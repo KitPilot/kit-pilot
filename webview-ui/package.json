@@ -99,7 +99,7 @@
 		"@types/stacktrace-js": "^2.0.3",
 		"@types/vscode-webview": "^1.57.5",
 		"@vitejs/plugin-react": "^4.3.4",
-		"@vitest/ui": "^3.2.3",
+		"@vitest/ui": "^4.1.6",
 		"babel-plugin-react-compiler": "^1.0.0",
 		"identity-obj-proxy": "^3.0.0",
 		"jsdom": "^26.0.0",
