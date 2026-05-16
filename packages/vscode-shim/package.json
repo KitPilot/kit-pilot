@@ -13,7 +13,7 @@
 	"devDependencies": {
 		"@kit-pilot/config-eslint": "workspace:^",
 		"@kit-pilot/config-typescript": "workspace:^",
-		"@types/node": "^24.1.0",
+		"@types/node": "^25.8.0",
 		"vitest": "^3.2.3"
 	},
 	"dependencies": {}

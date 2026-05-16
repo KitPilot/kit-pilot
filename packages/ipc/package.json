@@ -16,7 +16,7 @@
 	"devDependencies": {
 		"@kit-pilot/config-eslint": "workspace:^",
 		"@kit-pilot/config-typescript": "workspace:^",
-		"@types/node": "20.x",
+		"@types/node": "25.x",
 		"@types/node-ipc": "^9.2.3",
 		"vitest": "^3.2.3"
 	}
