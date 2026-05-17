@@ -1,5 +1,16 @@
 # KitPilot Changelog
 
+## 0.1.5
+
+### Fixed
+
+- "Check our docs to get started" link on the welcome screen now points to the KitPilot repo (was still pointing to Roo Code's repo).
+- Error boundary "report a bug" link → KitPilot issues.
+- Settings → About "Report a bug" and "Security issue" links → KitPilot issues / security policy.
+- ChatRow unknown-error fallback link → KitPilot issues.
+
+The Announcement dialog's "fork of Roo Code" link intentionally still points to the Roo Code repo as upstream attribution.
+
 ## 0.1.4
 
 ### Added — agentic improvements
