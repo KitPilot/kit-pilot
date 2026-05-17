@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## 0.1.1
+
+### Changed
+
+- Marketplace icon now uses a transparent background instead of a white card so it sits cleanly on light and dark surfaces.
+
 ## 0.1.0
 
 Initial release. KitPilot is a fork of [Roo Code](https://github.com/RooCodeInc/Roo-Code) v3.53.0, narrowed for use with GitHub Copilot only.
