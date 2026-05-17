@@ -1,6 +1,6 @@
 {
 	"extension.displayName": "KitPilot",
-	"extension.description": "Un equipo completo de desarrollo de agentes de IA en tu editor.",
+	"extension.description": "An agentic coding assistant powered exclusively by GitHub Copilot.",
 	"command.newTask.title": "Nueva Tarea",
 	"command.explainCode.title": "Explicar Código",
 	"command.fixCode.title": "Corregir Código",

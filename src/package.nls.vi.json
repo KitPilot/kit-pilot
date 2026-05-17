@@ -1,6 +1,6 @@
 {
 	"extension.displayName": "KitPilot",
-	"extension.description": "Một đội ngũ phát triển các tác nhân AI hoàn chỉnh trong trình soạn thảo của bạn.",
+	"extension.description": "An agentic coding assistant powered exclusively by GitHub Copilot.",
 	"command.newTask.title": "Tác Vụ Mới",
 	"command.explainCode.title": "Giải Thích Mã",
 	"command.fixCode.title": "Sửa Mã",

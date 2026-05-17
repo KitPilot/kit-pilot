@@ -1,5 +1,12 @@
 # KitPilot Changelog
 
+## 0.1.2
+
+### Changed
+
+- Replaced inherited Roo Code marketplace description (*"A whole dev team of AI agents in your editor"*) with KitPilot-accurate copy: *"An agentic coding assistant powered exclusively by GitHub Copilot."* Applied across all 18 locale files.
+- Cleaned marketplace keywords — dropped stale `claude`, `troo pilot`, `troopilot` tags; added `github-copilot`, `agentic`, `code-assistant`, `chat`, `kit-pilot`, `kitpilot` for better discoverability.
+
 ## 0.1.1
 
 ### Changed

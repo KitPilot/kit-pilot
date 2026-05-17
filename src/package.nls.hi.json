@@ -1,6 +1,6 @@
 {
 	"extension.displayName": "KitPilot",
-	"extension.description": "आपके एडिटर में एआई एजेंट्स की पूरी डेवलपमेंट टीम।",
+	"extension.description": "An agentic coding assistant powered exclusively by GitHub Copilot.",
 	"command.newTask.title": "नया कार्य",
 	"command.explainCode.title": "कोड समझाएं",
 	"command.fixCode.title": "कोड ठीक करें",

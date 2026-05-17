@@ -3,7 +3,7 @@
 	"displayName": "%extension.displayName%",
 	"description": "%extension.description%",
 	"publisher": "KitPilot",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"icon": "assets/icons/icon.png",
 	"galleryBanner": {
 		"color": "#617A91",
@@ -31,16 +31,19 @@
 	],
 	"keywords": [
 		"copilot",
-		"claude",
-		"dev",
-		"mcp",
-		"coding",
-		"agent",
-		"autonomous",
+		"github-copilot",
 		"vscode-lm",
+		"agent",
+		"agentic",
 		"ai",
-		"troo pilot",
-		"troopilot"
+		"coding",
+		"code-assistant",
+		"chat",
+		"mcp",
+		"dev",
+		"autonomous",
+		"kit-pilot",
+		"kitpilot"
 	],
 	"activationEvents": [
 		"onLanguage",

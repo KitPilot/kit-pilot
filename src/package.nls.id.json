@@ -1,6 +1,6 @@
 {
 	"extension.displayName": "KitPilot",
-	"extension.description": "Tim pengembang AI lengkap di editor kamu.",
+	"extension.description": "An agentic coding assistant powered exclusively by GitHub Copilot.",
 	"views.contextMenu.label": "KitPilot",
 	"views.terminalMenu.label": "KitPilot",
 	"views.activitybar.title": "KitPilot",
