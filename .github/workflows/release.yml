@@ -1,0 +1,104 @@
+name: Release
+
+# Triggers on push of a semver tag (e.g. v0.1.3). Also exposes a manual
+# "Run workflow" button via workflow_dispatch — useful for republishing.
+#
+# The flow: checkout the tagged commit, build everything, package the .vsix,
+# publish to the VS Code Marketplace, and create a GitHub Release with the
+# .vsix attached. The CHANGELOG.md section for the matching version is used
+# as the release body.
+
+on:
+    push:
+        tags:
+            - "v[0-9]+.[0-9]+.[0-9]+"
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: "Existing tag to publish (e.g. v0.1.3)"
+                required: true
+
+permissions:
+    contents: write # required so the workflow can create GitHub Releases
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+
+        steps:
+            - name: Checkout tagged commit
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.inputs.tag || github.ref }}
+                  fetch-depth: 0
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10.8.1
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.19.2
+                  cache: pnpm
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Build workspace build package
+              run: pnpm --filter @kit-pilot/build run build
+
+            - name: Build webview UI
+              run: pnpm --filter @kit-pilot/vscode-webview run build
+
+            - name: Bundle extension
+              run: pnpm --filter kit-pilot run bundle
+
+            - name: Install vsce
+              run: npm install -g @vscode/vsce@latest
+
+            - name: Package extension (.vsix)
+              working-directory: src
+              run: vsce package --no-dependencies --allow-package-all-secrets
+
+            - name: Publish to VS Code Marketplace
+              working-directory: src
+              env:
+                  VSCE_PAT: ${{ secrets.VSCE_PAT }}
+              run: vsce publish --no-dependencies --allow-package-all-secrets
+
+            - name: Extract version from tag
+              id: version
+              run: |
+                  TAG="${GITHUB_REF#refs/tags/}"
+                  # Honor manual dispatch input if present
+                  if [ -n "${{ github.event.inputs.tag }}" ]; then
+                      TAG="${{ github.event.inputs.tag }}"
+                  fi
+                  echo "tag=$TAG" >> $GITHUB_OUTPUT
+                  echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+            - name: Extract release notes from CHANGELOG.md
+              run: |
+                  version="${{ steps.version.outputs.version }}"
+                  awk -v ver="## $version" '
+                      $0 == ver { capture=1; next }
+                      /^## / && capture { exit }
+                      capture { print }
+                  ' CHANGELOG.md > release-notes.md
+                  if [ ! -s release-notes.md ]; then
+                      echo "No matching ## $version section in CHANGELOG.md — falling back to a generic note." > release-notes.md
+                      echo "" >> release-notes.md
+                      echo "Install via the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=KitPilot.kit-pilot)." >> release-notes.md
+                  fi
+                  cat release-notes.md
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ steps.version.outputs.tag }}
+                  name: KitPilot ${{ steps.version.outputs.tag }}
+                  body_path: release-notes.md
+                  files: src/kit-pilot-*.vsix
