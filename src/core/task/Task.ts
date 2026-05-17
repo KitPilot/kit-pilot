@@ -113,6 +113,7 @@ import {
 } from "../task-persistence"
 import { getEnvironmentDetails } from "../environment/getEnvironmentDetails"
 import { checkContextWindowExceededError } from "../context/context-management/context-error-handling"
+import { getInitialWorkspaceContext } from "./workspaceContext"
 import {
 	type CheckpointDiffOptions,
 	type CheckpointRestoreOptions,
@@ -326,6 +327,17 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	consecutiveMistakeLimit: number
 	consecutiveMistakeCountForApplyDiff: Map<string, number> = new Map()
 	consecutiveMistakeCountForEditFile: Map<string, number> = new Map()
+
+	// Deep error recovery: track consecutive failures per tool name so we can
+	// fire a secondary analytical LLM call when the model gets stuck on the
+	// same tool. Counters reset on any successful invocation of that tool.
+	consecutiveToolFailures: Map<string, number> = new Map()
+	// Records the most recent error payload per tool name so we can pass it
+	// to the secondary analysis call without re-deriving it from history.
+	lastToolErrorByName: Map<string, string> = new Map()
+	// Analysis text produced by the secondary call, queued for prepending
+	// to the next user turn as a <failure_analysis> block. Cleared once used.
+	pendingFailureAnalysis: string | null = null
 	consecutiveNoToolUseCount: number = 0
 	consecutiveNoAssistantMessagesCount: number = 0
 	toolUsage: ToolUsage = {}
@@ -372,6 +384,83 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * @param toolResult - The tool_result block to add
 	 * @returns true if added, false if duplicate was skipped
 	 */
+	/**
+	 * Record whether a tool invocation succeeded or failed so the deep-error
+	 * recovery logic can detect "stuck" patterns. A success on any tool wipes
+	 * that tool's consecutive-failure counter; a failure increments it AND
+	 * caches the error string for the secondary analysis call.
+	 */
+	public recordToolOutcome(toolName: string, isError: boolean, errorPayload?: string): void {
+		if (isError) {
+			const prev = this.consecutiveToolFailures.get(toolName) ?? 0
+			this.consecutiveToolFailures.set(toolName, prev + 1)
+			if (errorPayload) {
+				this.lastToolErrorByName.set(toolName, errorPayload)
+			}
+		} else {
+			this.consecutiveToolFailures.delete(toolName)
+			this.lastToolErrorByName.delete(toolName)
+		}
+	}
+
+	/**
+	 * Returns the first tool name that has just hit (or exceeded) the
+	 * stuck-loop threshold. Returning a tool name signals that the deep
+	 * analysis call should fire. We use exactly == 2 so the call fires once
+	 * per stuck episode rather than on every subsequent failure.
+	 */
+	public toolNeedingDeepAnalysis(): string | null {
+		for (const [tool, count] of this.consecutiveToolFailures.entries()) {
+			if (count === 2) return tool
+		}
+		return null
+	}
+
+	/**
+	 * Secondary LLM call. Asks the model — with a focused, isolated system
+	 * prompt — to analyze why a tool failed twice in a row and what to try
+	 * differently. Returns a short analysis string that gets prepended to
+	 * the next user turn as a <failure_analysis> block.
+	 *
+	 * Failures (network, etc.) are silently caught and return null — better
+	 * to skip the analysis than to stall the main loop.
+	 */
+	public async analyzeToolFailure(toolName: string): Promise<string | null> {
+		const errorPayload = this.lastToolErrorByName.get(toolName)
+		if (!errorPayload) return null
+
+		const systemPrompt =
+			"You are an error analysis assistant for an agentic coding tool. " +
+			"The agent just ran a tool and it failed twice in a row. " +
+			"In 3-5 short sentences, explain why it likely failed and what concrete alternative the agent should try. " +
+			"Reference the exact error text. Do not propose anything that requires asking the user. " +
+			"Output only the analysis text — no XML wrappers, no preamble, no bullet lists unless essential."
+
+		const userPrompt = `Tool: ${toolName}\nError payload (most recent): ${errorPayload}\n\nWhy did this fail twice? What concrete alternative should the agent try next?`
+
+		try {
+			const stream = this.api.createMessage(
+				systemPrompt,
+				[{ role: "user", content: userPrompt }],
+				{ taskId: this.taskId },
+			)
+			let analysis = ""
+			for await (const chunk of stream) {
+				if (chunk.type === "text") {
+					analysis += chunk.text
+				}
+			}
+			analysis = analysis.trim()
+			return analysis || null
+		} catch (error) {
+			console.warn(
+				`[Task#analyzeToolFailure] secondary analysis call failed:`,
+				error instanceof Error ? error.message : error,
+			)
+			return null
+		}
+	}
+
 	public pushToolResultToUserContent(toolResult: Anthropic.ToolResultBlockParam): boolean {
 		const existingResult = this.userMessageContent.find(
 			(block): block is Anthropic.ToolResultBlockParam =>
@@ -1937,11 +2026,17 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 			const imageBlocks: Anthropic.ImageBlockParam[] = formatResponse.imageBlocks(images)
 
+			// Proactively inject a workspace overview into the very first
+			// user message so the agent doesn't burn turns running list_files
+			// / read_file just to figure out what kind of project this is.
+			// Failures are silently swallowed by the helper.
+			const workspaceContext = await getInitialWorkspaceContext(this.cwd)
+
 			// Task starting
 			await this.initiateTaskLoop([
 				{
 					type: "text",
-					text: `<user_message>\n${task}\n</user_message>`,
+					text: `${workspaceContext}<user_message>\n${task}\n</user_message>`,
 				},
 				...imageBlocks,
 			]).catch((error) => {
@@ -2482,7 +2577,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		while (stack.length > 0) {
 			const currentItem = stack.pop()!
-			const currentUserContent = currentItem.userContent
+			// `let` (not const) so the deep-error-recovery branch below can
+			// prepend a <failure_analysis> block to the user content.
+			let currentUserContent = currentItem.userContent
 			const currentIncludeFileDetails = currentItem.includeFileDetails
 
 			if (this.abort) {
@@ -2532,6 +2629,34 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			// provider rate-limit window.
 			await this.maybeWaitForProviderRateLimit(currentItem.retryAttempt ?? 0)
 			Task.lastGlobalApiRequestTime = performance.now()
+
+			// Deep error recovery: if any tool has just failed for the 2nd
+			// consecutive time AND the user has opted in, make a secondary
+			// LLM call to analyze the failure. The result is prepended to
+			// this turn's user content as a <failure_analysis> block.
+			const deepAnalysisEnabled = vscode.workspace
+				.getConfiguration(Package.name)
+				.get<boolean>("deepErrorAnalysis", false)
+			if (deepAnalysisEnabled) {
+				const stuckTool = this.toolNeedingDeepAnalysis()
+				if (stuckTool) {
+					const analysis = await this.analyzeToolFailure(stuckTool)
+					if (analysis) {
+						currentUserContent = [
+							{
+								type: "text",
+								text:
+									`<failure_analysis tool="${stuckTool}">\n` +
+									`This is an automated analysis of why the previous \`${stuckTool}\` call failed twice in a row. ` +
+									`Treat it as a hint from an external reviewer, not the user's words.\n\n` +
+									`${analysis}\n` +
+									`</failure_analysis>\n\n`,
+							},
+							...currentUserContent,
+						]
+					}
+				}
+			}
 
 			await this.say(
 				"api_req_started",

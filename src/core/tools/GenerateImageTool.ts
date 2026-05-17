@@ -197,7 +197,6 @@ export class GenerateImageTool extends BaseTool<"generate_image"> {
 				"Image generation is disabled in this vscode-lm-only build of KitPilot. " +
 					"The generate_image tool is not registered (see build-tools.ts).",
 			)
-			// eslint-disable-next-line @typescript-eslint/no-unreachable -- defensive: keep type narrowing happy
 			const result = { success: false, error: "", imageData: "" } as {
 				success: boolean
 				error: string

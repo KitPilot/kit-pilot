@@ -98,7 +98,7 @@ ${getRulesSection(cwd, settings)}
 
 ${getSystemInfoSection(cwd)}
 
-${getObjectiveSection()}
+${getObjectiveSection(vscode.workspace.getConfiguration("kit-pilot").get<string>("verifyCommand", ""))}
 
 ${await addCustomInstructions(baseInstructions, globalCustomInstructions || "", cwd, mode, {
 	language: language ?? formatLanguage(vscode.env.language),

@@ -481,6 +481,16 @@ export async function presentAssistantMessage(cline: Task) {
 					content: resultContent,
 				})
 
+				// Track per-tool consecutive failure count for the deep-error
+				// recovery feature. We detect error results by sniffing the
+				// status field in the JSON envelope produced by
+				// formatResponse.toolError / toolDenied. Any non-error result
+				// resets the counter for this tool.
+				const looksLikeError =
+					resultContent.includes('"status":"error"') ||
+					resultContent.includes('"status":"denied"')
+				cline.recordToolOutcome(block.name, looksLikeError, looksLikeError ? resultContent : undefined)
+
 				if (imageBlocks.length > 0) {
 					cline.userMessageContent.push(...imageBlocks)
 				}

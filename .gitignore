@@ -55,3 +55,7 @@ qdrant_storage/
 plans/
 
 roo-cli-*.tar.gz*
+
+# Maintainer-local notes and implementation guidance — never push these.
+ROO_CODE_VSCODE_LM_NOTES.md
+claude_code_instructions.md

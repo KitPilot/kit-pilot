@@ -28,6 +28,8 @@ export const formatResponse = {
 			status: "error",
 			message: "The tool execution failed",
 			error,
+			reflectionRequired:
+				"[TOOL EXECUTION FAILED] Before taking your next action, you MUST use a <reflection> XML block to explicitly state why you think this tool failed and exactly what you will do differently to fix it.",
 		}),
 
 	rooIgnoreError: (path: string) =>
