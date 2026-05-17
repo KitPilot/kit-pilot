@@ -1,5 +1,5 @@
-Troo Pilot
-Copyright (c) 2026 Troo Pilot contributors
+KitPilot
+Copyright (c) 2026 KitPilot contributors
 
 This product includes software developed by Roo Code, Inc. and its
 contributors (https://github.com/RooCodeInc/Roo-Code), licensed under the
@@ -8,7 +8,7 @@ Apache License, Version 2.0.
 Roo Code is itself derived from Cline (https://github.com/cline/cline) by
 Cline contributors, also licensed under the Apache License, Version 2.0.
 
-Troo Pilot is a derivative work that narrows the upstream project to
+KitPilot is a derivative work that narrows the upstream project to
 exclusively support GitHub Copilot's VS Code Language Model API. See
 CHANGELOG.md for a summary of significant changes made in this fork.
 
@@ -18,7 +18,7 @@ or Cline contributors), except as required for reasonable and customary use
 in describing the origin of the Work and reproducing the content of the
 NOTICE file.
 
-"Troo Pilot" is a name used by this project's maintainers; it is not
+"KitPilot" is a name used by this project's maintainers; it is not
 affiliated with, endorsed by, or sponsored by Roo Code, Inc., GitHub Inc.,
 or Microsoft Corporation.
 

@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## 0.1.3
+
+### Fixed
+
+- Version indicator on the chat home screen was stuck displaying `v0.1.0` even after subsequent releases. The webview UI bundle wasn't being rebuilt between releases, so the baked-in `Package.version` constant never updated. From this release onward the GitHub Actions release workflow rebuilds the webview UI as part of every tag-triggered publish, preventing recurrence.
+
 ## 0.1.2
 
 ### Changed
