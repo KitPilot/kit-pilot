@@ -20,7 +20,7 @@ export const vscodeLlmModels = {
 	},
 	"gpt-4o-mini": {
 		contextWindow: 12115,
-		supportsImages: false,
+		supportsImages: true,
 		supportsPromptCache: false,
 		inputPrice: 0,
 		outputPrice: 0,
@@ -68,7 +68,7 @@ export const vscodeLlmModels = {
 	},
 	o1: {
 		contextWindow: 19827,
-		supportsImages: false,
+		supportsImages: true,
 		supportsPromptCache: false,
 		inputPrice: 0,
 		outputPrice: 0,
@@ -140,7 +140,7 @@ export const vscodeLlmModels = {
 	},
 	"o4-mini": {
 		contextWindow: 128000,
-		supportsImages: false,
+		supportsImages: true,
 		supportsPromptCache: false,
 		inputPrice: 0,
 		outputPrice: 0,

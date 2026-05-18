@@ -28,6 +28,60 @@ import { convertToVsCodeLmMessages, extractTextCountFromMessage } from "../trans
 import { BaseProvider } from "./base-provider"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
 
+// Substrings of model `family` / `id` strings known to accept image input via
+// the VS Code Language Model API (Copilot-backed). Conservative on purpose:
+// flipping `supportsImages: true` for a text-only model breaks requests instead
+// of falling back to the upstream `[IMAGE]` placeholder.
+const VISION_MODEL_ALLOWLIST = [
+	"gpt-4o",
+	"gpt-4.1",
+	"gpt-4-turbo",
+	"gpt-5",
+	"claude-3.5-sonnet",
+	"claude-3-5-sonnet",
+	"claude-3.7-sonnet",
+	"claude-3-7-sonnet",
+	"claude-sonnet-4",
+	"claude-opus-4",
+	"claude-haiku-4-5",
+	"gemini-1.5",
+	"gemini-2",
+	"o1",
+	"o3",
+	"o4",
+] as const
+
+// Explicit deny list for text-only variants that would otherwise be caught by
+// the allowlist substrings above (e.g. "o3-mini" matches "o3").
+const VISION_MODEL_DENYLIST = ["o1-mini", "o3-mini", "gpt-3.5"] as const
+
+function modelSupportsVision(family?: string, id?: string): boolean {
+	const haystack = `${family ?? ""} ${id ?? ""}`.toLowerCase()
+	if (VISION_MODEL_DENYLIST.some((p) => haystack.includes(p))) {
+		return false
+	}
+	return VISION_MODEL_ALLOWLIST.some((p) => haystack.includes(p))
+}
+
+/**
+ * Rough per-image token estimate, tiered by decoded byte size. The VS Code LM
+ * API's `countTokens` only handles strings, so we bypass it for images and add
+ * a flat estimate. Real per-image cost varies by model (OpenAI ~85 low / 1100
+ * high-detail; Claude ~1500 per 1MP) — this stays in the right order of
+ * magnitude without paying for dimension extraction on every call.
+ */
+function estimateImageTokens(block: Anthropic.Messages.ImageBlockParam): number {
+	const source = block.source
+	if (source?.type !== "base64" || typeof source.data !== "string") {
+		return 1000
+	}
+	// base64 length ≈ encoded chars; decoded bytes ≈ length * 0.75
+	const bytes = Math.floor(source.data.length * 0.75)
+	if (bytes < 50_000) return 300
+	if (bytes < 500_000) return 1000
+	return 2000
+}
+
 /**
  * Converts OpenAI-format tools to VSCode Language Model tools.
  * Normalizes the JSON Schema to draft 2020-12 compliant format required by
@@ -218,19 +272,21 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 	 * @returns A promise resolving to the token count
 	 */
 	override async countTokens(content: Array<Anthropic.Messages.ContentBlockParam>): Promise<number> {
-		// Convert Anthropic content blocks to a string for VSCode LM token counting
+		// Count text via the VS Code LM tokenizer; estimate images separately
+		// since the underlying `countTokens` only accepts strings.
 		let textContent = ""
+		let imageTokens = 0
 
 		for (const block of content) {
 			if (block.type === "text") {
 				textContent += block.text || ""
 			} else if (block.type === "image") {
-				// VSCode LM doesn't support images directly, so we'll just use a placeholder
-				textContent += "[IMAGE]"
+				imageTokens += estimateImageTokens(block)
 			}
 		}
 
-		return this.internalCountTokens(textContent)
+		const textTokens = textContent ? await this.internalCountTokens(textContent) : 0
+		return textTokens + imageTokens
 	}
 
 	/**
@@ -391,6 +447,12 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 			content: this.cleanMessageContent(msg.content),
 		}))
 
+		// Track whether any inbound message carried an image so we can show a
+		// clearer warning if the model rejects the request for image reasons.
+		const hasImages = cleanedMessages.some(
+			(m) => Array.isArray(m.content) && m.content.some((b: any) => b?.type === "image"),
+		)
+
 		// Convert Anthropic messages to VS Code LM messages
 		const vsCodeLmMessages: vscode.LanguageModelChatMessage[] = [
 			vscode.LanguageModelChatMessage.Assistant(systemPrompt),
@@ -503,6 +565,16 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 					name: error.name,
 				})
 
+				// If the request carried images and the error looks image-related,
+				// nudge the user toward a vision-capable model. Fire-and-forget;
+				// the original error still propagates so the caller's flow is
+				// unchanged.
+				if (hasImages && /image|vision|media[_\s-]?type|content[_\s-]?type|unsupported/i.test(error.message)) {
+					vscode.window.showWarningMessage(
+						`The model '${client.name}' rejected an image in this request. It may not support vision input — try a vision-capable model (e.g. GPT-4o, Claude Sonnet 4, Gemini 2.5 Pro).`,
+					)
+				}
+
 				// Return original error if it's already an Error instance
 				throw error
 			} else if (typeof error === "object" && error !== null) {
@@ -544,13 +616,17 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 			const modelId = this.client.id || modelParts.join(SELECTOR_SEPARATOR)
 
 			// Build model info with conservative defaults for missing values
+			const supportsImages = modelSupportsVision(this.client.family, this.client.id)
+			console.debug(
+				`Roo Code <Language Model API>: model=${modelId} vendor=${this.client.vendor} family=${this.client.family} supportsImages=${supportsImages}`,
+			)
 			const modelInfo: ModelInfo = {
 				maxTokens: -1, // Unlimited tokens by default
 				contextWindow:
 					typeof this.client.maxInputTokens === "number"
 						? Math.max(0, this.client.maxInputTokens)
 						: openAiModelInfoSaneDefaults.contextWindow,
-				supportsImages: false, // VSCode Language Model API currently doesn't support image inputs
+				supportsImages,
 				supportsPromptCache: true,
 				inputPrice: 0,
 				outputPrice: 0,

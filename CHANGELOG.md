@@ -1,5 +1,19 @@
 # KitPilot Changelog
 
+## 0.1.7
+
+### Added
+
+- **Image / vision support.** Paste a screenshot or `@`-mention an image file and KitPilot now sends the actual image bytes to Copilot via the VS Code Language Model API's `LanguageModelDataPart` — instead of replacing it with `[Image not supported]` placeholder text. Works on vision-capable Copilot models (GPT-4o, GPT-4o mini, GPT-4.1, GPT-5, Claude 3.5/3.7/Sonnet 4/Opus 4, Gemini 1.5/2.x, o1/o3/o4). Text-only models (e.g. `o3-mini`, `gpt-3.5`) continue to receive a clean placeholder.
+- **Image-rejection warning.** If a vision-bearing request fails with an image-shaped error (`unsupported content type`, `vision`, etc.), a one-shot toast suggests switching to a vision-capable model. The original error still propagates so existing flows are unchanged.
+- **Image token accounting.** `countTokens` now adds a per-image estimate (300/1000/2000 tokens by decoded byte size) on top of the text-token count, so context-window math stays roughly accurate when images are in the conversation. Real per-image cost is model-dependent; this is a conservative byte-size tier.
+
+### Changed
+
+- **Engine bump.** Minimum VS Code is now 1.107 (was 1.84). Required to access the stable `LanguageModelDataPart` API for image input.
+- **Webview no longer hardcodes `supportsImages: false` for the VS Code LM provider.** The per-model `supportsImages` flag from the model registry now flows through to the UI; `gpt-4o-mini`, `o1`, and `o4-mini` registry entries corrected to `true` (all three accept image input).
+- **5MB per-image cap.** Images exceeding 5MB after base64 decode become a clear placeholder (`[Image (..., XXXKB): exceeds the 5MB VS Code LM API limit and was not sent]`) instead of being sent in a request that would 4xx at the API boundary.
+
 ## 0.1.6
 
 ### Added

@@ -16,6 +16,12 @@ interface MockLanguageModelTextPart {
 	value: string
 }
 
+interface MockLanguageModelDataPart {
+	type: "data"
+	data: Uint8Array
+	mimeType: string
+}
+
 interface MockLanguageModelToolCallPart {
 	type: "tool_call"
 	callId: string
@@ -26,7 +32,7 @@ interface MockLanguageModelToolCallPart {
 interface MockLanguageModelToolResultPart {
 	type: "tool_result"
 	callId: string
-	content: MockLanguageModelTextPart[]
+	content: Array<MockLanguageModelTextPart | MockLanguageModelDataPart>
 }
 
 // Mock vscode namespace
@@ -39,6 +45,17 @@ vitest.mock("vscode", () => {
 	class MockLanguageModelTextPart {
 		type = "text"
 		constructor(public value: string) {}
+	}
+
+	class MockLanguageModelDataPart {
+		type = "data"
+		constructor(
+			public data: Uint8Array,
+			public mimeType: string,
+		) {}
+		static image(data: Uint8Array, mime: string) {
+			return new MockLanguageModelDataPart(data, mime)
+		}
 	}
 
 	class MockLanguageModelToolCallPart {
@@ -54,7 +71,7 @@ vitest.mock("vscode", () => {
 		type = "tool_result"
 		constructor(
 			public callId: string,
-			public content: MockLanguageModelTextPart[],
+			public content: Array<MockLanguageModelTextPart | MockLanguageModelDataPart>,
 		) {}
 	}
 
@@ -73,6 +90,7 @@ vitest.mock("vscode", () => {
 		},
 		LanguageModelChatMessageRole,
 		LanguageModelTextPart: MockLanguageModelTextPart,
+		LanguageModelDataPart: MockLanguageModelDataPart,
 		LanguageModelToolCallPart: MockLanguageModelToolCallPart,
 		LanguageModelToolResultPart: MockLanguageModelToolResultPart,
 	}
@@ -150,7 +168,9 @@ describe("convertToVsCodeLmMessages", () => {
 		expect(toolCall.type).toBe("tool_call")
 	})
 
-	it("should handle image blocks with appropriate placeholders", () => {
+	it("should convert base64 image blocks to LanguageModelDataPart", () => {
+		// "hello" → base64
+		const b64 = Buffer.from("hello").toString("base64")
 		const messages: Anthropic.Messages.MessageParam[] = [
 			{
 				role: "user",
@@ -161,7 +181,7 @@ describe("convertToVsCodeLmMessages", () => {
 						source: {
 							type: "base64",
 							media_type: "image/png",
-							data: "base64data",
+							data: b64,
 						},
 					},
 				],
@@ -171,8 +191,84 @@ describe("convertToVsCodeLmMessages", () => {
 		const result = convertToVsCodeLmMessages(messages)
 
 		expect(result).toHaveLength(1)
-		const imagePlaceholder = result[0].content[1] as MockLanguageModelTextPart
-		expect(imagePlaceholder.value).toContain("[Image (base64): image/png not supported by VSCode LM API]")
+		const dataPart = result[0].content[1] as MockLanguageModelDataPart
+		expect(dataPart.type).toBe("data")
+		expect(dataPart.mimeType).toBe("image/png")
+		expect(Buffer.from(dataPart.data).toString("utf8")).toBe("hello")
+	})
+
+	it("should strip data URL prefix when present in source.data", () => {
+		const b64 = Buffer.from("world").toString("base64")
+		const messages: Anthropic.Messages.MessageParam[] = [
+			{
+				role: "user",
+				content: [
+					{
+						type: "image",
+						source: {
+							// Some upstream paths may forget to strip the prefix; we must
+							// still decode the underlying bytes correctly.
+							type: "base64",
+							media_type: "image/png",
+							data: `data:image/jpeg;base64,${b64}` as any,
+						},
+					},
+				],
+			},
+		]
+
+		const result = convertToVsCodeLmMessages(messages)
+
+		const dataPart = result[0].content[0] as MockLanguageModelDataPart
+		expect(dataPart.type).toBe("data")
+		// Prefix's MIME wins when present — it's authoritative for the bytes that follow.
+		expect(dataPart.mimeType).toBe("image/jpeg")
+		expect(Buffer.from(dataPart.data).toString("utf8")).toBe("world")
+	})
+
+	it("should fall back to text placeholder for images exceeding the 5MB cap", () => {
+		// 6MB of decoded bytes → base64 length ≈ 6MB * 4/3
+		const b64 = "A".repeat(Math.ceil(6 * 1024 * 1024 * (4 / 3)))
+		const messages: Anthropic.Messages.MessageParam[] = [
+			{
+				role: "user",
+				content: [
+					{
+						type: "image",
+						source: { type: "base64", media_type: "image/png", data: b64 },
+					},
+				],
+			},
+		]
+
+		const result = convertToVsCodeLmMessages(messages)
+
+		const fallback = result[0].content[0] as MockLanguageModelTextPart
+		expect(fallback.type).toBe("text")
+		expect(fallback.value).toMatch(/exceeds the 5MB/)
+	})
+
+	it("should fall back to text placeholder for non-base64 image sources", () => {
+		const messages: Anthropic.Messages.MessageParam[] = [
+			{
+				role: "user",
+				content: [
+					{
+						type: "image",
+						source: {
+							type: "url",
+							url: "https://example.com/x.png",
+						} as any,
+					},
+				],
+			},
+		]
+
+		const result = convertToVsCodeLmMessages(messages)
+
+		const fallback = result[0].content[0] as MockLanguageModelTextPart
+		expect(fallback.type).toBe("text")
+		expect(fallback.value).toContain("base64")
 	})
 })
 

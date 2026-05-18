@@ -3,14 +3,14 @@
 	"displayName": "%extension.displayName%",
 	"description": "%extension.description%",
 	"publisher": "KitPilot",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"icon": "assets/icons/icon.png",
 	"galleryBanner": {
 		"color": "#617A91",
 		"theme": "dark"
 	},
 	"engines": {
-		"vscode": "^1.84.0",
+		"vscode": "^1.107.0",
 		"node": "20.19.2"
 	},
 	"author": {
@@ -523,7 +523,7 @@
 		"@types/string-similarity": "^4.0.2",
 		"@types/tmp": "^0.2.6",
 		"@types/turndown": "^5.0.5",
-		"@types/vscode": "^1.84.0",
+		"@types/vscode": "^1.107.0",
 		"@vscode/test-electron": "^2.5.2",
 		"@vscode/vsce": "3.3.2",
 		"ai": "^6.0.75",

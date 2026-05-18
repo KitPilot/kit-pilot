@@ -308,7 +308,9 @@ function getSelectedModel({
 				: vscodeLlmDefaultModelId
 			const modelFamily = apiConfiguration?.vsCodeLmModelSelector?.family ?? vscodeLlmDefaultModelId
 			const info = vscodeLlmModels[modelFamily as keyof typeof vscodeLlmModels]
-			return { id, info: { ...openAiModelInfoSaneDefaults, ...info, supportsImages: false } } // VSCode LM API currently doesn't support images.
+			// Let the registry's per-model `supportsImages` flow through (e.g. gpt-4o,
+			// claude-3.5-sonnet, gemini-2.5-pro all support vision via Copilot).
+			return { id, info: { ...openAiModelInfoSaneDefaults, ...info } }
 		}
 		case "sambanova": {
 			const id = apiConfiguration.apiModelId ?? defaultModelId

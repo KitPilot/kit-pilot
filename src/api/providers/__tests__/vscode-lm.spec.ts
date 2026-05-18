@@ -7,6 +7,17 @@ vi.mock("vscode", () => {
 		constructor(public value: string) {}
 	}
 
+	class MockLanguageModelDataPart {
+		type = "data"
+		constructor(
+			public data: Uint8Array,
+			public mimeType: string,
+		) {}
+		static image(data: Uint8Array, mime: string) {
+			return new MockLanguageModelDataPart(data, mime)
+		}
+	}
+
 	class MockLanguageModelToolCallPart {
 		type = "tool_call"
 		constructor(
@@ -16,11 +27,22 @@ vi.mock("vscode", () => {
 		) {}
 	}
 
+	class MockLanguageModelToolResultPart {
+		type = "tool_result"
+		constructor(
+			public callId: string,
+			public content: any[],
+		) {}
+	}
+
 	return {
 		workspace: {
 			onDidChangeConfiguration: vi.fn((_callback) => ({
 				dispose: vi.fn(),
 			})),
+		},
+		window: {
+			showWarningMessage: vi.fn(),
 		},
 		CancellationTokenSource: vi.fn(() => ({
 			token: {
@@ -47,7 +69,9 @@ vi.mock("vscode", () => {
 			})),
 		},
 		LanguageModelTextPart: MockLanguageModelTextPart,
+		LanguageModelDataPart: MockLanguageModelDataPart,
 		LanguageModelToolCallPart: MockLanguageModelToolCallPart,
+		LanguageModelToolResultPart: MockLanguageModelToolResultPart,
 		lm: {
 			selectChatModels: vi.fn(),
 		},
@@ -391,6 +415,54 @@ describe("VsCodeLmHandler", () => {
 
 			await expect(handler.createMessage(systemPrompt, messages).next()).rejects.toThrow("API Error")
 		})
+
+		it("should warn the user when an image-bearing request is rejected by the model", async () => {
+			const showWarning = vscode.window.showWarningMessage as Mock
+			showWarning.mockClear()
+
+			const messages: Anthropic.Messages.MessageParam[] = [
+				{
+					role: "user",
+					content: [
+						{ type: "text", text: "What is this?" },
+						{
+							type: "image",
+							source: { type: "base64", media_type: "image/png", data: "abc" },
+						},
+					],
+				},
+			]
+			mockLanguageModelChat.sendRequest.mockRejectedValueOnce(
+				new Error("Unsupported content type: image/png"),
+			)
+
+			await expect(handler.createMessage("system", messages).next()).rejects.toThrow(
+				"Unsupported content type",
+			)
+			expect(showWarning).toHaveBeenCalledTimes(1)
+			expect(showWarning.mock.calls[0][0]).toMatch(/rejected an image/i)
+		})
+
+		it("should NOT warn for non-image errors even when images are present", async () => {
+			const showWarning = vscode.window.showWarningMessage as Mock
+			showWarning.mockClear()
+
+			const messages: Anthropic.Messages.MessageParam[] = [
+				{
+					role: "user",
+					content: [
+						{
+							type: "image",
+							source: { type: "base64", media_type: "image/png", data: "abc" },
+						},
+					],
+				},
+			]
+			mockLanguageModelChat.sendRequest.mockRejectedValueOnce(new Error("Network timeout"))
+
+			await expect(handler.createMessage("system", messages).next()).rejects.toThrow("Network timeout")
+			expect(showWarning).not.toHaveBeenCalled()
+		})
 	})
 
 	describe("getModel", () => {
@@ -434,6 +506,37 @@ describe("VsCodeLmHandler", () => {
 			handler["client"] = null
 			const model = handler.getModel()
 			expect(model.info).toBeDefined()
+		})
+
+		it("should report supportsImages=false for non-vision models", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValue([{ ...mockLanguageModelChat }])
+			handler["client"] = null
+			await handler.initializeClient()
+
+			const model = handler.getModel()
+			expect(model.info.supportsImages).toBe(false)
+		})
+
+		it("should report supportsImages=true for vision-capable model families", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValue([
+				{ ...mockLanguageModelChat, id: "gpt-4o", family: "gpt-4o" },
+			])
+			handler["client"] = null
+			await handler.initializeClient()
+
+			const model = handler.getModel()
+			expect(model.info.supportsImages).toBe(true)
+		})
+
+		it("should keep supportsImages=false for denylisted text-only variants like o3-mini", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValue([
+				{ ...mockLanguageModelChat, id: "o3-mini", family: "o3-mini" },
+			])
+			handler["client"] = null
+			await handler.initializeClient()
+
+			const model = handler.getModel()
+			expect(model.info.supportsImages).toBe(false)
 		})
 	})
 
@@ -483,17 +586,34 @@ describe("VsCodeLmHandler", () => {
 			expect(result).toBe(0)
 		})
 
-		it("should handle image blocks with placeholder", async () => {
+		it("should estimate image tokens without calling the text counter", async () => {
 			handler["currentRequestCancellation"] = null
-			mockLanguageModelChat.countTokens.mockResolvedValueOnce(5)
 
+			// Small image (decoded ~2 bytes) → 300-token tier
 			const content: Anthropic.Messages.ContentBlockParam[] = [
 				{ type: "image", source: { type: "base64", media_type: "image/png", data: "abc" } },
 			]
 			const result = await handler.countTokens(content)
 
-			expect(result).toBe(5)
-			expect(mockLanguageModelChat.countTokens).toHaveBeenCalledWith("[IMAGE]", expect.any(Object))
+			expect(result).toBe(300)
+			// No text content was present, so the underlying tokenizer must not be called.
+			expect(mockLanguageModelChat.countTokens).not.toHaveBeenCalled()
+		})
+
+		it("should add image token estimate on top of text tokens", async () => {
+			handler["currentRequestCancellation"] = null
+			mockLanguageModelChat.countTokens.mockResolvedValueOnce(7)
+
+			// ~80KB decoded → 1000-token tier
+			const base64 = "a".repeat(110_000)
+			const content: Anthropic.Messages.ContentBlockParam[] = [
+				{ type: "text", text: "describe this" },
+				{ type: "image", source: { type: "base64", media_type: "image/png", data: base64 } },
+			]
+			const result = await handler.countTokens(content)
+
+			expect(result).toBe(7 + 1000)
+			expect(mockLanguageModelChat.countTokens).toHaveBeenCalledWith("describe this", expect.any(Object))
 		})
 	})
 

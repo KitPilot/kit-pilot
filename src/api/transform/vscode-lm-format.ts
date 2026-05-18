@@ -1,6 +1,54 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import * as vscode from "vscode"
 
+// Conservative ceiling matching the VS Code LM API's per-part data limit and
+// `imageHelpers.DEFAULT_MAX_IMAGE_FILE_SIZE_MB`. Oversized images are dropped
+// with a placeholder so the request body stays valid.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+
+/**
+ * Converts an Anthropic image block into a VS Code `LanguageModelDataPart`.
+ * Falls back to a text placeholder for non-base64 sources, oversized payloads,
+ * or decode failures so the model still sees a coherent message instead of a
+ * missing turn or a request that gets rejected at the API boundary.
+ */
+function convertAnthropicImageToPart(
+	imageBlock: Anthropic.ImageBlockParam,
+): vscode.LanguageModelDataPart | vscode.LanguageModelTextPart {
+	try {
+		const source = imageBlock.source
+		if (source?.type !== "base64" || !source.data) {
+			return new vscode.LanguageModelTextPart(
+				`[Image (${source?.type || "unknown source"}): only base64-encoded images are supported]`,
+			)
+		}
+
+		// Accept both raw base64 and `data:image/...;base64,XXX` data URLs.
+		// `source.data` should already be clean base64 (see responses.ts), but
+		// be defensive in case another producer leaves the prefix on.
+		let mime: string = source.media_type || "image/png"
+		let b64 = source.data
+		const dataUrl = b64.match(/^data:([^;]+);base64,(.*)$/)
+		if (dataUrl) {
+			mime = dataUrl[1]
+			b64 = dataUrl[2]
+		}
+
+		const bytes = new Uint8Array(Buffer.from(b64, "base64"))
+		if (bytes.byteLength > MAX_IMAGE_BYTES) {
+			const sizeKb = Math.round(bytes.byteLength / 1024)
+			const maxMb = Math.round(MAX_IMAGE_BYTES / (1024 * 1024))
+			return new vscode.LanguageModelTextPart(
+				`[Image (${mime}, ${sizeKb}KB): exceeds the ${maxMb}MB VS Code LM API limit and was not sent]`,
+			)
+		}
+		return vscode.LanguageModelDataPart.image(bytes, mime)
+	} catch (error) {
+		console.warn("Roo Code <Language Model API>: Failed to convert image block:", error)
+		return new vscode.LanguageModelTextPart("[Image: failed to decode]")
+	}
+}
+
 /**
  * Safely converts a value into a plain object.
  */
@@ -66,15 +114,15 @@ export function convertToVsCodeLmMessages(
 				const contentParts = [
 					// Convert tool messages to ToolResultParts
 					...toolMessages.map((toolMessage) => {
-						// Process tool result content into TextParts
-						const toolContentParts: vscode.LanguageModelTextPart[] =
+						// Process tool result content into text + data parts
+						const toolContentParts: Array<
+							vscode.LanguageModelTextPart | vscode.LanguageModelDataPart
+						> =
 							typeof toolMessage.content === "string"
 								? [new vscode.LanguageModelTextPart(toolMessage.content)]
 								: (toolMessage.content?.map((part) => {
 										if (part.type === "image") {
-											return new vscode.LanguageModelTextPart(
-												`[Image (${part.source?.type || "Unknown source-type"}): ${part.source?.media_type || "unknown media-type"} not supported by VSCode LM API]`,
-											)
+											return convertAnthropicImageToPart(part)
 										}
 										return new vscode.LanguageModelTextPart(part.text)
 									}) ?? [new vscode.LanguageModelTextPart("")])
@@ -82,12 +130,10 @@ export function convertToVsCodeLmMessages(
 						return new vscode.LanguageModelToolResultPart(toolMessage.tool_use_id, toolContentParts)
 					}),
 
-					// Convert non-tool messages to TextParts after tool messages
+					// Convert non-tool messages to text/data parts after tool messages
 					...nonToolMessages.map((part) => {
 						if (part.type === "image") {
-							return new vscode.LanguageModelTextPart(
-								`[Image (${part.source?.type || "Unknown source-type"}): ${part.source?.media_type || "unknown media-type"} not supported by VSCode LM API]`,
-							)
+							return convertAnthropicImageToPart(part)
 						}
 						return new vscode.LanguageModelTextPart(part.text)
 					}),
@@ -117,10 +163,12 @@ export function convertToVsCodeLmMessages(
 				// Process non-tool messages first, then tool messages
 				// Tool calls must come at the end so they are properly followed by user message with tool results
 				const contentParts = [
-					// Convert non-tool messages to TextParts first
+					// Convert non-tool messages to text/data parts first.
+					// Note: Anthropic assistants don't emit image blocks in practice; this branch
+					// exists for symmetry with the user-message path.
 					...nonToolMessages.map((part) => {
 						if (part.type === "image") {
-							return new vscode.LanguageModelTextPart("[Image generation not supported by VSCode LM API]")
+							return convertAnthropicImageToPart(part)
 						}
 						return new vscode.LanguageModelTextPart(part.text)
 					}),
