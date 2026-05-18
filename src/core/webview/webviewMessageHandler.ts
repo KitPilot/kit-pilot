@@ -1145,7 +1145,8 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			}
 
 			const workspaceFolder = getCurrentCwd()
-			const rooDir = path.join(workspaceFolder, ".roo")
+			// Write to the new ".kitpilot/" directory; reads elsewhere fall back to legacy ".roo/" automatically.
+			const rooDir = path.join(workspaceFolder, ".kitpilot")
 			const mcpPath = path.join(rooDir, "mcp.json")
 
 			try {
@@ -1776,19 +1777,23 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				// Determine the scope based on source (project or global)
 				const scope = modeToDelete.source || "global"
 
-				// Determine the rules folder path
+				// Determine the rules folder path. Prefer the new ".kitpilot/" location;
+				// fall back to legacy ".roo/" only if it exists and the new one doesn't.
+				const pickRulesFolder = async (base: string): Promise<string> => {
+					const kitpilotPath = path.join(base, ".kitpilot", `rules-${message.slug}`)
+					if (await fileExistsAtPath(kitpilotPath)) return kitpilotPath
+					const legacyPath = path.join(base, ".roo", `rules-${message.slug}`)
+					if (await fileExistsAtPath(legacyPath)) return legacyPath
+					return kitpilotPath
+				}
 				let rulesFolderPath: string
 				if (scope === "project") {
 					const workspacePath = getWorkspacePath()
-					if (workspacePath) {
-						rulesFolderPath = path.join(workspacePath, ".roo", `rules-${message.slug}`)
-					} else {
-						rulesFolderPath = path.join(".roo", `rules-${message.slug}`)
-					}
+					rulesFolderPath = workspacePath
+						? await pickRulesFolder(workspacePath)
+						: path.join(".kitpilot", `rules-${message.slug}`)
 				} else {
-					// Global scope - use OS home directory
-					const homeDir = os.homedir()
-					rulesFolderPath = path.join(homeDir, ".roo", `rules-${message.slug}`)
+					rulesFolderPath = await pickRulesFolder(os.homedir())
 				}
 
 				// Check if the rules folder exists

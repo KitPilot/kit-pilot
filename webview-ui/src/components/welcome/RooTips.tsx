@@ -3,57 +3,33 @@ import { useTranslation } from "react-i18next"
 import { Trans } from "react-i18next"
 
 import { buildDocLink } from "@src/utils/docLinks"
-import { Github, Users } from "lucide-react"
-
-const tips = [
-	{
-		icon: <Users className="size-4 shrink-0 mt-0.5" />,
-		href: buildDocLink("basic-usage/using-modes", "tips"),
-		titleKey: "rooTips.customizableModes.title",
-		descriptionKey: "rooTips.customizableModes.description",
-	},
-	{
-		icon: <Github className="size-4 shrink-0 mt-0.5" />,
-		href: "https://code.visualstudio.com/api/extension-guides/language-model",
-		titleKey: "rooTips.modelAgnostic.title",
-		descriptionKey: "rooTips.modelAgnostic.description",
-	},
-]
 
 const RooTips = () => {
 	const { t } = useTranslation("chat")
 
 	return (
-		<div className="flex flex-col gap-2 mb-4 max-w-[500px] text-vscode-descriptionForeground">
-			<p className="my-0 pr-2">
-				<Trans i18nKey="chat:about" />
-			</p>
-			<div className="gap-4">
-				{tips.map((tip) => (
-					<div key={tip.titleKey} className="flex items-start gap-2 mt-2 mr-6 leading-relaxed">
-						{tip.icon}
-						<span>
-							<VSCodeLink className="text-muted-foreground underline" href={tip.href}>
-								{t(tip.titleKey)}
-							</VSCodeLink>
-							: {t(tip.descriptionKey)}
-						</span>
-					</div>
-				))}
+		<div className="mb-6 max-w-[500px]">
+			<div className="flex flex-col gap-3 rounded-md border border-vscode-panel-border/40 bg-vscode-input-background/60 px-5 py-4">
+				<h2 className="m-0 text-lg font-medium text-vscode-foreground tracking-tight">
+					<Trans i18nKey="chat:about" />
+				</h2>
+				<p className="m-0 text-sm text-vscode-descriptionForeground leading-relaxed">
+					{t("rooTips.modelAgnostic.description")}
+				</p>
+				<p className="m-0 text-sm text-vscode-descriptionForeground">
+					<Trans
+						i18nKey="chat:docs"
+						components={{
+							DocsLink: (
+								<VSCodeLink
+									className="text-muted-foreground underline"
+									href={buildDocLink("", "welcome")}
+								/>
+							),
+						}}
+					/>
+				</p>
 			</div>
-			<p className="my-0 pr-8">
-				<Trans
-					i18nKey="chat:docs"
-					components={{
-						DocsLink: (
-							<VSCodeLink
-								className="text-muted-foreground underline"
-								href={buildDocLink("", "welcome")}
-							/>
-						),
-					}}
-				/>
-			</p>
 		</div>
 	)
 }

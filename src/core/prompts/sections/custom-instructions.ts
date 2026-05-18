@@ -225,8 +225,8 @@ export async function loadRuleFiles(cwd: string, enableSubfolderRules: boolean =
 		return "\n# Rules from .roo directories:\n\n" + rules.join("\n\n")
 	}
 
-	// Fall back to existing behavior for legacy .roorules/.clinerules files
-	const ruleFiles = [".roorules", ".clinerules"]
+	// Fall back to existing behavior for legacy single-file rules. Prefer .kitpilotrules; honor .roorules and .clinerules for back-compat.
+	const ruleFiles = [".kitpilotrules", ".roorules", ".clinerules"]
 
 	for (const file of ruleFiles) {
 		const content = await safeReadFile(path.join(cwd, file))
@@ -423,16 +423,14 @@ export async function addCustomInstructions(
 			modeRuleContent = "\n" + modeRules.join("\n\n")
 			usedRuleFile = `rules-${mode} directories`
 		} else {
-			// Fall back to existing behavior for legacy files
-			const rooModeRuleFile = `.roorules-${mode}`
-			modeRuleContent = await safeReadFile(path.join(cwd, rooModeRuleFile))
-			if (modeRuleContent) {
-				usedRuleFile = rooModeRuleFile
-			} else {
-				const clineModeRuleFile = `.clinerules-${mode}`
-				modeRuleContent = await safeReadFile(path.join(cwd, clineModeRuleFile))
-				if (modeRuleContent) {
-					usedRuleFile = clineModeRuleFile
+			// Fall back to existing behavior for legacy single-file rules. Prefer .kitpilotrules-{mode}; honor .roorules-{mode} and .clinerules-{mode} for back-compat.
+			const legacyFiles = [`.kitpilotrules-${mode}`, `.roorules-${mode}`, `.clinerules-${mode}`]
+			for (const file of legacyFiles) {
+				const content = await safeReadFile(path.join(cwd, file))
+				if (content) {
+					modeRuleContent = content
+					usedRuleFile = file
+					break
 				}
 			}
 		}

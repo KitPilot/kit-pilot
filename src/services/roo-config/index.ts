@@ -1,6 +1,7 @@
 import * as path from "path"
 import * as os from "os"
 import fs from "fs/promises"
+import fsSync from "fs"
 
 /**
  * Gets the global .roo directory path based on the current platform
@@ -25,7 +26,20 @@ import fs from "fs/promises"
  */
 export function getGlobalRooDirectory(): string {
 	const homeDir = os.homedir()
-	return path.join(homeDir, ".roo")
+	const kitpilotDir = path.join(homeDir, ".kitpilot")
+	const rooDir = path.join(homeDir, ".roo")
+	// Prefer the new ".kitpilot" location; fall back to legacy ".roo" only if it exists and the new one doesn't.
+	if (fsSync.existsSync(kitpilotDir)) return kitpilotDir
+	if (fsSync.existsSync(rooDir)) return rooDir
+	return kitpilotDir
+}
+
+/**
+ * Always returns the canonical `.kitpilot` global directory path, regardless of which dirs exist on disk.
+ * Use this at write sites that should always create the new-name directory.
+ */
+export function getGlobalKitpilotDirectory(): string {
+	return path.join(os.homedir(), ".kitpilot")
 }
 
 /**
@@ -102,7 +116,19 @@ export function getProjectAgentsDirectoryForCwd(cwd: string): string {
  * ```
  */
 export function getProjectRooDirectoryForCwd(cwd: string): string {
-	return path.join(cwd, ".roo")
+	const kitpilotDir = path.join(cwd, ".kitpilot")
+	const rooDir = path.join(cwd, ".roo")
+	// Prefer ".kitpilot"; fall back to legacy ".roo" only if it exists and the new one doesn't.
+	if (fsSync.existsSync(kitpilotDir)) return kitpilotDir
+	if (fsSync.existsSync(rooDir)) return rooDir
+	return kitpilotDir
+}
+
+/**
+ * Always returns the canonical `.kitpilot` project directory path. Use this at write sites that should always create the new-name directory.
+ */
+export function getProjectKitpilotDirectoryForCwd(cwd: string): string {
+	return path.join(cwd, ".kitpilot")
 }
 
 /**
@@ -196,14 +222,15 @@ export async function discoverSubfolderRooDirectories(cwd: string): Promise<stri
 		// available in the webview context
 		const { executeRipgrep } = await import("../search/file-search")
 
-		// Use ripgrep to find any file inside any .roo directory
-		// This efficiently discovers all .roo folders regardless of their content
+		// Use ripgrep to find any file inside any .roo or .kitpilot directory
 		const args = [
 			"--files",
 			"--hidden",
 			"--follow",
 			"-g",
 			"**/.roo/**",
+			"-g",
+			"**/.kitpilot/**",
 			"-g",
 			"!node_modules/**",
 			"-g",
@@ -213,18 +240,18 @@ export async function discoverSubfolderRooDirectories(cwd: string): Promise<stri
 
 		const results = await executeRipgrep({ args, workspacePath: cwd })
 
-		// Extract unique .roo directory paths
+		// Extract unique .roo / .kitpilot directory paths
 		const rooDirs = new Set<string>()
 		const rootRooDir = path.join(cwd, ".roo")
+		const rootKitpilotDir = path.join(cwd, ".kitpilot")
 
 		for (const result of results) {
-			// Match paths like "subfolder/.roo/anything" or "subfolder/nested/.roo/anything"
-			// Handle both forward slashes (Unix) and backslashes (Windows)
-			const match = result.path.match(/^(.+?)[/\\]\.roo[/\\]/)
+			// Match either ".roo" or ".kitpilot" segments, on Unix and Windows separators
+			const match = result.path.match(/^(.+?)[/\\](\.kitpilot|\.roo)[/\\]/)
 			if (match) {
-				const rooDir = path.join(cwd, match[1], ".roo")
-				// Exclude the root .roo directory (already handled by getProjectRooDirectoryForCwd)
-				if (rooDir !== rootRooDir) {
+				const rooDir = path.join(cwd, match[1], match[2])
+				// Exclude root-level dirs (already handled by getProjectRooDirectoryForCwd)
+				if (rooDir !== rootRooDir && rooDir !== rootKitpilotDir) {
 					rooDirs.add(rooDir)
 				}
 			}
@@ -272,14 +299,19 @@ export async function discoverSubfolderRooDirectories(cwd: string): Promise<stri
  * ```
  */
 export function getRooDirectoriesForCwd(cwd: string): string[] {
+	const homeDir = os.homedir()
+	const globalRoo = path.join(homeDir, ".roo")
+	const globalKitpilot = path.join(homeDir, ".kitpilot")
+	const projectRoo = path.join(cwd, ".roo")
+	const projectKitpilot = path.join(cwd, ".kitpilot")
+
 	const directories: string[] = []
-
-	// Add global directory first
-	directories.push(getGlobalRooDirectory())
-
-	// Add project-local directory second
-	directories.push(getProjectRooDirectoryForCwd(cwd))
-
+	// Order: less-specific first, more-specific last (later entries override earlier when merged).
+	// Legacy ".roo" reads first so any existing ".kitpilot" content takes precedence.
+	if (fsSync.existsSync(globalRoo)) directories.push(globalRoo)
+	if (fsSync.existsSync(globalKitpilot)) directories.push(globalKitpilot)
+	if (fsSync.existsSync(projectRoo)) directories.push(projectRoo)
+	directories.push(projectKitpilot) // project-local kitpilot always included even if absent (for write-site callers)
 	return directories
 }
 
@@ -303,18 +335,10 @@ export function getRooDirectoriesForCwd(cwd: string): string[] {
  * ```
  */
 export async function getAllRooDirectoriesForCwd(cwd: string): Promise<string[]> {
-	const directories: string[] = []
-
-	// Add global directory first
-	directories.push(getGlobalRooDirectory())
-
-	// Add project-local directory second
-	directories.push(getProjectRooDirectoryForCwd(cwd))
-
-	// Discover and add subfolder .roo directories
+	// Use the dual-aware roots (returns existing legacy + new canonical), then add subfolders.
+	const directories = getRooDirectoriesForCwd(cwd)
 	const subfolderDirs = await discoverSubfolderRooDirectories(cwd)
 	directories.push(...subfolderDirs)
-
 	return directories
 }
 

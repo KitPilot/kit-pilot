@@ -1,5 +1,17 @@
 # KitPilot Changelog
 
+## 0.1.6
+
+### Added
+
+- **Model picker in the chat input bar.** You can now switch VS Code LM models directly from the bottom of the chat pane — no more round-trip through Settings → API Configuration → Model. Click the model name next to the mode selector and pick from the list of models VS Code exposes (Copilot GPT-4o, Claude Sonnet, etc.). Models cluster by family in the list, and the selection is saved to your current API configuration.
+
+### Changed
+
+- **Chat home page polished.** Replaced the cluttered tip cards with a single faint panel — "Supercharge GitHub Copilot." heading, a one-line description, and a docs link. Less noise on a fresh task.
+- **The API Configuration selector has been removed from the chat input bar.** Since KitPilot only supports VS Code LM, the "configuration" concept added little — what users actually need to switch is the model. Named API configurations still exist in Settings for users who want to keep per-profile preferences like rate limits.
+- **Workspace files no longer carry the Roo name.** KitPilot now writes its workspace files under `.kitpilot*` instead of `.roo*`. Existing `.roo*` files keep working — no manual migration needed.
+
 ## 0.1.5
 
 ### Fixed

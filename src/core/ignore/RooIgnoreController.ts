@@ -7,76 +7,71 @@ import * as vscode from "vscode"
 
 export const LOCK_TEXT_SYMBOL = "\u{1F512}"
 
+const KITPILOT_IGNORE_FILENAME = ".kitpilotignore"
+const LEGACY_IGNORE_FILENAME = ".rooignore"
+
 /**
  * Controls LLM access to files by enforcing ignore patterns.
- * Designed to be instantiated once in Cline.ts and passed to file manipulation services.
- * Uses the 'ignore' library to support standard .gitignore syntax in .rooignore files.
+ * Reads either `.kitpilotignore` (preferred) or legacy `.rooignore` from the workspace root.
  */
 export class RooIgnoreController {
 	private cwd: string
 	private ignoreInstance: Ignore
 	private disposables: vscode.Disposable[] = []
+	private activeIgnoreFilename: string = KITPILOT_IGNORE_FILENAME
 	rooIgnoreContent: string | undefined
 
 	constructor(cwd: string) {
 		this.cwd = cwd
 		this.ignoreInstance = ignore()
 		this.rooIgnoreContent = undefined
-		// Set up file watcher for .rooignore
 		this.setupFileWatcher()
 	}
 
-	/**
-	 * Initialize the controller by loading custom patterns
-	 * Must be called after construction and before using the controller
-	 */
 	async initialize(): Promise<void> {
 		await this.loadRooIgnore()
 	}
 
-	/**
-	 * Set up the file watcher for .rooignore changes
-	 */
 	private setupFileWatcher(): void {
-		const rooignorePattern = new vscode.RelativePattern(this.cwd, ".rooignore")
-		const fileWatcher = vscode.workspace.createFileSystemWatcher(rooignorePattern)
-
-		// Watch for changes and updates
-		this.disposables.push(
-			fileWatcher.onDidChange(() => {
-				this.loadRooIgnore()
-			}),
-			fileWatcher.onDidCreate(() => {
-				this.loadRooIgnore()
-			}),
-			fileWatcher.onDidDelete(() => {
-				this.loadRooIgnore()
-			}),
-		)
-
-		// Add fileWatcher itself to disposables
-		this.disposables.push(fileWatcher)
+		// Watch both new and legacy filenames; either changing triggers a reload.
+		for (const name of [KITPILOT_IGNORE_FILENAME, LEGACY_IGNORE_FILENAME]) {
+			const pattern = new vscode.RelativePattern(this.cwd, name)
+			const watcher = vscode.workspace.createFileSystemWatcher(pattern)
+			this.disposables.push(
+				watcher.onDidChange(() => this.loadRooIgnore()),
+				watcher.onDidCreate(() => this.loadRooIgnore()),
+				watcher.onDidDelete(() => this.loadRooIgnore()),
+				watcher,
+			)
+		}
 	}
 
-	/**
-	 * Load custom patterns from .rooignore if it exists
-	 */
 	private async loadRooIgnore(): Promise<void> {
 		try {
-			// Reset ignore instance to prevent duplicate patterns
 			this.ignoreInstance = ignore()
-			const ignorePath = path.join(this.cwd, ".rooignore")
-			if (await fileExistsAtPath(ignorePath)) {
-				const content = await fs.readFile(ignorePath, "utf8")
+			const kitpilotPath = path.join(this.cwd, KITPILOT_IGNORE_FILENAME)
+			const legacyPath = path.join(this.cwd, LEGACY_IGNORE_FILENAME)
+
+			let activePath: string | undefined
+			if (await fileExistsAtPath(kitpilotPath)) {
+				activePath = kitpilotPath
+				this.activeIgnoreFilename = KITPILOT_IGNORE_FILENAME
+			} else if (await fileExistsAtPath(legacyPath)) {
+				activePath = legacyPath
+				this.activeIgnoreFilename = LEGACY_IGNORE_FILENAME
+			}
+
+			if (activePath) {
+				const content = await fs.readFile(activePath, "utf8")
 				this.rooIgnoreContent = content
 				this.ignoreInstance.add(content)
-				this.ignoreInstance.add(".rooignore")
+				this.ignoreInstance.add(this.activeIgnoreFilename)
 			} else {
 				this.rooIgnoreContent = undefined
+				this.activeIgnoreFilename = KITPILOT_IGNORE_FILENAME
 			}
 		} catch (error) {
-			// Should never happen: reading file failed even though it exists
-			console.error("Unexpected error loading .rooignore:", error)
+			console.error("Unexpected error loading ignore file:", error)
 		}
 	}
 
@@ -200,14 +195,14 @@ export class RooIgnoreController {
 	}
 
 	/**
-	 * Get formatted instructions about the .rooignore file for the LLM
-	 * @returns Formatted instructions or undefined if .rooignore doesn't exist
+	 * Get formatted instructions about the ignore file for the LLM.
+	 * @returns Formatted instructions or undefined if no ignore file exists
 	 */
 	getInstructions(): string | undefined {
 		if (!this.rooIgnoreContent) {
 			return undefined
 		}
-
-		return `# .rooignore\n\n(The following is provided by a root-level .rooignore file where the user has specified files and directories that should not be accessed. When using list_files, you'll notice a ${LOCK_TEXT_SYMBOL} next to files that are blocked. Attempting to access the file's contents e.g. through read_file will result in an error.)\n\n${this.rooIgnoreContent}\n.rooignore`
+		const name = this.activeIgnoreFilename
+		return `# ${name}\n\n(The following is provided by a root-level ${name} file where the user has specified files and directories that should not be accessed. When using list_files, you'll notice a ${LOCK_TEXT_SYMBOL} next to files that are blocked. Attempting to access the file's contents e.g. through read_file will result in an error.)\n\n${this.rooIgnoreContent}\n${name}`
 	}
 }
