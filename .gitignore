@@ -20,6 +20,9 @@ bin/
 /local-prompts
 AGENTS.local.md
 
+# Personal scratchpad
+TODO.md
+
 # Test environment
 .test_env
 .vscode-test/
