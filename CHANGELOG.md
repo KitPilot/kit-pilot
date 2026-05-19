@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## 0.1.8
+
+### Added
+
+- **Persistent user memory.** KitPilot now auto-loads memory files from `~/.kitpilot/memory/` and injects them into every system prompt, so the agent retains context about you across sessions. Create a `MEMORY.md` index file plus any number of body `.md` files (e.g. `user-role.md`, `project-conventions.md`, `feedback-on-tests.md`) and the agent will see them on every turn — no more re-explaining who you are or how you like to work at the start of each task. Total memory is capped at ~50KB to protect the context window; bodies are loaded alphabetically and truncated with a notice if the cap is exceeded. The feature is opt-in: if the directory doesn't exist, nothing changes. This is the first piece of the larger "compounding context" roadmap (subagents, model routing, hooks coming later).
+
 ## 0.1.7
 
 ### Added

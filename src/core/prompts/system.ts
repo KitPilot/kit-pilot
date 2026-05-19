@@ -23,6 +23,7 @@ import {
 	addCustomInstructions,
 	markdownFormattingSection,
 	getSkillsSection,
+	getUserMemorySection,
 } from "./sections"
 
 // Helper function to get prompt component, filtering out empty objects
@@ -74,9 +75,10 @@ async function generatePrompt(
 	// Tool calling is native-only.
 	const effectiveProtocol = "native"
 
-	const [modesSection, skillsSection] = await Promise.all([
+	const [modesSection, skillsSection, userMemorySection] = await Promise.all([
 		getModesSection(context),
 		getSkillsSection(skillsManager, mode as string),
+		getUserMemorySection(),
 	])
 
 	// Tools catalog is not included in the system prompt.
@@ -99,7 +101,7 @@ ${getRulesSection(cwd, settings)}
 ${getSystemInfoSection(cwd)}
 
 ${getObjectiveSection(vscode.workspace.getConfiguration("kit-pilot").get<string>("verifyCommand", ""))}
-
+${userMemorySection ? `\n${userMemorySection}\n` : ""}
 ${await addCustomInstructions(baseInstructions, globalCustomInstructions || "", cwd, mode, {
 	language: language ?? formatLanguage(vscode.env.language),
 	rooIgnoreInstructions,
