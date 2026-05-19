@@ -1,21 +1,26 @@
 name: Release
 
-# Triggers on push of a semver tag (e.g. v0.1.3). Also exposes a manual
-# "Run workflow" button via workflow_dispatch — useful for republishing.
+# Triggers on push of a semver tag (e.g. v0.1.3) for stable, or a
+# pre-release tag (e.g. v0.1.10-pre.1) for the marketplace pre-release
+# channel. Pre-releases are only visible to users who opt in via the
+# extension page's "Switch to Pre-Release Version" button. Also exposes a
+# manual "Run workflow" button via workflow_dispatch — useful for
+# republishing.
 #
 # The flow: checkout the tagged commit, build everything, package the .vsix,
-# publish to the VS Code Marketplace, and create a GitHub Release with the
-# .vsix attached. The CHANGELOG.md section for the matching version is used
-# as the release body.
+# publish to the VS Code Marketplace (with --pre-release when the tag has a
+# -pre.N suffix), and create a GitHub Release with the .vsix attached. The
+# CHANGELOG.md section for the matching version is used as the release body.
 
 on:
     push:
         tags:
             - "v[0-9]+.[0-9]+.[0-9]+"
+            - "v[0-9]+.[0-9]+.[0-9]+-pre.[0-9]+"
     workflow_dispatch:
         inputs:
             tag:
-                description: "Existing tag to publish (e.g. v0.1.3)"
+                description: "Existing tag to publish (e.g. v0.1.3 or v0.1.10-pre.1)"
                 required: true
 
 permissions:
@@ -67,7 +72,15 @@ jobs:
               working-directory: src
               env:
                   VSCE_PAT: ${{ secrets.VSCE_PAT }}
-              run: vsce publish --no-dependencies --allow-package-all-secrets
+                  REF: ${{ github.event.inputs.tag || github.ref }}
+              run: |
+                  if [[ "$REF" == *-pre.* ]]; then
+                      echo "Detected pre-release tag — publishing to pre-release channel."
+                      vsce publish --no-dependencies --allow-package-all-secrets --pre-release
+                  else
+                      echo "Publishing to stable channel."
+                      vsce publish --no-dependencies --allow-package-all-secrets
+                  fi
 
             - name: Extract version from tag
               id: version
