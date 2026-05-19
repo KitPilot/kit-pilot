@@ -29,6 +29,8 @@ import { switchModeTool } from "../tools/SwitchModeTool"
 import { attemptCompletionTool, AttemptCompletionCallbacks } from "../tools/AttemptCompletionTool"
 import { newTaskTool } from "../tools/NewTaskTool"
 import { updateTodoListTool } from "../tools/UpdateTodoListTool"
+import { rememberThisTool } from "../tools/RememberThisTool"
+import { forgetThisTool } from "../tools/ForgetThisTool"
 import { runSlashCommandTool } from "../tools/RunSlashCommandTool"
 import { skillTool } from "../tools/SkillTool"
 import { generateImageTool } from "../tools/GenerateImageTool"
@@ -368,6 +370,10 @@ export async function presentAssistantMessage(cline: Task) {
 						return `[${block.name} for '${block.params.artifact_id}']`
 					case "update_todo_list":
 						return `[${block.name}]`
+					case "remember_this":
+						return `[${block.name} '${block.params.name}']`
+					case "forget_this":
+						return `[${block.name} '${block.params.name}']`
 					case "new_task": {
 						const mode = block.params.mode ?? defaultModeSlug
 						const message = block.params.message ?? "(no message)"
@@ -669,6 +675,20 @@ export async function presentAssistantMessage(cline: Task) {
 					break
 				case "update_todo_list":
 					await updateTodoListTool.handle(cline, block as ToolUse<"update_todo_list">, {
+						askApproval,
+						handleError,
+						pushToolResult,
+					})
+					break
+				case "remember_this":
+					await rememberThisTool.handle(cline, block as ToolUse<"remember_this">, {
+						askApproval,
+						handleError,
+						pushToolResult,
+					})
+					break
+				case "forget_this":
+					await forgetThisTool.handle(cline, block as ToolUse<"forget_this">, {
 						askApproval,
 						handleError,
 						pushToolResult,

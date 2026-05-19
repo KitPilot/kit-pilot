@@ -1,5 +1,19 @@
 # KitPilot Changelog
 
+## 0.1.9
+
+### Added
+
+- **Memory write tools — agent can now save and forget memories on its own.** Completes the persistent memory feature that started in 0.1.8 (which only auto-loaded files the user wrote by hand). Two new tools:
+  - `remember_this(name, type, description, content)` — saves a memory to `~/.kitpilot/memory/{name}.md` and updates the `MEMORY.md` index. Reusing a name overwrites. Types: `user` (who you are), `feedback` (rules to follow), `project` (ongoing work), `reference` (external systems).
+  - `forget_this(name)` — deletes the memory file and removes its index entry. No-op success if it doesn't exist.
+  - Both tools require approval per call (respects existing auto-approval settings).
+- **Memory guidance in every system prompt.** The `<user_memory>` section now always emits, even when memory is empty, with explicit instructions about when to save (user shares stable facts, corrects your approach, mentions external systems) and when not to save (code patterns, in-progress state). Without this nudge, agents wouldn't proactively use the tools.
+
+### Changed
+
+- **`<user_memory>` block format reorganized** — memory body files are now nested under `### Entries` (was `## Entries`), and the empty state shows a placeholder instead of omitting the block entirely. This keeps the section structure consistent so the agent always knows the tools exist.
+
 ## 0.1.8
 
 ### Added
