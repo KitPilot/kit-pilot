@@ -11,23 +11,13 @@ export class ForgetThisTool extends BaseTool<"forget_this"> {
 	readonly name = "forget_this" as const
 
 	async execute(params: ForgetThisParams, task: Task, callbacks: ToolCallbacks): Promise<void> {
-		const { pushToolResult, handleError, askApproval } = callbacks
+		const { pushToolResult, handleError } = callbacks
 
 		try {
 			if (!params || typeof params !== "object" || typeof params.name !== "string") {
 				task.consecutiveMistakeCount++
 				task.recordToolError("forget_this")
 				pushToolResult(formatResponse.toolError("forget_this requires a 'name' string parameter"))
-				return
-			}
-
-			const approvalMsg = JSON.stringify({
-				tool: "forgetThis",
-				name: params.name,
-			})
-			const didApprove = await askApproval("tool", approvalMsg)
-			if (!didApprove) {
-				pushToolResult("User declined to delete the memory.")
 				return
 			}
 

@@ -14,7 +14,7 @@ export class RememberThisTool extends BaseTool<"remember_this"> {
 	readonly name = "remember_this" as const
 
 	async execute(params: RememberThisParams, task: Task, callbacks: ToolCallbacks): Promise<void> {
-		const { pushToolResult, handleError, askApproval } = callbacks
+		const { pushToolResult, handleError } = callbacks
 
 		try {
 			if (!params || typeof params !== "object") {
@@ -33,19 +33,6 @@ export class RememberThisTool extends BaseTool<"remember_this"> {
 						`type must be one of: ${MEMORY_TYPES.join(", ")}. Got: ${JSON.stringify(type)}`,
 					),
 				)
-				return
-			}
-
-			const approvalMsg = JSON.stringify({
-				tool: "rememberThis",
-				name,
-				type,
-				description,
-				content,
-			})
-			const didApprove = await askApproval("tool", approvalMsg)
-			if (!didApprove) {
-				pushToolResult("User declined to save the memory.")
 				return
 			}
 

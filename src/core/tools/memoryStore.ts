@@ -10,6 +10,40 @@ const INDEX_FILE = "MEMORY.md"
 const INDEX_HEADER = "# KitPilot user memory\n\n"
 const NAME_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/
 
+/**
+ * Patterns that strongly suggest a credential leaked into the content. Erring
+ * toward false positives — the agent can rephrase, but a leaked key persisted
+ * to disk forever is much worse.
+ */
+const SECRET_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
+	{ name: "OpenAI-style key (sk-…)", pattern: /\bsk-[A-Za-z0-9_-]{20,}\b/ },
+	{ name: "GitHub personal access token (ghp_…)", pattern: /\bghp_[A-Za-z0-9]{30,}\b/ },
+	{ name: "GitHub OAuth token (gho_/ghu_/ghs_/ghr_…)", pattern: /\bgh[ousr]_[A-Za-z0-9]{30,}\b/ },
+	{ name: "Slack token (xox[baprs]-…)", pattern: /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/ },
+	{ name: "AWS access key (AKIA…/ASIA…)", pattern: /\b(AKIA|ASIA)[0-9A-Z]{16}\b/ },
+	{ name: "GitLab PAT (glpat-…)", pattern: /\bglpat-[A-Za-z0-9_-]{20,}\b/ },
+	{
+		name: "credential-shaped assignment (key|secret|password|token = '…')",
+		pattern:
+			/\b(api[_-]?key|secret|password|passwd|token|private[_-]?key|access[_-]?key)\s*[:=]\s*['"][^'"\s]{8,}['"]/i,
+	},
+]
+
+export interface SecretDetection {
+	matched: boolean
+	patternName?: string
+}
+
+export function detectSecrets(content: string): SecretDetection {
+	if (typeof content !== "string") return { matched: false }
+	for (const { name, pattern } of SECRET_PATTERNS) {
+		if (pattern.test(content)) {
+			return { matched: true, patternName: name }
+		}
+	}
+	return { matched: false }
+}
+
 export function getMemoryDir(): string {
 	return path.join(os.homedir(), MEMORY_DIR_NAME)
 }
@@ -110,6 +144,13 @@ export async function writeMemory(params: RememberParams): Promise<RememberResul
 	}
 	if (typeof params.description !== "string" || params.description.trim().length === 0) {
 		throw new Error("description must be a non-empty string")
+	}
+
+	const secret = detectSecrets(params.content)
+	if (secret.matched) {
+		throw new Error(
+			`Refusing to save memory: content appears to contain a credential (${secret.patternName}). Memory is plain-text on disk and loaded into every system prompt — never persist secrets here. Re-call without the sensitive value (e.g. reference the secret by name or location instead).`,
+		)
 	}
 
 	await fs.mkdir(getMemoryDir(), { recursive: true })

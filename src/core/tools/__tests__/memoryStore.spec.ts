@@ -2,7 +2,7 @@ import * as fs from "fs/promises"
 import * as os from "os"
 import * as path from "path"
 
-import { writeMemory, deleteMemory, getMemoryDir, validateMemoryName } from "../memoryStore"
+import { writeMemory, deleteMemory, getMemoryDir, validateMemoryName, detectSecrets } from "../memoryStore"
 
 const TEST_HOME = path.join(os.tmpdir(), `kitpilot-memorystore-test-${process.pid}`)
 
@@ -139,6 +139,45 @@ describe("memoryStore", () => {
 					content: "x",
 				}),
 			).rejects.toThrow()
+		})
+
+		it("refuses to save content that looks like a credential", async () => {
+			await expect(
+				writeMemory({
+					name: "openai",
+					type: "reference",
+					description: "openai key",
+					content: "my key is sk-abcdefghijklmnopqrstuvwxyz1234",
+				}),
+			).rejects.toThrow(/credential/)
+			// File should NOT have been created.
+			await expect(readFile("openai.md")).rejects.toThrow()
+		})
+	})
+
+	describe("detectSecrets", () => {
+		it.each([
+			["OpenAI key", "my key is sk-abcdefghijklmnopqrstuvwxyz1234"],
+			["GitHub PAT", "use ghp_abcdefghijklmnopqrstuvwxyz1234567890 for the repo"],
+			["GitHub OAuth", "token gho_abcdefghijklmnopqrstuvwxyz1234567890 expired"],
+			["Slack token", "xoxb-1234567890-abcdefghijk is the bot token"],
+			["Slack user token", "xoxp-1234567890-abc-def-ghi"],
+			["AWS access key", "creds: AKIAIOSFODNN7EXAMPLE"],
+			["GitLab PAT", "glpat-xxxxxxxxxxxxxxxxxxxx"],
+			["password assignment", `config.password = "hunter2hunter2"`],
+			["api_key assignment", `api_key: 'abcdef0123456789'`],
+			["private_key assignment", `private_key="MIIBOwIBAAJBAJABCDEFGH"`],
+		])("flags %s", (_name, sample) => {
+			expect(detectSecrets(sample).matched).toBe(true)
+		})
+
+		it.each([
+			["plain prose", "User is a senior backend engineer working in Go."],
+			["unrelated 'sk' word", "Their favorite ski resort is Whistler."],
+			["short ghp_-like fragment", "ghp_only_12 chars"],
+			["mention of password concept", "Remember to rotate API keys quarterly — never store them in plaintext."],
+		])("does not flag %s", (_name, sample) => {
+			expect(detectSecrets(sample).matched).toBe(false)
 		})
 	})
 
