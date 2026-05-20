@@ -1,10 +1,14 @@
 # KitPilot Changelog
 
-## 0.1.10
+## 0.1.11
 
 ### Fixed
 
 - **"Provider Error: API request failed" after long idle (laptop sleep) now self-recovers.** The VS Code Language Model handle was cached for the lifetime of the provider — after 1-2 hours of idle the underlying Copilot token would expire, every subsequent request would fail against the dead handle, and the only fix was reloading the window. The cached handle is now dropped automatically when a request fails so the next attempt re-acquires a fresh one via `vscode.lm.selectChatModels()`. Also proactively invalidates on `vscode.lm.onDidChangeChatModels` so the failure is often avoided entirely (e.g. when Copilot re-registers its provider after re-authenticating on wake). User cancellation is exempt — the handle is fine in that case.
+
+## 0.1.10
+
+> Released to the marketplace pre-release channel only as `v0.1.10-pre.1`. The same version number couldn't be re-published to stable, so stable users jump straight from 0.1.9 to 0.1.11 — which includes everything below plus the 0.1.11 fix.
 
 ### Added
 
