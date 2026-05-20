@@ -74,6 +74,9 @@ vi.mock("vscode", () => {
 		LanguageModelToolResultPart: MockLanguageModelToolResultPart,
 		lm: {
 			selectChatModels: vi.fn(),
+			onDidChangeChatModels: vi.fn((_callback) => ({
+				dispose: vi.fn(),
+			})),
 		},
 	}
 })
@@ -463,6 +466,28 @@ describe("VsCodeLmHandler", () => {
 			await expect(handler.createMessage("system", messages).next()).rejects.toThrow("Network timeout")
 			expect(showWarning).not.toHaveBeenCalled()
 		})
+
+		it("drops the cached client when sendRequest throws so the next call re-acquires a fresh handle", async () => {
+			const messages: Anthropic.Messages.MessageParam[] = [{ role: "user", content: "Hello" }]
+			mockLanguageModelChat.sendRequest.mockRejectedValueOnce(new Error("auth token expired"))
+
+			await expect(handler.createMessage("system", messages).next()).rejects.toThrow("auth token expired")
+
+			// Cached handle must be cleared so getClient() re-runs selectChatModels()
+			// on the next request instead of reusing the stale one.
+			expect(handler["client"]).toBeNull()
+		})
+
+		it("does NOT drop the cached client on user cancellation (the client is fine)", async () => {
+			const messages: Anthropic.Messages.MessageParam[] = [{ role: "user", content: "Hello" }]
+			mockLanguageModelChat.sendRequest.mockRejectedValueOnce(new vscode.CancellationError())
+
+			await expect(handler.createMessage("system", messages).next()).rejects.toThrow(/cancelled/i)
+
+			// CancellationError means the user cancelled — the handle itself
+			// is still valid, so we should not force a re-acquire.
+			expect(handler["client"]).toBe(mockLanguageModelChat)
+		})
 	})
 
 	describe("getModel", () => {
@@ -654,6 +679,40 @@ describe("VsCodeLmHandler", () => {
 
 			const promise = handler.completePrompt("Test prompt")
 			await expect(promise).rejects.toThrow("VSCode LM completion error: Completion failed")
+		})
+
+		it("drops the cached client on completion error so the next call re-acquires a fresh handle", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([{ ...mockLanguageModelChat }])
+			mockLanguageModelChat.sendRequest.mockRejectedValueOnce(new Error("Completion failed"))
+			handler["client"] = mockLanguageModelChat
+
+			await expect(handler.completePrompt("Test prompt")).rejects.toThrow()
+			expect(handler["client"]).toBeNull()
+		})
+	})
+
+	describe("stale-handle recovery", () => {
+		it("nulls the cached client when onDidChangeChatModels fires", () => {
+			// The constructor registers a listener with vscode.lm.onDidChangeChatModels.
+			// Simulate VS Code firing it (e.g. Copilot re-registering after re-auth post-sleep).
+			handler["client"] = mockLanguageModelChat
+
+			const onDidChange = vscode.lm.onDidChangeChatModels as Mock
+			expect(onDidChange).toHaveBeenCalled()
+			const callback = onDidChange.mock.calls[0][0]
+			callback()
+
+			expect(handler["client"]).toBeNull()
+		})
+
+		it("disposes the model-change listener on dispose()", () => {
+			const onDidChange = vscode.lm.onDidChangeChatModels as Mock
+			// Most recent registration belongs to the handler under test.
+			const registration = onDidChange.mock.results[onDidChange.mock.results.length - 1].value as {
+				dispose: Mock
+			}
+			handler.dispose()
+			expect(registration.dispose).toHaveBeenCalled()
 		})
 	})
 })

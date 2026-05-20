@@ -132,6 +132,7 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 	protected options: ApiHandlerOptions
 	private client: vscode.LanguageModelChat | null
 	private disposable: vscode.Disposable | null
+	private modelChangeDisposable: vscode.Disposable | null
 	private currentRequestCancellation: vscode.CancellationTokenSource | null
 
 	constructor(options: ApiHandlerOptions) {
@@ -139,6 +140,7 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 		this.options = options
 		this.client = null
 		this.disposable = null
+		this.modelChangeDisposable = null
 		this.currentRequestCancellation = null
 
 		try {
@@ -153,6 +155,17 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 					}
 				}
 			})
+
+			// Drop the cached handle when VS Code's registered chat models change
+			// (e.g. Copilot re-registers its provider after re-authenticating
+			// post-sleep). Proactively invalidating avoids the first-request
+			// failure that the catch-block fallback would otherwise recover from.
+			if (typeof vscode.lm.onDidChangeChatModels === "function") {
+				this.modelChangeDisposable = vscode.lm.onDidChangeChatModels(() => {
+					this.client = null
+				})
+			}
+
 			this.initializeClient()
 		} catch (error) {
 			// Ensure cleanup if constructor fails
@@ -256,6 +269,10 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 	dispose(): void {
 		if (this.disposable) {
 			this.disposable.dispose()
+		}
+
+		if (this.modelChangeDisposable) {
+			this.modelChangeDisposable.dispose()
 		}
 
 		if (this.currentRequestCancellation) {
@@ -558,6 +575,14 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 				throw new Error("Roo Code <Language Model API>: Request cancelled by user")
 			}
 
+			// Drop the cached client so the next request re-acquires a fresh
+			// handle via vscode.lm.selectChatModels(). The cached handle goes
+			// stale after long idle (laptop sleep): the underlying Copilot
+			// token expires, and every retry hits the dead handle until the
+			// window is reloaded. selectChatModels is in-process, so
+			// re-acquiring is essentially free.
+			this.client = null
+
 			if (error instanceof Error) {
 				console.error("Roo Code <Language Model API>: Stream error details:", {
 					message: error.message,
@@ -668,6 +693,9 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 			}
 			return result
 		} catch (error) {
+			// Same stale-handle rationale as createMessage — drop the cached
+			// client so the next call re-acquires a fresh one.
+			this.client = null
 			if (error instanceof Error) {
 				throw new Error(`VSCode LM completion error: ${error.message}`)
 			}

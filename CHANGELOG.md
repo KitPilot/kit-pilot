@@ -1,5 +1,21 @@
 # KitPilot Changelog
 
+## 0.1.10
+
+### Fixed
+
+- **"Provider Error: API request failed" after long idle (laptop sleep) now self-recovers.** The VS Code Language Model handle was cached for the lifetime of the provider — after 1-2 hours of idle the underlying Copilot token would expire, every subsequent request would fail against the dead handle, and the only fix was reloading the window. The cached handle is now dropped automatically when a request fails so the next attempt re-acquires a fresh one via `vscode.lm.selectChatModels()`. Also proactively invalidates on `vscode.lm.onDidChangeChatModels` so the failure is often avoided entirely (e.g. when Copilot re-registers its provider after re-authenticating on wake). User cancellation is exempt — the handle is fine in that case.
+
+### Added
+
+- **Marketplace pre-release channel.** Tags matching `v0.1.X-pre.N` now publish to the VS Code Marketplace pre-release channel (visible only to users who opt in via the extension page's "Switch to Pre-Release Version" button). Lets us validate risky changes against real installs without polluting the stable channel.
+- **Roo Code → KitPilot migration scripts** in `scripts/` (`migrate-from-roo.sh` for macOS/Linux/Git Bash; `migrate-from-roo.ps1` for Windows). Both forks share the same `globalStorage` layout, so the scripts copy missing task directories and merge the master `_index.json` (dedupes by id; KitPilot wins on conflict). Backs up KitPilot storage before any write; idempotent on re-run. Not bundled with the extension — pull the file you need from the repo and run it.
+
+### Changed
+
+- **Memory write tools auto-approve.** `remember_this` and `forget_this` no longer prompt per call. Both write to `~/.kitpilot/memory/` (user's own home directory) and are low-risk, so the approval friction was hurting the feature more than it was protecting anyone.
+- **Memory write hardening.** Names are validated against a strict pattern (kebab/snake case only, no path traversal). Content is scanned for credential-shaped strings (OpenAI/Anthropic/GitHub/Slack/AWS/GitLab tokens, password/api_key/private_key assignments) and the write is refused with a clear error if any are found — keeps the agent from quietly persisting a leaked secret to a plaintext file under your home directory.
+
 ## 0.1.9
 
 ### Added
