@@ -833,7 +833,12 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	const selectImages = useCallback(() => vscode.postMessage({ type: "selectImages" }), [])
 
-	const shouldDisableImages = !model?.supportsImages || selectedImages.length >= MAX_IMAGES_PER_MESSAGE
+	// Only disable when the model has loaded AND explicitly reports no image
+	// support. On webview mount `model` is undefined until apiConfiguration
+	// arrives async from the extension — treating undefined as "no images"
+	// caused a visible disabled→enabled flicker that looked like a paste bug.
+	const shouldDisableImages =
+		(model !== undefined && !model.supportsImages) || selectedImages.length >= MAX_IMAGES_PER_MESSAGE
 
 	const handleMessage = useCallback(
 		(e: MessageEvent) => {

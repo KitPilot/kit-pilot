@@ -1127,17 +1127,11 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 											"bg-transparent border-none p-1.5",
 											"rounded-md min-w-[28px] min-h-[28px]",
 											"text-vscode-descriptionForeground hover:text-vscode-foreground",
-											"transition-all duration-1000",
-											"cursor-pointer",
-											!shouldDisableImages
-												? "opacity-50 hover:opacity-100 delay-750 pointer-events-auto"
-												: "opacity-0 pointer-events-none duration-200 delay-0",
-											!shouldDisableImages &&
-												"hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)]",
+											"transition-opacity duration-150",
 											"focus:outline-none focus-visible:ring-1 focus-visible:ring-vscode-focusBorder",
-											!shouldDisableImages && "active:bg-[rgba(255,255,255,0.1)]",
-											shouldDisableImages &&
-												"opacity-40 cursor-not-allowed grayscale-[30%] hover:bg-transparent hover:border-[rgba(255,255,255,0.08)] active:bg-transparent",
+											shouldDisableImages
+												? "opacity-40 cursor-not-allowed grayscale-[30%]"
+												: "opacity-50 hover:opacity-100 cursor-pointer hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)] active:bg-[rgba(255,255,255,0.1)]",
 										)}>
 										<Image className="w-4 h-4" />
 									</button>
