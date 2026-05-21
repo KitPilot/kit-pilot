@@ -1,5 +1,12 @@
 # KitPilot Changelog
 
+## 0.1.12
+
+### Fixed
+
+- **Image attach button no longer appears disabled at chat startup.** The button was computing its disabled state from `!model?.supportsImages`, which evaluated to `true` while `apiConfiguration` was still loading async from the extension. Users saw a grayed-out button, tried pasting an image instead, and observed the button enable a moment later — making it look like paste was the trigger. Now only disables when the model is fully loaded AND explicitly reports no image support.
+- **Image button styling cleanup.** The button had two conflicting opacity classes (`opacity-0` AND `opacity-40`) when disabled, plus a 1.75-second transition (`duration-1000` + `delay-750`) that made state changes look sluggish. Replaced with a clean two-state pattern using a standard 150ms opacity transition.
+
 ## 0.1.11
 
 ### Fixed
