@@ -1,8 +1,8 @@
 # KitPilot Changelog
 
-## 0.1.13
+## 0.1.14
 
-> 0.1.12 was uploaded but rejected by the VS Code Marketplace virus scanner with no specific signature reported — a known false-positive pattern for extensions that bundle WASMs and native binaries. Content is identical; 0.1.13 is the retry.
+> Both 0.1.12 and 0.1.13 were uploaded but rejected by the VS Code Marketplace virus scanner with no specific signature reported — a known false-positive pattern for extensions that bundle WASMs and native binaries. Content is byte-identical; 0.1.14 is a same-day-after retry hoping the scanner's signature DB has refreshed.
 
 ### Fixed
 
