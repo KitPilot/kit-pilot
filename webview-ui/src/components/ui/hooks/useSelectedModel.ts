@@ -17,6 +17,7 @@ import {
 	xaiModels,
 	vscodeLlmModels,
 	vscodeLlmDefaultModelId,
+	modelSupportsVision,
 	openAiCodexModels,
 	sambaNovaModels,
 	internationalZAiModels,
@@ -308,9 +309,19 @@ function getSelectedModel({
 				: vscodeLlmDefaultModelId
 			const modelFamily = apiConfiguration?.vsCodeLmModelSelector?.family ?? vscodeLlmDefaultModelId
 			const info = vscodeLlmModels[modelFamily as keyof typeof vscodeLlmModels]
-			// Let the registry's per-model `supportsImages` flow through (e.g. gpt-4o,
-			// claude-3.5-sonnet, gemini-2.5-pro all support vision via Copilot).
-			return { id, info: { ...openAiModelInfoSaneDefaults, ...info } }
+			// Derive `supportsImages` from the same substring rules the backend
+			// vscode-lm provider uses, not the static registry. Copilot reports
+			// family strings (e.g. "claude-sonnet-4") that don't match the registry
+			// keys (e.g. "claude-4-sonnet"); a registry miss fell back to defaults
+			// with supportsImages: false, wrongly disabling the chat image button.
+			return {
+				id,
+				info: {
+					...openAiModelInfoSaneDefaults,
+					...info,
+					supportsImages: modelSupportsVision(modelFamily, id),
+				},
+			}
 		}
 		case "sambanova": {
 			const id = apiConfiguration.apiModelId ?? defaultModelId

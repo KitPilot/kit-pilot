@@ -2,7 +2,7 @@ import { Anthropic } from "@anthropic-ai/sdk"
 import * as vscode from "vscode"
 import OpenAI from "openai"
 
-import { type ModelInfo } from "@kit-pilot/types"
+import { type ModelInfo, modelSupportsVision } from "@kit-pilot/types"
 
 // vscode-lm-only build: this fallback ModelInfo used to live in
 // @kit-pilot/types as `openAiModelInfoSaneDefaults` (from the OpenAI provider
@@ -27,41 +27,6 @@ import { convertToVsCodeLmMessages, extractTextCountFromMessage } from "../trans
 
 import { BaseProvider } from "./base-provider"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
-
-// Substrings of model `family` / `id` strings known to accept image input via
-// the VS Code Language Model API (Copilot-backed). Conservative on purpose:
-// flipping `supportsImages: true` for a text-only model breaks requests instead
-// of falling back to the upstream `[IMAGE]` placeholder.
-const VISION_MODEL_ALLOWLIST = [
-	"gpt-4o",
-	"gpt-4.1",
-	"gpt-4-turbo",
-	"gpt-5",
-	"claude-3.5-sonnet",
-	"claude-3-5-sonnet",
-	"claude-3.7-sonnet",
-	"claude-3-7-sonnet",
-	"claude-sonnet-4",
-	"claude-opus-4",
-	"claude-haiku-4-5",
-	"gemini-1.5",
-	"gemini-2",
-	"o1",
-	"o3",
-	"o4",
-] as const
-
-// Explicit deny list for text-only variants that would otherwise be caught by
-// the allowlist substrings above (e.g. "o3-mini" matches "o3").
-const VISION_MODEL_DENYLIST = ["o1-mini", "o3-mini", "gpt-3.5"] as const
-
-function modelSupportsVision(family?: string, id?: string): boolean {
-	const haystack = `${family ?? ""} ${id ?? ""}`.toLowerCase()
-	if (VISION_MODEL_DENYLIST.some((p) => haystack.includes(p))) {
-		return false
-	}
-	return VISION_MODEL_ALLOWLIST.some((p) => haystack.includes(p))
-}
 
 /**
  * Rough per-image token estimate, tiered by decoded byte size. The VS Code LM

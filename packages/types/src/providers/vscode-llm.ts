@@ -4,6 +4,48 @@ export type VscodeLlmModelId = keyof typeof vscodeLlmModels
 
 export const vscodeLlmDefaultModelId: VscodeLlmModelId = "claude-3.5-sonnet"
 
+// Substrings of model `family` / `id` strings known to accept image input via
+// the VS Code Language Model API (Copilot-backed). Conservative on purpose:
+// flipping `supportsImages: true` for a text-only model breaks requests instead
+// of falling back to the upstream `[IMAGE]` placeholder.
+//
+// This is the single source of truth for vision detection: the backend
+// (vscode-lm provider) uses it to build ModelInfo, and the webview uses it to
+// decide whether the chat image button is enabled. Keying off the static
+// `vscodeLlmModels` registry is unreliable because the `family` strings Copilot
+// reports (e.g. "claude-sonnet-4") don't match the registry keys (e.g.
+// "claude-4-sonnet"), so registry misses wrongly disabled the image button.
+export const VISION_MODEL_ALLOWLIST = [
+	"gpt-4o",
+	"gpt-4.1",
+	"gpt-4-turbo",
+	"gpt-5",
+	"claude-3.5-sonnet",
+	"claude-3-5-sonnet",
+	"claude-3.7-sonnet",
+	"claude-3-7-sonnet",
+	"claude-sonnet-4",
+	"claude-opus-4",
+	"claude-haiku-4-5",
+	"gemini-1.5",
+	"gemini-2",
+	"o1",
+	"o3",
+	"o4",
+] as const
+
+// Explicit deny list for text-only variants that would otherwise be caught by
+// the allowlist substrings above (e.g. "o3-mini" matches "o3").
+export const VISION_MODEL_DENYLIST = ["o1-mini", "o3-mini", "gpt-3.5"] as const
+
+export function modelSupportsVision(family?: string, id?: string): boolean {
+	const haystack = `${family ?? ""} ${id ?? ""}`.toLowerCase()
+	if (VISION_MODEL_DENYLIST.some((p) => haystack.includes(p))) {
+		return false
+	}
+	return VISION_MODEL_ALLOWLIST.some((p) => haystack.includes(p))
+}
+
 // https://docs.cline.bot/provider-config/vscode-language-model-api
 export const vscodeLlmModels = {
 	"gpt-3.5-turbo": {

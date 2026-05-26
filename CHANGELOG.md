@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## 0.1.16
+
+### Fixed
+
+- **Image attach button no longer shows a "not-allowed" cursor for vision-capable models.** When a vision model was selected (e.g. Claude Sonnet 4 via Copilot), hovering the image button showed a red not-allowed cursor and the button was disabled, even though the model accepts images. The webview decided image support by looking the model's `family` up in a static registry, but the family strings Copilot reports (e.g. `claude-sonnet-4`) don't match the registry keys (e.g. `claude-4-sonnet`) — and unlisted families like `claude-3.7-sonnet` and `claude-opus-4` missed entirely. A registry miss fell back to `supportsImages: false`. The webview now derives image support from the same substring rules the backend vscode-lm provider already uses, so the button is enabled for every vision model regardless of registry coverage. The vision-detection logic is now shared (`modelSupportsVision` in `@kit-pilot/types`) so the two code paths can't drift again.
+
 ## 0.1.15
 
 > 0.1.12, 0.1.13, and 0.1.14 were all uploaded but rejected by the VS Code Marketplace virus scanner with no specific signature reported. After escalating to vsmarketplace@microsoft.com with both manifests and a diff summary, support asked us to re-upload under a new version — 0.1.15 is that retry. Content is byte-identical to those failed builds.
