@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## 0.1.17
+
+### Changed
+
+- Internal bookkeeping and housekeeping. No new features.
+
 ## 0.1.16
 
 ### Fixed
