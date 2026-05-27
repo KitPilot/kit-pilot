@@ -15,7 +15,7 @@
 	},
 	"providerSignup": {
 		"heading": "プロバイダーを選択",
-		"chooseProvider": "Rooが機能するにはLLMプロバイダーが必要です。始めるために1つを選択してください。後から追加することもできます。",
+		"chooseProvider": "KitPilotが機能するにはLLMプロバイダーが必要です。始めるために1つを選択してください。後から追加することもできます。",
 		"learnMore": "詳細を見る",
 		"useAnotherProvider": "サードパーティプロバイダー",
 		"useAnotherProviderDescription": "APIキーを入力して開始します。",

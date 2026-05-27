@@ -234,7 +234,7 @@
 			},
 			"protected": {
 				"label": "Korumalı dosyaları dahil et",
-				"description": "KitPilot'nun korumalı dosyaları (.rooignore ve .roo/ yapılandırma dosyaları gibi) onay gerektirmeden oluşturmasına ve düzenlemesine izin ver."
+				"description": "KitPilot'nun korumalı dosyaları (.kitpilotignore ve .kitpilot/ yapılandırma dosyaları gibi) onay gerektirmeden oluşturmasına ve düzenlemesine izin ver."
 			}
 		},
 		"mcp": {
@@ -546,7 +546,7 @@
 			"maxTokensLabel": "Maksimum Çıktı Token sayısı",
 			"maxTokensDescription": "Claude Code yanıtları için maksimum çıktı token sayısı. Varsayılan 8000'dir."
 		},
-		"retiredRooProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredKitPilotProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -600,9 +600,9 @@
 			"label": "Çalışma alanı dosyaları bağlam sınırı",
 			"description": "Mevcut çalışma dizini ayrıntılarına dahil edilecek maksimum dosya sayısı. Daha yüksek değerler daha fazla bağlam sağlar ancak token kullanımını artırır."
 		},
-		"rooignore": {
-			"label": "Listelerde ve aramalarda .rooignore dosyalarını göster",
-			"description": "Etkinleştirildiğinde, .rooignore'daki desenlerle eşleşen dosyalar kilit sembolü ile listelerde gösterilecektir. Devre dışı bırakıldığında, bu dosyalar dosya listelerinden ve aramalardan tamamen gizlenecektir."
+		"kitpilotignore": {
+			"label": "Listelerde ve aramalarda .kitpilotignore dosyalarını göster",
+			"description": "Etkinleştirildiğinde, .kitpilotignore'daki desenlerle eşleşen dosyalar kilit sembolü ile listelerde gösterilecektir. Devre dışı bırakıldığında, bu dosyalar dosya listelerinden ve aramalardan tamamen gizlenecektir."
 		},
 		"maxReadFile": {
 			"label": "Dosya okuma otomatik kısaltma eşiği",
@@ -663,7 +663,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "Alt klasör kurallarını etkinleştir",
-			"description": "Alt dizinlerden .roo/rules ve AGENTS.md dosyalarını yinelemeli olarak keşfet ve yükle. Paket başına kuralları olan monorepo'lar için kullanışlı."
+			"description": "Alt dizinlerden .kitpilot/rules ve AGENTS.md dosyalarını yinelemeli olarak keşfet ve yükle. Paket başına kuralları olan monorepo'lar için kullanışlı."
 		}
 	},
 	"terminal": {
@@ -803,9 +803,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Özel araçları etkinleştir",
-			"description": "Etkinleştirildiğinde, KitPilot projenizin .roo/tools dizininden veya global araçlar için ~/.roo/tools dizininden özel TypeScript/JavaScript araçlarını yükleyebilir ve kullanabilir. Not: Bu araçlar otomatik olarak onaylanacaktır.",
+			"description": "Etkinleştirildiğinde, KitPilot projenizin .kitpilot/tools dizininden veya global araçlar için ~/.kitpilot/tools dizininden özel TypeScript/JavaScript araçlarını yükleyebilir ve kullanabilir. Not: Bu araçlar otomatik olarak onaylanacaktır.",
 			"toolsHeader": "Kullanılabilir Özel Araçlar",
-			"noTools": "Özel araç yüklenmedi. Projenizin .roo/tools dizinine veya global araçlar için ~/.roo/tools dizinine .ts veya .js dosyaları ekleyin.",
+			"noTools": "Özel araç yüklenmedi. Projenizin .kitpilot/tools dizinine veya global araçlar için ~/.kitpilot/tools dizinine .ts veya .js dosyaları ekleyin.",
 			"refreshButton": "Yenile",
 			"refreshing": "Yenileniyor...",
 			"refreshSuccess": "Araçlar başarıyla yenilendi",

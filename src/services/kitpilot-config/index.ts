@@ -4,34 +4,28 @@ import fs from "fs/promises"
 import fsSync from "fs"
 
 /**
- * Gets the global .roo directory path based on the current platform
+ * Gets the global .kitpilot directory path based on the current platform
  *
- * @returns The absolute path to the global .roo directory
+ * @returns The absolute path to the global .kitpilot directory
  *
  * @example Platform-specific paths:
  * ```
- * // macOS/Linux: ~/.roo/
- * // Example: /Users/john/.roo
+ * // macOS/Linux: ~/.kitpilot/
+ * // Example: /Users/john/.kitpilot
  *
- * // Windows: %USERPROFILE%\.roo\
- * // Example: C:\Users\john\.roo
+ * // Windows: %USERPROFILE%\.kitpilot\
+ * // Example: C:\Users\john\.kitpilot
  * ```
  *
  * @example Usage:
  * ```typescript
- * const globalDir = getGlobalRooDirectory()
- * // Returns: "/Users/john/.roo" (on macOS/Linux)
- * // Returns: "C:\\Users\\john\\.roo" (on Windows)
+ * const globalDir = getGlobalKitPilotDirectory()
+ * // Returns: "/Users/john/.kitpilot" (on macOS/Linux)
+ * // Returns: "C:\\Users\\john\\.kitpilot" (on Windows)
  * ```
  */
-export function getGlobalRooDirectory(): string {
-	const homeDir = os.homedir()
-	const kitpilotDir = path.join(homeDir, ".kitpilot")
-	const rooDir = path.join(homeDir, ".roo")
-	// Prefer the new ".kitpilot" location; fall back to legacy ".roo" only if it exists and the new one doesn't.
-	if (fsSync.existsSync(kitpilotDir)) return kitpilotDir
-	if (fsSync.existsSync(rooDir)) return rooDir
-	return kitpilotDir
+export function getGlobalKitPilotDirectory(): string {
+	return path.join(os.homedir(), ".kitpilot")
 }
 
 /**
@@ -87,24 +81,24 @@ export function getProjectAgentsDirectoryForCwd(cwd: string): string {
 }
 
 /**
- * Gets the project-local .roo directory path for a given cwd
+ * Gets the project-local .kitpilot directory path for a given cwd
  *
  * @param cwd - Current working directory (project path)
- * @returns The absolute path to the project-local .roo directory
+ * @returns The absolute path to the project-local .kitpilot directory
  *
  * @example
  * ```typescript
- * const projectDir = getProjectRooDirectoryForCwd('/Users/john/my-project')
- * // Returns: "/Users/john/my-project/.roo"
+ * const projectDir = getProjectKitPilotDirectoryForCwd('/Users/john/my-project')
+ * // Returns: "/Users/john/my-project/.kitpilot"
  *
- * const windowsProjectDir = getProjectRooDirectoryForCwd('C:\\Users\\john\\my-project')
- * // Returns: "C:\\Users\\john\\my-project\\.roo"
+ * const windowsProjectDir = getProjectKitPilotDirectoryForCwd('C:\\Users\\john\\my-project')
+ * // Returns: "C:\\Users\\john\\my-project\\.kitpilot"
  * ```
  *
  * @example Directory structure:
  * ```
  * /Users/john/my-project/
- * ├── .roo/                    # Project-local configuration directory
+ * ├── .kitpilot/                    # Project-local configuration directory
  * │   ├── rules/
  * │   │   └── rules.md
  * │   ├── custom-instructions.md
@@ -115,13 +109,8 @@ export function getProjectAgentsDirectoryForCwd(cwd: string): string {
  * └── package.json
  * ```
  */
-export function getProjectRooDirectoryForCwd(cwd: string): string {
-	const kitpilotDir = path.join(cwd, ".kitpilot")
-	const rooDir = path.join(cwd, ".roo")
-	// Prefer ".kitpilot"; fall back to legacy ".roo" only if it exists and the new one doesn't.
-	if (fsSync.existsSync(kitpilotDir)) return kitpilotDir
-	if (fsSync.existsSync(rooDir)) return rooDir
-	return kitpilotDir
+export function getProjectKitPilotDirectoryForCwd(cwd: string): string {
+	return path.join(cwd, ".kitpilot")
 }
 
 /**
@@ -182,53 +171,53 @@ export async function readFileIfExists(filePath: string): Promise<string | null>
 }
 
 /**
- * Discovers all .roo directories in subdirectories of the workspace
+ * Discovers all .kitpilot directories in subdirectories of the workspace
  *
  * @param cwd - Current working directory (workspace root)
- * @returns Array of absolute paths to .roo directories found in subdirectories,
- *          sorted alphabetically. Does not include the root .roo directory.
+ * @returns Array of absolute paths to .kitpilot directories found in subdirectories,
+ *          sorted alphabetically. Does not include the root .kitpilot directory.
  *
  * @example
  * ```typescript
- * const subfolderRoos = await discoverSubfolderRooDirectories('/Users/john/monorepo')
+ * const subfolderRoos = await discoverSubfolderKitPilotDirectories('/Users/john/monorepo')
  * // Returns:
  * // [
- * //   '/Users/john/monorepo/package-a/.roo',
- * //   '/Users/john/monorepo/package-b/.roo',
- * //   '/Users/john/monorepo/packages/shared/.roo'
+ * //   '/Users/john/monorepo/package-a/.kitpilot',
+ * //   '/Users/john/monorepo/package-b/.kitpilot',
+ * //   '/Users/john/monorepo/packages/shared/.kitpilot'
  * // ]
  * ```
  *
  * @example Directory structure:
  * ```
  * /Users/john/monorepo/
- * ├── .roo/                    # Root .roo (NOT included - use getProjectRooDirectoryForCwd)
+ * ├── .kitpilot/                    # Root .kitpilot (NOT included - use getProjectKitPilotDirectoryForCwd)
  * ├── package-a/
- * │   └── .roo/                # Included
+ * │   └── .kitpilot/                # Included
  * │       └── rules/
  * ├── package-b/
- * │   └── .roo/                # Included
+ * │   └── .kitpilot/                # Included
  * │       └── rules-code/
  * └── packages/
  *     └── shared/
- *         └── .roo/            # Included (nested)
+ *         └── .kitpilot/            # Included (nested)
  *             └── rules/
  * ```
  */
-export async function discoverSubfolderRooDirectories(cwd: string): Promise<string[]> {
+export async function discoverSubfolderKitPilotDirectories(cwd: string): Promise<string[]> {
 	try {
 		// Dynamic import to avoid vscode dependency at module load time
 		// This is necessary because file-search.ts imports vscode, which is not
 		// available in the webview context
 		const { executeRipgrep } = await import("../search/file-search")
 
-		// Use ripgrep to find any file inside any .roo or .kitpilot directory
+		// Use ripgrep to find any file inside any .kitpilot or .kitpilot directory
 		const args = [
 			"--files",
 			"--hidden",
 			"--follow",
 			"-g",
-			"**/.roo/**",
+			"**/.kitpilot/**",
 			"-g",
 			"**/.kitpilot/**",
 			"-g",
@@ -240,25 +229,24 @@ export async function discoverSubfolderRooDirectories(cwd: string): Promise<stri
 
 		const results = await executeRipgrep({ args, workspacePath: cwd })
 
-		// Extract unique .roo / .kitpilot directory paths
-		const rooDirs = new Set<string>()
-		const rootRooDir = path.join(cwd, ".roo")
+		// Extract unique .kitpilot directory paths
+		const kitpilotDirs = new Set<string>()
 		const rootKitpilotDir = path.join(cwd, ".kitpilot")
 
 		for (const result of results) {
-			// Match either ".roo" or ".kitpilot" segments, on Unix and Windows separators
-			const match = result.path.match(/^(.+?)[/\\](\.kitpilot|\.roo)[/\\]/)
+			// Match ".kitpilot" segments, on Unix and Windows separators
+			const match = result.path.match(/^(.+?)[/\\](\.kitpilot)[/\\]/)
 			if (match) {
-				const rooDir = path.join(cwd, match[1], match[2])
-				// Exclude root-level dirs (already handled by getProjectRooDirectoryForCwd)
-				if (rooDir !== rootRooDir && rooDir !== rootKitpilotDir) {
-					rooDirs.add(rooDir)
+				const kitpilotDir = path.join(cwd, match[1], match[2])
+				// Exclude root-level dirs (already handled by getProjectKitPilotDirectoryForCwd)
+				if (kitpilotDir !== rootKitpilotDir) {
+					kitpilotDirs.add(kitpilotDir)
 				}
 			}
 		}
 
 		// Return sorted alphabetically
-		return Array.from(rooDirs).sort()
+		return Array.from(kitpilotDirs).sort()
 	} catch (error) {
 		// If discovery fails (e.g., ripgrep not available), return empty array
 		return []
@@ -266,7 +254,7 @@ export async function discoverSubfolderRooDirectories(cwd: string): Promise<stri
 }
 
 /**
- * Gets the ordered list of .roo directories to check (global first, then project-local)
+ * Gets the ordered list of .kitpilot directories to check (global first, then project-local)
  *
  * @param cwd - Current working directory (project path)
  * @returns Array of directory paths to check in order [global, project-local]
@@ -274,23 +262,23 @@ export async function discoverSubfolderRooDirectories(cwd: string): Promise<stri
  * @example
  * ```typescript
  * // For a project at /Users/john/my-project
- * const directories = getRooDirectoriesForCwd('/Users/john/my-project')
+ * const directories = getKitPilotDirectoriesForCwd('/Users/john/my-project')
  * // Returns:
  * // [
- * //   '/Users/john/.roo',           // Global directory
- * //   '/Users/john/my-project/.roo' // Project-local directory
+ * //   '/Users/john/.kitpilot',           // Global directory
+ * //   '/Users/john/my-project/.kitpilot' // Project-local directory
  * // ]
  * ```
  *
  * @example Directory structure:
  * ```
  * /Users/john/
- * ├── .roo/                    # Global configuration
+ * ├── .kitpilot/                    # Global configuration
  * │   ├── rules/
  * │   │   └── rules.md
  * │   └── custom-instructions.md
  * └── my-project/
- *     ├── .roo/                # Project-specific configuration
+ *     ├── .kitpilot/                # Project-specific configuration
  *     │   ├── rules/
  *     │   │   └── rules.md     # Overrides global rules
  *     │   └── project-notes.md
@@ -298,55 +286,49 @@ export async function discoverSubfolderRooDirectories(cwd: string): Promise<stri
  *         └── index.ts
  * ```
  */
-export function getRooDirectoriesForCwd(cwd: string): string[] {
-	const homeDir = os.homedir()
-	const globalRoo = path.join(homeDir, ".roo")
-	const globalKitpilot = path.join(homeDir, ".kitpilot")
-	const projectRoo = path.join(cwd, ".roo")
+export function getKitPilotDirectoriesForCwd(cwd: string): string[] {
+	const globalKitpilot = path.join(os.homedir(), ".kitpilot")
 	const projectKitpilot = path.join(cwd, ".kitpilot")
 
 	const directories: string[] = []
 	// Order: less-specific first, more-specific last (later entries override earlier when merged).
-	// Legacy ".roo" reads first so any existing ".kitpilot" content takes precedence.
-	if (fsSync.existsSync(globalRoo)) directories.push(globalRoo)
 	if (fsSync.existsSync(globalKitpilot)) directories.push(globalKitpilot)
-	if (fsSync.existsSync(projectRoo)) directories.push(projectRoo)
 	directories.push(projectKitpilot) // project-local kitpilot always included even if absent (for write-site callers)
 	return directories
 }
 
 /**
- * Gets the ordered list of all .roo directories including subdirectories
+ * Gets the ordered list of all .kitpilot directories including subdirectories
  *
  * @param cwd - Current working directory (project path)
  * @returns Array of directory paths in order: [global, project-local, ...subfolders (alphabetically)]
  *
  * @example
  * ```typescript
- * // For a monorepo at /Users/john/monorepo with .roo in subfolders
- * const directories = await getAllRooDirectoriesForCwd('/Users/john/monorepo')
+ * // For a monorepo at /Users/john/monorepo with .kitpilot in subfolders
+ * const directories = await getAllKitPilotDirectoriesForCwd('/Users/john/monorepo')
  * // Returns:
  * // [
- * //   '/Users/john/.roo',                    // Global directory
- * //   '/Users/john/monorepo/.roo',           // Project-local directory
- * //   '/Users/john/monorepo/package-a/.roo', // Subfolder (alphabetical)
- * //   '/Users/john/monorepo/package-b/.roo'  // Subfolder (alphabetical)
+ * //   '/Users/john/.kitpilot',                    // Global directory
+ * //   '/Users/john/monorepo/.kitpilot',           // Project-local directory
+ * //   '/Users/john/monorepo/package-a/.kitpilot', // Subfolder (alphabetical)
+ * //   '/Users/john/monorepo/package-b/.kitpilot'  // Subfolder (alphabetical)
  * // ]
  * ```
  */
-export async function getAllRooDirectoriesForCwd(cwd: string): Promise<string[]> {
+export async function getAllKitPilotDirectoriesForCwd(cwd: string): Promise<string[]> {
 	// Use the dual-aware roots (returns existing legacy + new canonical), then add subfolders.
-	const directories = getRooDirectoriesForCwd(cwd)
-	const subfolderDirs = await discoverSubfolderRooDirectories(cwd)
+	const directories = getKitPilotDirectoriesForCwd(cwd)
+	const subfolderDirs = await discoverSubfolderKitPilotDirectories(cwd)
 	directories.push(...subfolderDirs)
 	return directories
 }
 
 /**
- * Gets parent directories containing .roo folders, in order from root to subfolders
+ * Gets parent directories containing .kitpilot folders, in order from root to subfolders
  *
  * @param cwd - Current working directory (project path)
- * @returns Array of parent directory paths (not .roo paths) containing AGENTS.md or .roo
+ * @returns Array of parent directory paths (not .kitpilot paths) containing AGENTS.md or .kitpilot
  *
  * @example
  * ```typescript
@@ -360,12 +342,12 @@ export async function getAgentsDirectoriesForCwd(cwd: string): Promise<string[]>
 	// Always include the root directory
 	directories.push(cwd)
 
-	// Get all subfolder .roo directories
-	const subfolderRooDirs = await discoverSubfolderRooDirectories(cwd)
+	// Get all subfolder .kitpilot directories
+	const subfolderKitPilotDirs = await discoverSubfolderKitPilotDirectories(cwd)
 
-	// Extract parent directories (remove .roo from path)
-	for (const rooDir of subfolderRooDirs) {
-		const parentDir = path.dirname(rooDir)
+	// Extract parent directories (remove .kitpilot from path)
+	for (const kitpilotDir of subfolderKitPilotDirs) {
+		const parentDir = path.dirname(kitpilotDir)
 		directories.push(parentDir)
 	}
 
@@ -373,9 +355,9 @@ export async function getAgentsDirectoriesForCwd(cwd: string): Promise<string[]>
 }
 
 /**
- * Loads configuration from multiple .roo directories with project overriding global
+ * Loads configuration from multiple .kitpilot directories with project overriding global
  *
- * @param relativePath - The relative path within each .roo directory (e.g., 'rules/rules.md')
+ * @param relativePath - The relative path within each .kitpilot directory (e.g., 'rules/rules.md')
  * @param cwd - Current working directory (project path)
  * @returns Object with global and project content, plus merged content
  *
@@ -386,8 +368,8 @@ export async function getAgentsDirectoriesForCwd(cwd: string): Promise<string[]>
  *
  * // Returns:
  * // {
- * //   global: "Global rules content...",     // From ~/.roo/rules/rules.md
- * //   project: "Project rules content...",   // From /Users/john/my-project/.roo/rules/rules.md
+ * //   global: "Global rules content...",     // From ~/.kitpilot/rules/rules.md
+ * //   project: "Project rules content...",   // From /Users/john/my-project/.kitpilot/rules/rules.md
  * //   merged: "Global rules content...\n\n# Project-specific rules (override global):\n\nProject rules content..."
  * // }
  * ```
@@ -398,8 +380,8 @@ export async function getAgentsDirectoriesForCwd(cwd: string): Promise<string[]>
  * cwd: '/Users/john/my-project'
  *
  * Reads from:
- * - Global: /Users/john/.roo/rules/rules.md
- * - Project: /Users/john/my-project/.roo/rules/rules.md
+ * - Global: /Users/john/.kitpilot/rules/rules.md
+ * - Project: /Users/john/my-project/.kitpilot/rules/rules.md
  *
  * Other common relativePath examples:
  * - 'custom-instructions.md'
@@ -431,8 +413,8 @@ export async function loadConfiguration(
 	project: string | null
 	merged: string
 }> {
-	const globalDir = getGlobalRooDirectory()
-	const projectDir = getProjectRooDirectoryForCwd(cwd)
+	const globalDir = getGlobalKitPilotDirectory()
+	const projectDir = getProjectKitPilotDirectoryForCwd(cwd)
 
 	const globalFilePath = path.join(globalDir, relativePath)
 	const projectFilePath = path.join(projectDir, relativePath)
@@ -465,4 +447,4 @@ export async function loadConfiguration(
 }
 
 // Export with backward compatibility alias
-export const loadRooConfiguration: typeof loadConfiguration = loadConfiguration
+export const loadKitPilotConfiguration: typeof loadConfiguration = loadConfiguration

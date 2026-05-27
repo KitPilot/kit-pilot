@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=RooVeterinaryInc.roo-cline"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/roocode"><img src="https://img.shields.io/badge/roocode-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=KitPilotVeterinaryInc.kit-pilot"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
+  <a href="https://x.com/kitpilot"><img src="https://img.shields.io/badge/kitpilot-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
 </p>
-# Roo Code
+# KitPilot
 
 > Ton équipe de dev propulsée par l'IA, directement dans ton éditeur
 
@@ -32,7 +32,7 @@
 
 ---
 
-## Que peut faire Roo Code pour VOUS ?
+## Que peut faire KitPilot pour VOUS ?
 
 - Générer du code à partir de descriptions en langage naturel
 - S'adapter avec les Modes : Code, Architecte, Demande, Débogage et Modes Personnalisés
@@ -44,7 +44,7 @@
 
 ## Modes
 
-Roo Code s'adapte à votre façon de travailler, pas l'inverse :
+KitPilot s'adapte à votre façon de travailler, pas l'inverse :
 
 - Mode Code : codage quotidien, modifications et opérations sur les fichiers
 - Mode Architecte : planifier les systèmes, les spécifications et les migrations
@@ -52,21 +52,21 @@ Roo Code s'adapte à votre façon de travailler, pas l'inverse :
 - Mode Débogage : tracer les problèmes, ajouter des journaux, isoler les causes profondes
 - Modes Personnalisés : créez des modes spécialisés pour votre équipe ou votre flux de travail
 
-En savoir plus : [Utiliser les Modes](https://docs.roocode.com/basic-usage/using-modes) • [Modes personnalisés](https://docs.roocode.com/advanced-usage/custom-modes)
+En savoir plus : [Utiliser les Modes](https://docs.kitpilot.com/basic-usage/using-modes) • [Modes personnalisés](https://docs.kitpilot.com/advanced-usage/custom-modes)
 
 ## Ressources
 
-- **[Documentation](https://docs.roocode.com):** Le guide officiel pour installer, configurer et maîtriser Roo Code.
-- **[Problèmes GitHub](https://github.com/RooCodeInc/Roo-Code/issues):** Signalez des bugs et suivez le développement.
+- **[Documentation](https://docs.kitpilot.com):** Le guide officiel pour installer, configurer et maîtriser KitPilot.
+- **[Problèmes GitHub](https://github.com/KitPilotInc/KitPilot/issues):** Signalez des bugs et suivez le développement.
 
 ---
 
 ## Avertissement
 
-**Veuillez noter** que Roo Code, Inc. ne fait **aucune** déclaration ou garantie concernant tout code, modèle ou autre outil fourni ou mis à disposition en rapport avec Roo Code, tout outil tiers associé ou toute sortie en résultant. Vous assumez **tous les risques** associés à l'utilisation de ces outils ou sorties ; ces outils sont fournis **"EN L'ÉTAT"** et **"SELON LA DISPONIBILITÉ"**. Ces risques peuvent inclure, sans s'y limiter, la violation de la propriété intellectuelle, les vulnérabilités ou attaques cybernétiques, les biais, les inexactitudes, les erreurs, les défauts, les virus, les temps d'arrêt, la perte ou l'endommagement de biens et/ou les blessures corporelles. Vous êtes seul responsable de votre utilisation de ces outils ou sorties (y compris, sans s'y limiter, leur légalité, leur pertinence et leurs résultats).
+**Veuillez noter** que KitPilot, Inc. ne fait **aucune** déclaration ou garantie concernant tout code, modèle ou autre outil fourni ou mis à disposition en rapport avec KitPilot, tout outil tiers associé ou toute sortie en résultant. Vous assumez **tous les risques** associés à l'utilisation de ces outils ou sorties ; ces outils sont fournis **"EN L'ÉTAT"** et **"SELON LA DISPONIBILITÉ"**. Ces risques peuvent inclure, sans s'y limiter, la violation de la propriété intellectuelle, les vulnérabilités ou attaques cybernétiques, les biais, les inexactitudes, les erreurs, les défauts, les virus, les temps d'arrêt, la perte ou l'endommagement de biens et/ou les blessures corporelles. Vous êtes seul responsable de votre utilisation de ces outils ou sorties (y compris, sans s'y limiter, leur légalité, leur pertinence et leurs résultats).
 
 ---
 
 ## Licence
 
-[Apache 2.0 © 2025 Roo Code, Inc.](../../LICENSE)
+[Apache 2.0 © 2025 KitPilot, Inc.](../../LICENSE)

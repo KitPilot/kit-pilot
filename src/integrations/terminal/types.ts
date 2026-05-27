@@ -1,34 +1,34 @@
 import EventEmitter from "events"
 
-export type RooTerminalProvider = "vscode" | "execa"
+export type KitPilotTerminalProvider = "vscode" | "execa"
 
-export interface RooTerminal {
-	provider: RooTerminalProvider
+export interface KitPilotTerminal {
+	provider: KitPilotTerminalProvider
 	id: number
 	busy: boolean
 	running: boolean
 	taskId?: string
-	process?: RooTerminalProcess
+	process?: KitPilotTerminalProcess
 	getCurrentWorkingDirectory(): string
 	isClosed: () => boolean
-	runCommand: (command: string, callbacks: RooTerminalCallbacks) => RooTerminalProcessResultPromise
+	runCommand: (command: string, callbacks: KitPilotTerminalCallbacks) => KitPilotTerminalProcessResultPromise
 	setActiveStream(stream: AsyncIterable<string> | undefined, pid?: number): void
 	shellExecutionComplete(exitDetails: ExitCodeDetails): void
-	getProcessesWithOutput(): RooTerminalProcess[]
+	getProcessesWithOutput(): KitPilotTerminalProcess[]
 	getUnretrievedOutput(): string
 	getLastCommand(): string
 	cleanCompletedProcessQueue(): void
 }
 
-export interface RooTerminalCallbacks {
-	onLine: (line: string, process: RooTerminalProcess) => void
-	onCompleted: (output: string | undefined, process: RooTerminalProcess) => void | Promise<void>
-	onShellExecutionStarted: (pid: number | undefined, process: RooTerminalProcess) => void
-	onShellExecutionComplete: (details: ExitCodeDetails, process: RooTerminalProcess) => void
-	onNoShellIntegration?: (message: string, process: RooTerminalProcess) => void
+export interface KitPilotTerminalCallbacks {
+	onLine: (line: string, process: KitPilotTerminalProcess) => void
+	onCompleted: (output: string | undefined, process: KitPilotTerminalProcess) => void | Promise<void>
+	onShellExecutionStarted: (pid: number | undefined, process: KitPilotTerminalProcess) => void
+	onShellExecutionComplete: (details: ExitCodeDetails, process: KitPilotTerminalProcess) => void
+	onNoShellIntegration?: (message: string, process: KitPilotTerminalProcess) => void
 }
 
-export interface RooTerminalProcess extends EventEmitter<RooTerminalProcessEvents> {
+export interface KitPilotTerminalProcess extends EventEmitter<KitPilotTerminalProcessEvents> {
 	command: string
 	isHot: boolean
 	run: (command: string) => Promise<void>
@@ -39,9 +39,9 @@ export interface RooTerminalProcess extends EventEmitter<RooTerminalProcessEvent
 	trimRetrievedOutput: () => void
 }
 
-export type RooTerminalProcessResultPromise = RooTerminalProcess & Promise<void>
+export type KitPilotTerminalProcessResultPromise = KitPilotTerminalProcess & Promise<void>
 
-export interface RooTerminalProcessEvents {
+export interface KitPilotTerminalProcessEvents {
 	line: [line: string]
 	continue: []
 	completed: [output?: string]

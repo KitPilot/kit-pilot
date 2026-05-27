@@ -2,7 +2,7 @@ import { HTMLAttributes } from "react"
 
 import type { Experiments, ImageGenerationProvider } from "@kit-pilot/types"
 
-import { EXPERIMENT_IDS, experimentConfigsMap } from "@roo/experiments"
+import { EXPERIMENT_IDS, experimentConfigsMap } from "@kitpilot/experiments"
 
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { cn } from "@src/lib/utils"

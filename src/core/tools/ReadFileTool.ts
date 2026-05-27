@@ -146,11 +146,11 @@ export class ReadFileTool extends BaseTool<"read_file"> {
 			for (const fileResult of fileResults) {
 				const relPath = fileResult.path
 
-				// RooIgnore validation
-				const accessAllowed = task.rooIgnoreController?.validateAccess(relPath)
+				// KitPilotIgnore validation
+				const accessAllowed = task.kitpilotIgnoreController?.validateAccess(relPath)
 				if (!accessAllowed) {
-					await task.say("rooignore_error", relPath)
-					const errorMsg = formatResponse.rooIgnoreError(relPath)
+					await task.say("kitpilotignore_error", relPath)
+					const errorMsg = formatResponse.kitpilotIgnoreError(relPath)
 					updateFileResult(relPath, {
 						status: "blocked",
 						error: errorMsg,
@@ -688,11 +688,11 @@ export class ReadFileTool extends BaseTool<"read_file"> {
 			const relPath = entry.path
 			const fullPath = path.resolve(task.cwd, relPath)
 
-			// RooIgnore validation
-			const accessAllowed = task.rooIgnoreController?.validateAccess(relPath)
+			// KitPilotIgnore validation
+			const accessAllowed = task.kitpilotIgnoreController?.validateAccess(relPath)
 			if (!accessAllowed) {
-				await task.say("rooignore_error", relPath)
-				const errorMsg = formatResponse.rooIgnoreError(relPath)
+				await task.say("kitpilotignore_error", relPath)
+				const errorMsg = formatResponse.kitpilotIgnoreError(relPath)
 				results.push(`File: ${relPath}\nError: ${errorMsg}`)
 				continue
 			}

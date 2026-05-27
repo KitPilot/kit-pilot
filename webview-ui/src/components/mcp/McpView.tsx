@@ -47,7 +47,7 @@ const McpView = () => {
 					}}>
 					<Trans i18nKey="mcp:description">
 						<VSCodeLink
-							href={buildDocLink("features/mcp/using-mcp-in-roo", "mcp_settings")}
+							href={buildDocLink("features/mcp/using-mcp-in-kitpilot", "mcp_settings")}
 							style={{ display: "inline" }}>
 							Learn More
 						</VSCodeLink>
@@ -141,7 +141,7 @@ const McpView = () => {
 							}}>
 							<VSCodeLink
 								href={buildDocLink(
-									"features/mcp/using-mcp-in-roo#editing-mcp-settings-files",
+									"features/mcp/using-mcp-in-kitpilot#editing-mcp-settings-files",
 									"mcp_edit_settings",
 								)}
 								style={{ display: "inline" }}>

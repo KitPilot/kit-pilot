@@ -10,14 +10,14 @@ import { type ModeConfig, type PromptComponent, customModesSettingsSchema, modeC
 
 import { fileExistsAtPath } from "../../utils/fs"
 import { getWorkspacePath } from "../../utils/path"
-import { getGlobalRooDirectory } from "../../services/roo-config"
+import { getGlobalKitPilotDirectory } from "../../services/kitpilot-config"
 import { logger } from "../../utils/logging"
 import { GlobalFileNames } from "../../shared/globalFileNames"
 import { ensureSettingsDirectoryExists } from "../../utils/globalContext"
 import { t } from "../../i18n"
 
 const ROOMODES_FILENAME = ".kitpilotmodes"
-const LEGACY_ROOMODES_FILENAME = ".roomodes"
+const LEGACY_ROOMODES_FILENAME = ".kitpilotmodes"
 
 // Type definitions for import/export functionality
 interface RuleFile {
@@ -99,7 +99,7 @@ export class CustomModesManager {
 		}
 
 		const workspaceRoot = getWorkspacePath()
-		// Prefer the new ".kitpilotmodes"; fall back to legacy ".roomodes" only if the new one is absent.
+		// Prefer the new ".kitpilotmodes"; fall back to legacy ".kitpilotmodes" only if the new one is absent.
 		const kitpilotPath = path.join(workspaceRoot, ROOMODES_FILENAME)
 		if (await fileExistsAtPath(kitpilotPath)) {
 			return kitpilotPath
@@ -181,7 +181,7 @@ export class CustomModesManager {
 				}
 			}
 
-			// For non-.roomodes files, just log and return empty object
+			// For non-.kitpilotmodes files, just log and return empty object
 			const errorMsg = yamlError instanceof Error ? yamlError.message : String(yamlError)
 			console.error(`[CustomModesManager] Failed to parse YAML from ${filePath}:`, errorMsg)
 			return {}
@@ -302,12 +302,12 @@ export class CustomModesManager {
 					return
 				}
 
-				// Get modes from .roomodes if it exists (takes precedence)
-				const roomodesPath = await this.getWorkspaceRoomodes()
-				const roomodesModes = roomodesPath ? await this.loadModesFromFile(roomodesPath) : []
+				// Get modes from .kitpilotmodes if it exists (takes precedence)
+				const kitpilotmodesPath = await this.getWorkspaceRoomodes()
+				const kitpilotmodesModes = kitpilotmodesPath ? await this.loadModesFromFile(kitpilotmodesPath) : []
 
-				// Merge modes from both sources (.roomodes takes precedence)
-				const mergedModes = await this.mergeCustomModes(roomodesModes, result.data.customModes)
+				// Merge modes from both sources (.kitpilotmodes takes precedence)
+				const mergedModes = await this.mergeCustomModes(kitpilotmodesModes, result.data.customModes)
 				await this.context.globalState.update("customModes", mergedModes)
 				this.clearCache()
 				await this.onUpdate()
@@ -321,7 +321,7 @@ export class CustomModesManager {
 		this.disposables.push(settingsWatcher.onDidDelete(handleSettingsChange))
 		this.disposables.push(settingsWatcher)
 
-		// Watch both the new ".kitpilotmodes" and legacy ".roomodes" filenames at workspace root.
+		// Watch both the new ".kitpilotmodes" and legacy ".kitpilotmodes" filenames at workspace root.
 		const workspaceFolders = vscode.workspace.workspaceFolders
 		if (workspaceFolders && workspaceFolders.length > 0) {
 			const workspaceRoot = getWorkspacePath()
@@ -354,7 +354,7 @@ export class CustomModesManager {
 		}
 	}
 
-	/** True if the path is either the new ".kitpilotmodes" or legacy ".roomodes" workspace file. */
+	/** True if the path is either the new ".kitpilotmodes" or legacy ".kitpilotmodes" workspace file. */
 	private isProjectModesPath(filePath: string): boolean {
 		return filePath.endsWith(ROOMODES_FILENAME) || filePath.endsWith(LEGACY_ROOMODES_FILENAME)
 	}
@@ -371,16 +371,16 @@ export class CustomModesManager {
 		const settingsPath = await this.getCustomModesFilePath()
 		const settingsModes = await this.loadModesFromFile(settingsPath)
 
-		// Get modes from .roomodes if it exists.
-		const roomodesPath = await this.getWorkspaceRoomodes()
-		const roomodesModes = roomodesPath ? await this.loadModesFromFile(roomodesPath) : []
+		// Get modes from .kitpilotmodes if it exists.
+		const kitpilotmodesPath = await this.getWorkspaceRoomodes()
+		const kitpilotmodesModes = kitpilotmodesPath ? await this.loadModesFromFile(kitpilotmodesPath) : []
 
 		// Create maps to store modes by source.
 		const projectModes = new Map<string, ModeConfig>()
 		const globalModes = new Map<string, ModeConfig>()
 
 		// Add project modes (they take precedence).
-		for (const mode of roomodesModes) {
+		for (const mode of kitpilotmodesModes) {
 			projectModes.set(mode.slug, { ...mode, source: "project" as const })
 		}
 
@@ -393,7 +393,7 @@ export class CustomModesManager {
 
 		// Combine modes in the correct order: project modes first, then global modes.
 		const mergedModes = [
-			...roomodesModes.map((mode) => ({ ...mode, source: "project" as const })),
+			...kitpilotmodesModes.map((mode) => ({ ...mode, source: "project" as const })),
 			...settingsModes
 				.filter((mode) => !projectModes.has(mode.slug))
 				.map((mode) => ({ ...mode, source: "global" as const })),
@@ -501,11 +501,11 @@ export class CustomModesManager {
 
 	private async refreshMergedState(): Promise<void> {
 		const settingsPath = await this.getCustomModesFilePath()
-		const roomodesPath = await this.getWorkspaceRoomodes()
+		const kitpilotmodesPath = await this.getWorkspaceRoomodes()
 
 		const settingsModes = await this.loadModesFromFile(settingsPath)
-		const roomodesModes = roomodesPath ? await this.loadModesFromFile(roomodesPath) : []
-		const mergedModes = await this.mergeCustomModes(roomodesModes, settingsModes)
+		const kitpilotmodesModes = kitpilotmodesPath ? await this.loadModesFromFile(kitpilotmodesPath) : []
+		const mergedModes = await this.mergeCustomModes(kitpilotmodesModes, settingsModes)
 
 		await this.context.globalState.update("customModes", mergedModes)
 
@@ -517,13 +517,13 @@ export class CustomModesManager {
 	public async deleteCustomMode(slug: string): Promise<void> {
 		try {
 			const settingsPath = await this.getCustomModesFilePath()
-			const roomodesPath = await this.getWorkspaceRoomodes()
+			const kitpilotmodesPath = await this.getWorkspaceRoomodes()
 
 			const settingsModes = await this.loadModesFromFile(settingsPath)
-			const roomodesModes = roomodesPath ? await this.loadModesFromFile(roomodesPath) : []
+			const kitpilotmodesModes = kitpilotmodesPath ? await this.loadModesFromFile(kitpilotmodesPath) : []
 
 			// Find the mode in either file
-			const projectMode = roomodesModes.find((m) => m.slug === slug)
+			const projectMode = kitpilotmodesModes.find((m) => m.slug === slug)
 			const globalMode = settingsModes.find((m) => m.slug === slug)
 
 			if (!projectMode && !globalMode) {
@@ -535,8 +535,8 @@ export class CustomModesManager {
 
 			await this.queueWrite(async () => {
 				// Delete from project first if it exists there
-				if (projectMode && roomodesPath) {
-					await this.updateModesInFile(roomodesPath, (modes) => modes.filter((m) => m.slug !== slug))
+				if (projectMode && kitpilotmodesPath) {
+					await this.updateModesInFile(kitpilotmodesPath, (modes) => modes.filter((m) => m.slug !== slug))
 				}
 
 				// Delete from global settings if it exists there
@@ -574,14 +574,14 @@ export class CustomModesManager {
 			if (scope === "project") {
 				const workspacePath = getWorkspacePath()
 				if (workspacePath) {
-					rulesFolderPath = path.join(workspacePath, ".roo", `rules-${slug}`)
+					rulesFolderPath = path.join(workspacePath, ".kitpilot", `rules-${slug}`)
 				} else {
 					return // No workspace, can't delete project rules
 				}
 			} else {
 				// Global scope - use OS home directory
 				const homeDir = os.homedir()
-				rulesFolderPath = path.join(homeDir, ".roo", `rules-${slug}`)
+				rulesFolderPath = path.join(homeDir, ".kitpilot", `rules-${slug}`)
 			}
 
 			// Check if the rules folder exists and delete it
@@ -620,7 +620,7 @@ export class CustomModesManager {
 	}
 
 	/**
-	 * Checks if a mode has associated rules files in the .roo/rules-{slug}/ directory
+	 * Checks if a mode has associated rules files in the .kitpilot/rules-{slug}/ directory
 	 * @param slug - The mode identifier to check
 	 * @returns True if the mode has rules files with content, false otherwise
 	 */
@@ -631,21 +631,21 @@ export class CustomModesManager {
 			const mode = allModes.find((m) => m.slug === slug)
 
 			if (!mode) {
-				// If not in custom modes, check if it's defined in the project modes file (preferring .kitpilotmodes, falling back to legacy .roomodes).
+				// If not in custom modes, check if it's defined in the project modes file (preferring .kitpilotmodes, falling back to legacy .kitpilotmodes).
 				const workspacePath = getWorkspacePath()
 				if (!workspacePath) {
 					return false
 				}
 
-				const roomodesPath = await this.getWorkspaceRoomodes()
+				const kitpilotmodesPath = await this.getWorkspaceRoomodes()
 				try {
-					if (roomodesPath) {
-						const roomodesContent = await fs.readFile(roomodesPath, "utf-8")
-						const roomodesData = yaml.parse(roomodesContent)
-						const roomodesModes = roomodesData?.customModes || []
+					if (kitpilotmodesPath) {
+						const kitpilotmodesContent = await fs.readFile(kitpilotmodesPath, "utf-8")
+						const kitpilotmodesData = yaml.parse(kitpilotmodesContent)
+						const kitpilotmodesModes = kitpilotmodesData?.customModes || []
 
 						// Check if this specific mode exists in the project modes file
-						const modeInRoomodes = roomodesModes.find((m: any) => m.slug === slug)
+						const modeInRoomodes = kitpilotmodesModes.find((m: any) => m.slug === slug)
 						if (!modeInRoomodes) {
 							return false // Mode not found anywhere
 						}
@@ -653,7 +653,7 @@ export class CustomModesManager {
 						return false // No project modes file and not in custom modes
 					}
 				} catch (error) {
-					return false // Cannot read .roomodes and not in custom modes
+					return false // Cannot read .kitpilotmodes and not in custom modes
 				}
 			}
 
@@ -662,16 +662,16 @@ export class CustomModesManager {
 			const isGlobalMode = mode?.source === "global"
 
 			if (isGlobalMode) {
-				// For global modes, check in global .roo directory
-				const globalRooDir = getGlobalRooDirectory()
-				modeRulesDir = path.join(globalRooDir, `rules-${slug}`)
+				// For global modes, check in global .kitpilot directory
+				const globalKitPilotDir = getGlobalKitPilotDirectory()
+				modeRulesDir = path.join(globalKitPilotDir, `rules-${slug}`)
 			} else {
-				// For project modes, check in workspace .roo directory
+				// For project modes, check in workspace .kitpilot directory
 				const workspacePath = getWorkspacePath()
 				if (!workspacePath) {
 					return false
 				}
-				modeRulesDir = path.join(workspacePath, ".roo", `rules-${slug}`)
+				modeRulesDir = path.join(workspacePath, ".kitpilot", `rules-${slug}`)
 			}
 
 			try {
@@ -731,15 +731,15 @@ export class CustomModesManager {
 				// Only check workspace-based modes if workspace is available
 				const workspacePath = getWorkspacePath()
 				if (workspacePath) {
-					const roomodesPath = await this.getWorkspaceRoomodes()
+					const kitpilotmodesPath = await this.getWorkspaceRoomodes()
 					try {
-						if (roomodesPath) {
-							const roomodesContent = await fs.readFile(roomodesPath, "utf-8")
-							const roomodesData = yaml.parse(roomodesContent)
-							const roomodesModes = roomodesData?.customModes || []
+						if (kitpilotmodesPath) {
+							const kitpilotmodesContent = await fs.readFile(kitpilotmodesPath, "utf-8")
+							const kitpilotmodesData = yaml.parse(kitpilotmodesContent)
+							const kitpilotmodesModes = kitpilotmodesData?.customModes || []
 
 							// Find the mode in the project modes file
-							mode = roomodesModes.find((m: any) => m.slug === slug)
+							mode = kitpilotmodesModes.find((m: any) => m.slug === slug)
 						}
 					} catch (error) {
 						// Continue to check built-in modes
@@ -762,8 +762,8 @@ export class CustomModesManager {
 			const isGlobalMode = mode.source === "global"
 			let baseDir: string
 			if (isGlobalMode) {
-				// For global modes, use the global .roo directory
-				baseDir = getGlobalRooDirectory()
+				// For global modes, use the global .kitpilot directory
+				baseDir = getGlobalKitPilotDirectory()
 			} else {
 				// For project modes, use the workspace directory
 				const workspacePath = getWorkspacePath()
@@ -773,10 +773,10 @@ export class CustomModesManager {
 				baseDir = workspacePath
 			}
 
-			// Check for .roo/rules-{slug}/ directory (or rules-{slug}/ for global)
+			// Check for .kitpilot/rules-{slug}/ directory (or rules-{slug}/ for global)
 			const modeRulesDir = isGlobalMode
 				? path.join(baseDir, `rules-${slug}`)
-				: path.join(baseDir, ".roo", `rules-${slug}`)
+				: path.join(baseDir, ".kitpilot", `rules-${slug}`)
 
 			let rulesFiles: RuleFile[] = []
 			try {
@@ -856,11 +856,11 @@ export class CustomModesManager {
 		let rulesFolderPath: string
 
 		if (source === "global") {
-			baseDir = getGlobalRooDirectory()
+			baseDir = getGlobalKitPilotDirectory()
 			rulesFolderPath = path.join(baseDir, `rules-${importMode.slug}`)
 		} else {
 			const workspacePath = getWorkspacePath()
-			baseDir = path.join(workspacePath, ".roo")
+			baseDir = path.join(workspacePath, ".kitpilot")
 			rulesFolderPath = path.join(baseDir, `rules-${importMode.slug}`)
 		}
 

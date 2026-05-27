@@ -9,7 +9,7 @@
 		"src/extension.ts",
 		"scripts/**",
 		"apps/cli/scripts/**",
-		"apps/web-roo-code/next-sitemap.config.cjs"
+		"apps/web-kit-pilot/next-sitemap.config.cjs"
 	],
 	"workspaces": {
 		"src": {

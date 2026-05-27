@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=RooVeterinaryInc.roo-cline"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/roocode"><img src="https://img.shields.io/badge/roocode-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=KitPilotVeterinaryInc.kit-pilot"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
+  <a href="https://x.com/kitpilot"><img src="https://img.shields.io/badge/kitpilot-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
 </p>
-# Roo Code
+# KitPilot
 
 > Seu time de desenvolvimento com IA, direto no seu editor
 
@@ -32,7 +32,7 @@
 
 ---
 
-## O que o Roo Code pode fazer por VOCÊ?
+## O que o KitPilot pode fazer por VOCÊ?
 
 - Gerar código a partir de descrições em linguagem natural
 - Adapte-se com os Modos: Código, Arquiteto, Pergunta, Depuração e Modos Personalizados
@@ -44,7 +44,7 @@
 
 ## Modos
 
-O Roo Code se adapta à sua maneira de trabalhar, e não o contrário:
+O KitPilot se adapta à sua maneira de trabalhar, e não o contrário:
 
 - Modo Código: codificação diária, edições e operações de arquivo
 - Modo Arquiteto: planeje sistemas, especificações e migrações
@@ -52,21 +52,21 @@ O Roo Code se adapta à sua maneira de trabalhar, e não o contrário:
 - Modo Depuração: rastreie problemas, adicione logs, isole as causas raiz
 - Modos Personalizados: crie modos especializados para sua equipe ou fluxo de trabalho
 
-Saiba mais: [Usar Modos](https://docs.roocode.com/basic-usage/using-modes) • [Modos personalizados](https://docs.roocode.com/advanced-usage/custom-modes)
+Saiba mais: [Usar Modos](https://docs.kitpilot.com/basic-usage/using-modes) • [Modos personalizados](https://docs.kitpilot.com/advanced-usage/custom-modes)
 
 ## Recursos
 
-- **[Documentação](https://docs.roocode.com):** O guia oficial para instalar, configurar e dominar o Roo Code.
-- **[Issues do GitHub](https://github.com/RooCodeInc/Roo-Code/issues):** Relate bugs e acompanhe o desenvolvimento.
+- **[Documentação](https://docs.kitpilot.com):** O guia oficial para instalar, configurar e dominar o KitPilot.
+- **[Issues do GitHub](https://github.com/KitPilotInc/KitPilot/issues):** Relate bugs e acompanhe o desenvolvimento.
 
 ---
 
 ## Isenção de responsabilidade
 
-**Observe** que a Roo Code, Inc. **não** faz representações ou garantias em relação a qualquer código, modelos ou outras ferramentas fornecidas ou disponibilizadas em conexão com o Roo Code, quaisquer ferramentas de terceiros associadas ou quaisquer saídas resultantes. Você assume **todos os riscos** associados ao uso de tais ferramentas ou saídas; tais ferramentas são fornecidas **"COMO ESTÃO"** e **"CONFORME DISPONÍVEIS"**. Tais riscos podem incluir, sem limitação, violação de propriedade intelectual, vulnerabilidades ou ataques cibernéticos, viés, imprecisões, erros, defeitos, vírus, tempo de inatividade, perda ou dano de propriedade e/ou lesões pessoais. Você é o único responsável pelo uso de tais ferramentas ou saídas (incluindo, sem limitação, a legalidade, adequação e resultados das mesmas).
+**Observe** que a KitPilot, Inc. **não** faz representações ou garantias em relação a qualquer código, modelos ou outras ferramentas fornecidas ou disponibilizadas em conexão com o KitPilot, quaisquer ferramentas de terceiros associadas ou quaisquer saídas resultantes. Você assume **todos os riscos** associados ao uso de tais ferramentas ou saídas; tais ferramentas são fornecidas **"COMO ESTÃO"** e **"CONFORME DISPONÍVEIS"**. Tais riscos podem incluir, sem limitação, violação de propriedade intelectual, vulnerabilidades ou ataques cibernéticos, viés, imprecisões, erros, defeitos, vírus, tempo de inatividade, perda ou dano de propriedade e/ou lesões pessoais. Você é o único responsável pelo uso de tais ferramentas ou saídas (incluindo, sem limitação, a legalidade, adequação e resultados das mesmas).
 
 ---
 
 ## Licença
 
-[Apache 2.0 © 2025 Roo Code, Inc.](../../LICENSE)
+[Apache 2.0 © 2025 KitPilot, Inc.](../../LICENSE)

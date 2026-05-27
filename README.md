@@ -2,7 +2,7 @@
 
 > An agentic coding assistant for VS Code, powered exclusively by GitHub Copilot.
 
-KitPilot is a streamlined fork of [Roo Code](https://github.com/RooCodeInc/Roo-Code), purpose-built for users whose organizations only authorize GitHub Copilot. Every non-Copilot AI provider integration has been removed; the extension routes all model traffic through VS Code's [Language Model API](https://code.visualstudio.com/api/extension-guides/language-model) — meaning if you have Copilot, you're already set up.
+KitPilot is a streamlined fork of [KitPilot](https://github.com/KitPilotInc/KitPilot), purpose-built for users whose organizations only authorize GitHub Copilot. Every non-Copilot AI provider integration has been removed; the extension routes all model traffic through VS Code's [Language Model API](https://code.visualstudio.com/api/extension-guides/language-model) — meaning if you have Copilot, you're already set up.
 
 ## Why KitPilot
 
@@ -12,7 +12,7 @@ KitPilot strips all of that out:
 
 - **One provider, by design.** Only `vscode-lm` (Copilot). No third-party SDKs, no API key prompts.
 - **Smaller install.** ~50 npm packages removed vs. the upstream extension; bundle is leaner.
-- **Lower token cost per turn.** Delta-only environment injection and trimmed-history sends mean roughly 3× fewer tokens vs. base Roo Code for the same conversation.
+- **Lower token cost per turn.** Delta-only environment injection and trimmed-history sends mean roughly 3× fewer tokens vs. base KitPilot for the same conversation.
 - **Same agent depth.** Full multi-mode chat, tool use, MCP, custom modes — all of it works through Copilot.
 
 ## What Can KitPilot Do For You
@@ -46,11 +46,11 @@ Semantic `codebase_search` is supported via local [Ollama](https://ollama.ai/) e
 
 ## Credits
 
-KitPilot is a fork of [Roo Code](https://github.com/RooCodeInc/Roo-Code), which itself is a fork of [Cline](https://cline.bot/). Both projects deserve the credit for the underlying agent design, mode system, and tool architecture. This fork's contribution is the Copilot-only narrowing, the token-efficiency work, and the rebrand.
+KitPilot is a fork of [KitPilot](https://github.com/KitPilotInc/KitPilot), which itself is a fork of [Cline](https://cline.bot/). Both projects deserve the credit for the underlying agent design, mode system, and tool architecture. This fork's contribution is the Copilot-only narrowing, the token-efficiency work, and the rebrand.
 
 ## License
 
-[Apache 2.0](./LICENSE) © KitPilot contributors. Original Roo Code work © Roo Code, Inc. See [NOTICE](./NOTICE) for the full attribution chain.
+[Apache 2.0](./LICENSE) © KitPilot contributors. Original KitPilot work © KitPilot, Inc. See [NOTICE](./NOTICE) for the full attribution chain.
 
 ## Disclaimer
 
@@ -65,8 +65,8 @@ downtime, and any operational consequences of running AI-generated commands
 or code on your system.
 
 KitPilot is **not affiliated with, endorsed by, or sponsored by**
-Roo Code, Inc., GitHub, Inc., Microsoft Corporation, or the maintainers of
+KitPilot, Inc., GitHub, Inc., Microsoft Corporation, or the maintainers of
 any other upstream project. Trademarks such as "GitHub Copilot," "VS Code,"
-and "Roo Code" remain the property of their respective owners and are used
+and "KitPilot" remain the property of their respective owners and are used
 here only for the descriptive purpose of identifying the products that
 KitPilot integrates with or derives from.

@@ -8,7 +8,7 @@
 		"noMatchFound": "No s'han trobat modes",
 		"editModesConfig": "Editar configuració de modes",
 		"editGlobalModes": "Editar modes globals",
-		"editProjectModes": "Editar modes de projecte (.roomodes)",
+		"editProjectModes": "Editar modes de projecte (.kitpilotmodes)",
 		"createModeHelpText": "Els modes són persones especialitzades que adapten el comportament de KitPilot. <0>Aprèn sobre l'ús de modes</0> o <1>Personalització de modes.</1>",
 		"selectMode": "Cerqueu modes"
 	},
@@ -49,7 +49,7 @@
 		"title": "Instruccions personalitzades específiques del mode (opcional)",
 		"resetToDefault": "Restablir a valors predeterminats",
 		"description": "Afegiu directrius de comportament específiques per al mode {{modeName}}.",
-		"loadFromFile": "Les instruccions personalitzades específiques per al mode {{mode}} també es poden carregar des de la carpeta <span>.roo/rules-{{slug}}/</span> al vostre espai de treball o des del global <0>.roo/rules-{{slug}}/</0> (.roorules-{{slug}} i .clinerules-{{slug}} estan obsolets i deixaran de funcionar aviat)."
+		"loadFromFile": "Les instruccions personalitzades específiques per al mode {{mode}} també es poden carregar des de la carpeta <span>.kitpilot/rules-{{slug}}/</span> al vostre espai de treball o des del global <0>.kitpilot/rules-{{slug}}/</0> (.roorules-{{slug}} i .clinerules-{{slug}} estan obsolets i deixaran de funcionar aviat)."
 	},
 	"exportMode": {
 		"title": "Exportar mode",
@@ -67,13 +67,13 @@
 		},
 		"project": {
 			"label": "Nivell de projecte",
-			"description": "Només disponible en aquest espai de treball. Si el mode exportat contenia fitxers de regles, es tornaran a crear a la carpeta .roo/rules-{slug}/."
+			"description": "Només disponible en aquest espai de treball. Si el mode exportat contenia fitxers de regles, es tornaran a crear a la carpeta .kitpilot/rules-{slug}/."
 		}
 	},
 	"globalCustomInstructions": {
 		"title": "Instruccions personalitzades per a tots els modes",
 		"description": "Aquestes instruccions s'apliquen a tots els modes. Proporcionen un conjunt bàsic de comportaments que es poden millorar amb instruccions específiques de cada mode a continuació. <0>Més informació</0>",
-		"loadFromFile": "Les instruccions també es poden carregar des de la carpeta <span>.roo/rules/</span> al vostre espai de treball o des del global <0>.roo/rules/</0> (.roorules i .clinerules estan obsolets i deixaran de funcionar aviat)."
+		"loadFromFile": "Les instruccions també es poden carregar des de la carpeta <span>.kitpilot/rules/</span> al vostre espai de treball o des del global <0>.kitpilot/rules/</0> (.roorules i .clinerules estan obsolets i deixaran de funcionar aviat)."
 	},
 	"systemPrompt": {
 		"preview": "Previsualització del prompt del sistema",
@@ -161,7 +161,7 @@
 				"description": "Disponible a tots els espais de treball"
 			},
 			"project": {
-				"label": "Específic del projecte (.roomodes)",
+				"label": "Específic del projecte (.kitpilotmodes)",
 				"description": "Només disponible en aquest espai de treball, té prioritat sobre el global"
 			}
 		},

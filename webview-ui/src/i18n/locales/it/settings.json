@@ -234,7 +234,7 @@
 			},
 			"protected": {
 				"label": "Includi file protetti",
-				"description": "Permetti a KitPilot di creare e modificare file protetti (come .rooignore e file di configurazione .roo/) senza richiedere approvazione."
+				"description": "Permetti a KitPilot di creare e modificare file protetti (come .kitpilotignore e file di configurazione .kitpilot/) senza richiedere approvazione."
 			}
 		},
 		"mcp": {
@@ -546,7 +546,7 @@
 			"maxTokensLabel": "Token di output massimi",
 			"maxTokensDescription": "Numero massimo di token di output per le risposte di Claude Code. Il valore predefinito è 8000."
 		},
-		"retiredRooProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredKitPilotProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -600,9 +600,9 @@
 			"label": "Limite contesto file area di lavoro",
 			"description": "Numero massimo di file da includere nei dettagli della directory di lavoro corrente. Valori più alti forniscono più contesto ma aumentano l'utilizzo di token."
 		},
-		"rooignore": {
-			"label": "Mostra file .rooignore negli elenchi e nelle ricerche",
-			"description": "Quando abilitato, i file che corrispondono ai pattern in .rooignore verranno mostrati negli elenchi con un simbolo di blocco. Quando disabilitato, questi file saranno completamente nascosti dagli elenchi di file e dalle ricerche."
+		"kitpilotignore": {
+			"label": "Mostra file .kitpilotignore negli elenchi e nelle ricerche",
+			"description": "Quando abilitato, i file che corrispondono ai pattern in .kitpilotignore verranno mostrati negli elenchi con un simbolo di blocco. Quando disabilitato, questi file saranno completamente nascosti dagli elenchi di file e dalle ricerche."
 		},
 		"maxReadFile": {
 			"label": "Soglia di auto-troncamento lettura file",
@@ -663,7 +663,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "Abilita regole sottocartelle",
-			"description": "Scopri e carica ricorsivamente i file .roo/rules e AGENTS.md dalle sottodirectory. Utile per i monorepo con regole per pacchetto."
+			"description": "Scopri e carica ricorsivamente i file .kitpilot/rules e AGENTS.md dalle sottodirectory. Utile per i monorepo con regole per pacchetto."
 		}
 	},
 	"terminal": {
@@ -803,9 +803,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Abilita strumenti personalizzati",
-			"description": "Quando abilitato, KitPilot può caricare e utilizzare strumenti TypeScript/JavaScript personalizzati dalla directory .roo/tools del tuo progetto o ~/.roo/tools per strumenti globali. Nota: questi strumenti saranno automaticamente approvati.",
+			"description": "Quando abilitato, KitPilot può caricare e utilizzare strumenti TypeScript/JavaScript personalizzati dalla directory .kitpilot/tools del tuo progetto o ~/.kitpilot/tools per strumenti globali. Nota: questi strumenti saranno automaticamente approvati.",
 			"toolsHeader": "Strumenti personalizzati disponibili",
-			"noTools": "Nessuno strumento personalizzato caricato. Aggiungi file .ts o .js alla directory .roo/tools del tuo progetto o ~/.roo/tools per strumenti globali.",
+			"noTools": "Nessuno strumento personalizzato caricato. Aggiungi file .ts o .js alla directory .kitpilot/tools del tuo progetto o ~/.kitpilot/tools per strumenti globali.",
 			"refreshButton": "Aggiorna",
 			"refreshing": "Aggiornamento...",
 			"refreshSuccess": "Strumenti aggiornati con successo",

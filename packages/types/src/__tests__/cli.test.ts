@@ -1,14 +1,14 @@
 import {
-	rooCliControlEventSchema,
-	rooCliFinalOutputSchema,
-	rooCliInputCommandSchema,
-	rooCliStreamEventSchema,
+	kitpilotCliControlEventSchema,
+	kitpilotCliFinalOutputSchema,
+	kitpilotCliInputCommandSchema,
+	kitpilotCliStreamEventSchema,
 } from "../cli.js"
 
 describe("CLI types", () => {
-	describe("rooCliInputCommandSchema", () => {
+	describe("kitpilotCliInputCommandSchema", () => {
 		it("validates a start command", () => {
-			const result = rooCliInputCommandSchema.safeParse({
+			const result = kitpilotCliInputCommandSchema.safeParse({
 				command: "start",
 				requestId: "req-1",
 				prompt: "hello",
@@ -21,7 +21,7 @@ describe("CLI types", () => {
 		})
 
 		it("validates a message command with images", () => {
-			const result = rooCliInputCommandSchema.safeParse({
+			const result = kitpilotCliInputCommandSchema.safeParse({
 				command: "message",
 				requestId: "req-2a",
 				prompt: "follow up",
@@ -32,7 +32,7 @@ describe("CLI types", () => {
 		})
 
 		it("rejects a message command without prompt", () => {
-			const result = rooCliInputCommandSchema.safeParse({
+			const result = kitpilotCliInputCommandSchema.safeParse({
 				command: "message",
 				requestId: "req-2",
 			})
@@ -41,7 +41,7 @@ describe("CLI types", () => {
 		})
 
 		it("rejects a start command with invalid taskId format", () => {
-			const result = rooCliInputCommandSchema.safeParse({
+			const result = kitpilotCliInputCommandSchema.safeParse({
 				command: "start",
 				requestId: "req-invalid-task-id",
 				prompt: "hello",
@@ -52,9 +52,9 @@ describe("CLI types", () => {
 		})
 	})
 
-	describe("rooCliControlEventSchema", () => {
+	describe("kitpilotCliControlEventSchema", () => {
 		it("validates a control done event", () => {
-			const result = rooCliControlEventSchema.safeParse({
+			const result = kitpilotCliControlEventSchema.safeParse({
 				type: "control",
 				subtype: "done",
 				requestId: "req-3",
@@ -67,7 +67,7 @@ describe("CLI types", () => {
 		})
 
 		it("rejects control event without requestId", () => {
-			const result = rooCliControlEventSchema.safeParse({
+			const result = kitpilotCliControlEventSchema.safeParse({
 				type: "control",
 				subtype: "ack",
 			})
@@ -76,9 +76,9 @@ describe("CLI types", () => {
 		})
 	})
 
-	describe("rooCliStreamEventSchema", () => {
+	describe("kitpilotCliStreamEventSchema", () => {
 		it("accepts passthrough fields for forward compatibility", () => {
-			const result = rooCliStreamEventSchema.safeParse({
+			const result = kitpilotCliStreamEventSchema.safeParse({
 				type: "assistant",
 				id: 42,
 				content: "partial",
@@ -89,9 +89,9 @@ describe("CLI types", () => {
 		})
 	})
 
-	describe("rooCliFinalOutputSchema", () => {
+	describe("kitpilotCliFinalOutputSchema", () => {
 		it("validates final json output shape", () => {
-			const result = rooCliFinalOutputSchema.safeParse({
+			const result = kitpilotCliFinalOutputSchema.safeParse({
 				type: "result",
 				success: true,
 				content: "done",

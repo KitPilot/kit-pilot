@@ -1,7 +1,7 @@
 import { z } from "zod"
 
-import { RooCodeEventName } from "./events.js"
-import type { RooCodeSettings } from "./global-settings.js"
+import { KitPilotEventName } from "./events.js"
+import type { KitPilotSettings } from "./global-settings.js"
 import type { ClineMessage, QueuedMessage, TokenUsage } from "./message.js"
 import type { ToolUsage, ToolName } from "./tool.js"
 import type { TodoItem } from "./todo.js"
@@ -19,7 +19,7 @@ export interface TaskProviderLike {
 		images?: string[],
 		parentTask?: TaskLike,
 		options?: CreateTaskOptions,
-		configuration?: RooCodeSettings,
+		configuration?: KitPilotSettings,
 	): Promise<TaskLike>
 	cancelTask(): Promise<void>
 	clearTask(): Promise<void>
@@ -53,30 +53,30 @@ export interface TaskProviderLike {
 }
 
 export type TaskProviderEvents = {
-	[RooCodeEventName.TaskCreated]: [task: TaskLike]
-	[RooCodeEventName.TaskStarted]: [taskId: string]
-	[RooCodeEventName.TaskCompleted]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
-	[RooCodeEventName.TaskAborted]: [taskId: string]
-	[RooCodeEventName.TaskFocused]: [taskId: string]
-	[RooCodeEventName.TaskUnfocused]: [taskId: string]
-	[RooCodeEventName.TaskActive]: [taskId: string]
-	[RooCodeEventName.TaskInteractive]: [taskId: string]
-	[RooCodeEventName.TaskResumable]: [taskId: string]
-	[RooCodeEventName.TaskIdle]: [taskId: string]
+	[KitPilotEventName.TaskCreated]: [task: TaskLike]
+	[KitPilotEventName.TaskStarted]: [taskId: string]
+	[KitPilotEventName.TaskCompleted]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
+	[KitPilotEventName.TaskAborted]: [taskId: string]
+	[KitPilotEventName.TaskFocused]: [taskId: string]
+	[KitPilotEventName.TaskUnfocused]: [taskId: string]
+	[KitPilotEventName.TaskActive]: [taskId: string]
+	[KitPilotEventName.TaskInteractive]: [taskId: string]
+	[KitPilotEventName.TaskResumable]: [taskId: string]
+	[KitPilotEventName.TaskIdle]: [taskId: string]
 
-	[RooCodeEventName.TaskPaused]: [taskId: string]
-	[RooCodeEventName.TaskUnpaused]: [taskId: string]
-	[RooCodeEventName.TaskSpawned]: [taskId: string]
-	[RooCodeEventName.TaskDelegated]: [parentTaskId: string, childTaskId: string]
-	[RooCodeEventName.TaskDelegationCompleted]: [parentTaskId: string, childTaskId: string, summary: string]
-	[RooCodeEventName.TaskDelegationResumed]: [parentTaskId: string, childTaskId: string]
+	[KitPilotEventName.TaskPaused]: [taskId: string]
+	[KitPilotEventName.TaskUnpaused]: [taskId: string]
+	[KitPilotEventName.TaskSpawned]: [taskId: string]
+	[KitPilotEventName.TaskDelegated]: [parentTaskId: string, childTaskId: string]
+	[KitPilotEventName.TaskDelegationCompleted]: [parentTaskId: string, childTaskId: string, summary: string]
+	[KitPilotEventName.TaskDelegationResumed]: [parentTaskId: string, childTaskId: string]
 
-	[RooCodeEventName.TaskUserMessage]: [taskId: string]
+	[KitPilotEventName.TaskUserMessage]: [taskId: string]
 
-	[RooCodeEventName.TaskTokenUsageUpdated]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
+	[KitPilotEventName.TaskTokenUsageUpdated]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
 
-	[RooCodeEventName.ModeChanged]: [mode: string]
-	[RooCodeEventName.ProviderProfileChanged]: [config: { name: string; provider?: string }]
+	[KitPilotEventName.ModeChanged]: [mode: string]
+	[KitPilotEventName.ProviderProfileChanged]: [config: { name: string; provider?: string }]
 }
 
 /**
@@ -133,29 +133,29 @@ export interface TaskLike {
 
 export type TaskEvents = {
 	// Task Lifecycle
-	[RooCodeEventName.TaskStarted]: []
-	[RooCodeEventName.TaskCompleted]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
-	[RooCodeEventName.TaskAborted]: []
-	[RooCodeEventName.TaskFocused]: []
-	[RooCodeEventName.TaskUnfocused]: []
-	[RooCodeEventName.TaskActive]: [taskId: string]
-	[RooCodeEventName.TaskInteractive]: [taskId: string]
-	[RooCodeEventName.TaskResumable]: [taskId: string]
-	[RooCodeEventName.TaskIdle]: [taskId: string]
+	[KitPilotEventName.TaskStarted]: []
+	[KitPilotEventName.TaskCompleted]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
+	[KitPilotEventName.TaskAborted]: []
+	[KitPilotEventName.TaskFocused]: []
+	[KitPilotEventName.TaskUnfocused]: []
+	[KitPilotEventName.TaskActive]: [taskId: string]
+	[KitPilotEventName.TaskInteractive]: [taskId: string]
+	[KitPilotEventName.TaskResumable]: [taskId: string]
+	[KitPilotEventName.TaskIdle]: [taskId: string]
 
 	// Subtask Lifecycle
-	[RooCodeEventName.TaskPaused]: [taskId: string]
-	[RooCodeEventName.TaskUnpaused]: [taskId: string]
-	[RooCodeEventName.TaskSpawned]: [taskId: string]
+	[KitPilotEventName.TaskPaused]: [taskId: string]
+	[KitPilotEventName.TaskUnpaused]: [taskId: string]
+	[KitPilotEventName.TaskSpawned]: [taskId: string]
 
 	// Task Execution
-	[RooCodeEventName.Message]: [{ action: "created" | "updated"; message: ClineMessage }]
-	[RooCodeEventName.TaskModeSwitched]: [taskId: string, mode: string]
-	[RooCodeEventName.TaskAskResponded]: []
-	[RooCodeEventName.TaskUserMessage]: [taskId: string]
-	[RooCodeEventName.QueuedMessagesUpdated]: [taskId: string, messages: QueuedMessage[]]
+	[KitPilotEventName.Message]: [{ action: "created" | "updated"; message: ClineMessage }]
+	[KitPilotEventName.TaskModeSwitched]: [taskId: string, mode: string]
+	[KitPilotEventName.TaskAskResponded]: []
+	[KitPilotEventName.TaskUserMessage]: [taskId: string]
+	[KitPilotEventName.QueuedMessagesUpdated]: [taskId: string, messages: QueuedMessage[]]
 
 	// Task Analytics
-	[RooCodeEventName.TaskToolFailed]: [taskId: string, tool: ToolName, error: string]
-	[RooCodeEventName.TaskTokenUsageUpdated]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
+	[KitPilotEventName.TaskToolFailed]: [taskId: string, tool: ToolName, error: string]
+	[KitPilotEventName.TaskTokenUsageUpdated]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
 }

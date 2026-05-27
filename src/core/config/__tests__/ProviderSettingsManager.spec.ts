@@ -558,14 +558,14 @@ describe("ProviderSettingsManager", () => {
 	})
 
 	describe("LoadConfig", () => {
-		it("preserves Roo Code Router configs as retired providers", async () => {
+		it("preserves KitPilot Router configs as retired providers", async () => {
 			const existingConfig = {
 				currentApiConfigName: "default",
 				apiConfigs: {
 					default: {
-						apiProvider: "roo",
+						apiProvider: "kitpilot",
 						apiModelId: "xai/grok-code-fast-1",
-						rooApiKey: "legacy-key",
+						kitpilotApiKey: "legacy-key",
 						id: "default-id",
 					},
 				},

@@ -1,8 +1,8 @@
-// npx vitest core/ignore/__tests__/RooIgnoreController.security.spec.ts
+// npx vitest core/ignore/__tests__/KitPilotIgnoreController.security.spec.ts
 
 import type { Mock } from "vitest"
 
-import { RooIgnoreController } from "../RooIgnoreController"
+import { KitPilotIgnoreController } from "../KitPilotIgnoreController"
 import * as path from "path"
 import * as fs from "fs/promises"
 import { fileExistsAtPath } from "../../../utils/fs"
@@ -29,9 +29,9 @@ vi.mock("vscode", () => {
 	}
 })
 
-describe("RooIgnoreController Security Tests", () => {
+describe("KitPilotIgnoreController Security Tests", () => {
 	const TEST_CWD = "/test/path"
-	let controller: RooIgnoreController
+	let controller: KitPilotIgnoreController
 	let mockFileExists: Mock<typeof fileExistsAtPath>
 	let mockReadFile: Mock<typeof fs.readFile>
 
@@ -43,12 +43,12 @@ describe("RooIgnoreController Security Tests", () => {
 		mockFileExists = fileExistsAtPath as Mock<typeof fileExistsAtPath>
 		mockReadFile = fs.readFile as Mock<typeof fs.readFile>
 
-		// By default, setup .rooignore to exist with some patterns
+		// By default, setup .kitpilotignore to exist with some patterns
 		mockFileExists.mockResolvedValue(true)
 		mockReadFile.mockResolvedValue("node_modules\n.git\nsecrets/**\n*.log\nprivate/")
 
 		// Create and initialize controller
-		controller = new RooIgnoreController(TEST_CWD)
+		controller = new KitPilotIgnoreController(TEST_CWD)
 		await controller.initialize()
 	})
 

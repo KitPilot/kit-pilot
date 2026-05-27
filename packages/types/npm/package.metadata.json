@@ -1,22 +1,22 @@
 {
 	"name": "@kit-pilot/types",
 	"version": "1.115.0",
-	"description": "TypeScript type definitions for Roo Code.",
+	"description": "TypeScript type definitions for KitPilot.",
 	"publishConfig": {
 		"access": "public",
 		"name": "@kit-pilot/types",
 		"registry": "https://registry.npmjs.org/"
 	},
-	"author": "Roo Code Team",
+	"author": "KitPilot Team",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/RooCodeInc/Roo-Code.git"
+		"url": "git+https://github.com/KitPilotInc/KitPilot.git"
 	},
 	"bugs": {
-		"url": "https://github.com/RooCodeInc/Roo-Code/issues"
+		"url": "https://github.com/KitPilotInc/KitPilot/issues"
 	},
-	"homepage": "https://roocode.com",
-	"keywords": ["roo", "roo-code", "ai"],
+	"homepage": "https://kitpilot.com",
+	"keywords": ["kitpilot", "kit-pilot", "ai"],
 	"files": ["dist"]
 }

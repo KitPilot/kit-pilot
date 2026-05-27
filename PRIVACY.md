@@ -59,7 +59,7 @@ model can react to it), per the same path as your prompts above.
 
 KitPilot does not collect telemetry. There is no analytics SDK in the
 extension. There is no anonymous usage data sent anywhere. The upstream
-Roo Code extension included PostHog telemetry; that has been removed in
+KitPilot extension included PostHog telemetry; that has been removed in
 this fork.
 
 ## What we do **not** do

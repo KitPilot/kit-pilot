@@ -39,7 +39,7 @@ vi.mock("../../../utils/fs", () => ({
 vi.mock("../../prompts/responses", () => ({
 	formatResponse: {
 		toolError: vi.fn((msg: string) => `Error: ${msg}`),
-		rooIgnoreError: vi.fn((filePath: string) => `Access denied: ${filePath}`),
+		kitpilotIgnoreError: vi.fn((filePath: string) => `Access denied: ${filePath}`),
 		createPrettyPatch: vi.fn(() => "mock-diff"),
 	},
 }))
@@ -113,10 +113,10 @@ describe("editTool", () => {
 				}),
 			}),
 		}
-		mockTask.rooIgnoreController = {
+		mockTask.kitpilotIgnoreController = {
 			validateAccess: vi.fn().mockReturnValue(true),
 		}
-		mockTask.rooProtectedController = {
+		mockTask.kitpilotProtectedController = {
 			isWriteProtected: vi.fn().mockReturnValue(false),
 		}
 		mockTask.diffViewProvider = {
@@ -176,7 +176,7 @@ describe("editTool", () => {
 
 		mockedFileExistsAtPath.mockResolvedValue(fileExists)
 		mockedFsReadFile.mockResolvedValue(fileContent)
-		mockTask.rooIgnoreController.validateAccess.mockReturnValue(accessAllowed)
+		mockTask.kitpilotIgnoreController.validateAccess.mockReturnValue(accessAllowed)
 
 		const defaultParams = {
 			file_path: testFilePath,

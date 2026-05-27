@@ -13,21 +13,21 @@ import { batchConsecutive } from "@src/utils/batchConsecutive"
 import type { ClineAsk, ClineSayTool, ClineMessage, ExtensionMessage, AudioType } from "@kit-pilot/types"
 import { isRetiredProvider } from "@kit-pilot/types"
 
-import { findLast } from "@roo/array"
+import { findLast } from "@kitpilot/array"
 import { SuggestionItem } from "@kit-pilot/types"
-import { combineApiRequests } from "@roo/combineApiRequests"
-import { combineCommandSequences } from "@roo/combineCommandSequences"
-import { getApiMetrics } from "@roo/getApiMetrics"
-import { getAllModes } from "@roo/modes"
-import { ProfileValidator } from "@roo/ProfileValidator"
-import { getLatestTodo } from "@roo/todo"
+import { combineApiRequests } from "@kitpilot/combineApiRequests"
+import { combineCommandSequences } from "@kitpilot/combineCommandSequences"
+import { getApiMetrics } from "@kitpilot/getApiMetrics"
+import { getAllModes } from "@kitpilot/modes"
+import { ProfileValidator } from "@kitpilot/ProfileValidator"
+import { getLatestTodo } from "@kitpilot/todo"
 
 import { vscode } from "@src/utils/vscode"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { useSelectedModel } from "@src/components/ui/hooks/useSelectedModel"
-import RooHero from "@src/components/welcome/RooHero"
-import RooTips from "@src/components/welcome/RooTips"
+import KitPilotHero from "@src/components/welcome/KitPilotHero"
+import KitPilotTips from "@src/components/welcome/KitPilotTips"
 import { StandardTooltip, Button } from "@src/components/ui"
 import VersionIndicator from "../common/VersionIndicator"
 import HistoryPreview from "../history/HistoryPreview"
@@ -1618,9 +1618,9 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							className="absolute top-2 right-3 z-10"
 						/>
 						<div className="flex flex-col gap-4 w-full">
-							<RooHero />
-							{/* Show RooTips when authenticated or when user is new */}
-							{taskHistory.length < 6 && <RooTips />}
+							<KitPilotHero />
+							{/* Show KitPilotTips when authenticated or when user is new */}
+							{taskHistory.length < 6 && <KitPilotTips />}
 							{/* Everyone should see their task history if any */}
 							{taskHistory.length > 0 && <HistoryPreview />}
 						</div>
@@ -1757,8 +1757,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					<WarningRow
 						title={t("chat:retiredProvider.title")}
 						message={t(
-							apiConfiguration?.apiProvider === "roo"
-								? "chat:retiredProvider.rooMessage"
+							apiConfiguration?.apiProvider === "kitpilot"
+								? "chat:retiredProvider.kitpilotMessage"
 								: "chat:retiredProvider.message",
 						)}
 						actionText={t("chat:retiredProvider.openSettings")}
@@ -1797,7 +1797,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				</div>
 			)}
 
-			<div id="roo-portal" />
+			<div id="kitpilot-portal" />
 		</div>
 	)
 }

@@ -93,7 +93,7 @@
 	"about": "KitPilot आपके संपादक में एक पूरी AI देव टीम है।",
 	"docs": "और जानने के लिए हमारे <DocsLink>दस्तावेज़</DocsLink> देखें।",
 	"onboarding": "इस कार्यक्षेत्र में आपकी कार्य सूची खाली है।",
-	"rooTips": {
+	"kitpilotTips": {
 		"customizableModes": {
 			"title": "अनुकूलन योग्य मोड",
 			"description": "विशेष व्यक्ति जो कार्य पर बने रहते हैं और वितरित करते हैं।"
@@ -236,7 +236,7 @@
 	"response": "प्रतिक्रिया",
 	"arguments": "आर्ग्युमेंट्स",
 	"text": {
-		"rooSaid": "रू ने कहा"
+		"kitpilotSaid": "रू ने कहा"
 	},
 	"feedback": {
 		"youSaid": "आपने कहा"
@@ -486,6 +486,6 @@
 		"title": "प्रदाता अब समर्थित नहीं है",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "सेटिंग्स खोलें",
-		"rooMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

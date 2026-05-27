@@ -5,7 +5,7 @@ import prettyBytes from "pretty-bytes"
 
 import type { ClineMessage } from "@kit-pilot/types"
 
-import { getModelMaxOutputTokens } from "@roo/api"
+import { getModelMaxOutputTokens } from "@kitpilot/api"
 
 import { formatLargeNumber } from "@src/utils/format"
 import { cn } from "@src/lib/utils"

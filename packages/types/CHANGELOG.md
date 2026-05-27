@@ -1,4 +1,4 @@
-# @roo-code/types
+# @kit-pilot/types
 
 ## 0.0.1
 

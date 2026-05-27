@@ -120,7 +120,7 @@
 	"about": "KitPilot 是編輯器中的完整 AI 開發團隊。",
 	"docs": "請參閱 <DocsLink>說明文件</DocsLink> 開始使用。",
 	"onboarding": "想要做什麼呢？",
-	"rooTips": {
+	"kitpilotTips": {
 		"customizableModes": {
 			"title": "可自訂模式，專注任務不偏離",
 			"description": "專注於任務並交付成果的專業角色。"
@@ -282,7 +282,7 @@
 	"response": "回應",
 	"arguments": "參數",
 	"text": {
-		"rooSaid": "KitPilot 說"
+		"kitpilotSaid": "KitPilot 說"
 	},
 	"feedback": {
 		"youSaid": "您說"
@@ -482,6 +482,6 @@
 		"title": "供應商不再受支援",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "開啟設定",
-		"rooMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

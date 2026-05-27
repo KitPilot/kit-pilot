@@ -1,6 +1,6 @@
 {
 	"name": "@kit-pilot/build",
-	"description": "ESBuild utilities for Roo Code.",
+	"description": "ESBuild utilities for KitPilot.",
 	"private": true,
 	"type": "module",
 	"main": "./dist/index.js",

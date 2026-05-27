@@ -10,7 +10,7 @@ import {
 	mcpExecutionStatusSchema,
 } from "@kit-pilot/types"
 
-import { safeJsonParse } from "@roo/core"
+import { safeJsonParse } from "@kitpilot/core"
 
 import { cn } from "@src/lib/utils"
 import { Button } from "@src/components/ui"

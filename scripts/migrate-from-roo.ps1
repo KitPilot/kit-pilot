@@ -1,4 +1,4 @@
-# Migrate Roo Code conversation history into KitPilot. (Windows / PowerShell)
+# Migrate KitPilot conversation history into KitPilot. (Windows / PowerShell)
 #
 # Both extensions are forks of the same codebase, so their VS Code
 # globalStorage layouts are identical: tasks\<uuid>\*.json plus a master
@@ -6,7 +6,7 @@
 #
 #   1) shows what would be imported, asks to confirm
 #   2) backs up KitPilot storage to %USERPROFILE%\kitpilot-storage-backup-<ts>
-#   3) copies any Roo task directories not already in KitPilot
+#   3) copies any KitPilot task directories not already in KitPilot
 #   4) merges the master _index.json (dedupes by id; KitPilot wins on conflict)
 #
 # Re-running is safe: already-imported tasks are skipped.
@@ -15,7 +15,7 @@
 # _index.json on shutdown and undo the merge.
 #
 # Usage:
-#   powershell -ExecutionPolicy Bypass -File .\scripts\migrate-from-roo.ps1
+#   powershell -ExecutionPolicy Bypass -File .\scripts\migrate-from-kitpilot.ps1
 #
 # Override the storage root with $env:KITPILOT_VSCODE_BASE if you run a
 # non-default install (Insiders, portable, etc.).
@@ -37,17 +37,17 @@ $Base = if ($env:KITPILOT_VSCODE_BASE) {
     Join-Path $env:APPDATA 'Code\User\globalStorage'
 }
 
-$Roo = Join-Path $Base 'rooveterinaryinc.roo-cline'
+$KitPilot = Join-Path $Base 'rooveterinaryinc.kit-pilot'
 $Kp  = Join-Path $Base 'kitpilot.kit-pilot'
 
 Write-Host "VS Code globalStorage: $Base"
-Write-Host "  Roo Code: $Roo"
+Write-Host "  KitPilot: $KitPilot"
 Write-Host "  KitPilot: $Kp"
 Write-Host ""
 
 # --- 2. Sanity checks -------------------------------------------------------
-if (-not (Test-Path (Join-Path $Roo 'tasks'))) {
-    Write-Host "No Roo Code tasks found at: $(Join-Path $Roo 'tasks')"
+if (-not (Test-Path (Join-Path $KitPilot 'tasks'))) {
+    Write-Host "No KitPilot tasks found at: $(Join-Path $KitPilot 'tasks')"
     Write-Host "Nothing to migrate."
     exit 0
 }
@@ -64,19 +64,19 @@ if (-not (Test-Path $KpIndex)) {
 }
 
 # --- 3. Inventory -----------------------------------------------------------
-$RooTaskDirs = @(Get-ChildItem -Path (Join-Path $Roo 'tasks') -Directory -ErrorAction SilentlyContinue)
-if ($RooTaskDirs.Count -eq 0) {
-    Write-Host "No Roo task directories found. Exiting."
+$KitPilotTaskDirs = @(Get-ChildItem -Path (Join-Path $KitPilot 'tasks') -Directory -ErrorAction SilentlyContinue)
+if ($KitPilotTaskDirs.Count -eq 0) {
+    Write-Host "No KitPilot task directories found. Exiting."
     exit 0
 }
 
 $NewCount = 0
 $SkipCount = 0
-foreach ($t in $RooTaskDirs) {
+foreach ($t in $KitPilotTaskDirs) {
     if (Test-Path (Join-Path $KpTasks $t.Name)) { $SkipCount++ } else { $NewCount++ }
 }
 
-Write-Host "Roo tasks total:        $($RooTaskDirs.Count)"
+Write-Host "KitPilot tasks total:        $($KitPilotTaskDirs.Count)"
 Write-Host "  new (will copy):      $NewCount"
 Write-Host "  already in KitPilot:  $SkipCount (skip)"
 Write-Host ""
@@ -96,7 +96,7 @@ Copy-Item -Path $Kp -Destination $Backup -Recurse
 
 # --- 5. Copy missing task directories --------------------------------------
 $copied = 0
-foreach ($t in $RooTaskDirs) {
+foreach ($t in $KitPilotTaskDirs) {
     $dest = Join-Path $KpTasks $t.Name
     if (Test-Path $dest) { continue }
     Copy-Item -Path $t.FullName -Destination $dest -Recurse
@@ -105,17 +105,17 @@ foreach ($t in $RooTaskDirs) {
 Write-Host "Copied $copied task directories."
 
 # --- 6. Merge _index.json --------------------------------------------------
-$RooIndex = Join-Path $Roo 'tasks\_index.json'
-if (-not (Test-Path $RooIndex)) {
-    Write-Host "Roo has no _index.json to merge. Task dirs were copied; KitPilot will rebuild the index on launch if needed."
+$KitPilotIndex = Join-Path $KitPilot 'tasks\_index.json'
+if (-not (Test-Path $KitPilotIndex)) {
+    Write-Host "KitPilot has no _index.json to merge. Task dirs were copied; KitPilot will rebuild the index on launch if needed."
     Write-Host "Done. Backup at: $Backup"
     exit 0
 }
 
 $KpIdx  = Get-Content $KpIndex  -Raw | ConvertFrom-Json
-$RooIdx = Get-Content $RooIndex -Raw | ConvertFrom-Json
+$KitPilotIdx = Get-Content $KitPilotIndex -Raw | ConvertFrom-Json
 
-$AllEntries = @($KpIdx.entries) + @($RooIdx.entries)
+$AllEntries = @($KpIdx.entries) + @($KitPilotIdx.entries)
 # KitPilot entries come first in the array, so on duplicate id KitPilot wins.
 $Deduped = @($AllEntries | Group-Object -Property id | ForEach-Object { $_.Group[0] })
 
@@ -131,5 +131,5 @@ Write-JsonNoBom -Path $KpIndex -Content $json
 
 Write-Host "Merged _index.json (now $($Deduped.Count) total entries)."
 Write-Host ""
-Write-Host "Done. Open KitPilot - your Roo tasks should appear in the history view."
+Write-Host "Done. Open KitPilot - your KitPilot tasks should appear in the history view."
 Write-Host "If anything looks wrong, restore from: $Backup"

@@ -27,21 +27,21 @@ vi.mock("../../search/file-search", () => ({
 }))
 
 import {
-	getGlobalRooDirectory,
+	getGlobalKitPilotDirectory,
 	getGlobalAgentsDirectory,
-	getProjectRooDirectoryForCwd,
+	getProjectKitPilotDirectoryForCwd,
 	getProjectAgentsDirectoryForCwd,
 	directoryExists,
 	fileExists,
 	readFileIfExists,
-	getRooDirectoriesForCwd,
-	getAllRooDirectoriesForCwd,
+	getKitPilotDirectoriesForCwd,
+	getAllKitPilotDirectoriesForCwd,
 	getAgentsDirectoriesForCwd,
-	discoverSubfolderRooDirectories,
+	discoverSubfolderKitPilotDirectories,
 	loadConfiguration,
 } from "../index"
 
-describe("RooConfigService", () => {
+describe("KitPilotConfigService", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockHomedir.mockReturnValue("/mock/home")
@@ -51,24 +51,24 @@ describe("RooConfigService", () => {
 		vi.restoreAllMocks()
 	})
 
-	describe("getGlobalRooDirectory", () => {
-		it("should return correct path for global .roo directory", () => {
-			const result = getGlobalRooDirectory()
-			expect(result).toBe(path.join("/mock/home", ".roo"))
+	describe("getGlobalKitPilotDirectory", () => {
+		it("should return correct path for global .kitpilot directory", () => {
+			const result = getGlobalKitPilotDirectory()
+			expect(result).toBe(path.join("/mock/home", ".kitpilot"))
 		})
 
 		it("should handle different home directories", () => {
 			mockHomedir.mockReturnValue("/different/home")
-			const result = getGlobalRooDirectory()
-			expect(result).toBe(path.join("/different/home", ".roo"))
+			const result = getGlobalKitPilotDirectory()
+			expect(result).toBe(path.join("/different/home", ".kitpilot"))
 		})
 	})
 
-	describe("getProjectRooDirectoryForCwd", () => {
+	describe("getProjectKitPilotDirectoryForCwd", () => {
 		it("should return correct path for given cwd", () => {
 			const cwd = "/custom/project/path"
-			const result = getProjectRooDirectoryForCwd(cwd)
-			expect(result).toBe(path.join(cwd, ".roo"))
+			const result = getProjectKitPilotDirectoryForCwd(cwd)
+			expect(result).toBe(path.join(cwd, ".kitpilot"))
 		})
 	})
 
@@ -236,13 +236,13 @@ describe("RooConfigService", () => {
 		})
 	})
 
-	describe("getRooDirectoriesForCwd", () => {
+	describe("getKitPilotDirectoriesForCwd", () => {
 		it("should return directories for given cwd", () => {
 			const cwd = "/custom/project/path"
 
-			const result = getRooDirectoriesForCwd(cwd)
+			const result = getKitPilotDirectoriesForCwd(cwd)
 
-			expect(result).toEqual([path.join("/mock/home", ".roo"), path.join(cwd, ".roo")])
+			expect(result).toEqual([path.join("/mock/home", ".kitpilot"), path.join(cwd, ".kitpilot")])
 		})
 	})
 
@@ -325,166 +325,166 @@ describe("RooConfigService", () => {
 
 			await loadConfiguration("rules/rules.md", "/project/path")
 
-			expect(mockReadFile).toHaveBeenCalledWith(path.join("/mock/home", ".roo", "rules/rules.md"), "utf-8")
-			expect(mockReadFile).toHaveBeenCalledWith(path.join("/project/path", ".roo", "rules/rules.md"), "utf-8")
+			expect(mockReadFile).toHaveBeenCalledWith(path.join("/mock/home", ".kitpilot", "rules/rules.md"), "utf-8")
+			expect(mockReadFile).toHaveBeenCalledWith(path.join("/project/path", ".kitpilot", "rules/rules.md"), "utf-8")
 		})
 	})
 
-	describe("discoverSubfolderRooDirectories", () => {
-		it("should return empty array when no subfolder .roo directories found", async () => {
+	describe("discoverSubfolderKitPilotDirectories", () => {
+		it("should return empty array when no subfolder .kitpilot directories found", async () => {
 			mockExecuteRipgrep.mockResolvedValue([])
 
-			const result = await discoverSubfolderRooDirectories("/project/path")
+			const result = await discoverSubfolderKitPilotDirectories("/project/path")
 
 			expect(result).toEqual([])
 		})
 
-		it("should discover .roo directories from subfolders", async () => {
-			// Find any file inside .roo directories
+		it("should discover .kitpilot directories from subfolders", async () => {
+			// Find any file inside .kitpilot directories
 			mockExecuteRipgrep.mockResolvedValueOnce([
-				{ path: "package-a/.roo/rules/rule.md", type: "file" },
-				{ path: "package-b/.roo/rules-code/rule.md", type: "file" },
+				{ path: "package-a/.kitpilot/rules/rule.md", type: "file" },
+				{ path: "package-b/.kitpilot/rules-code/rule.md", type: "file" },
 			])
 
-			const result = await discoverSubfolderRooDirectories("/project/path")
+			const result = await discoverSubfolderKitPilotDirectories("/project/path")
 
 			expect(result).toEqual([
-				path.join("/project/path", "package-a", ".roo"),
-				path.join("/project/path", "package-b", ".roo"),
+				path.join("/project/path", "package-a", ".kitpilot"),
+				path.join("/project/path", "package-b", ".kitpilot"),
 			])
 		})
 
 		it("should sort discovered directories alphabetically", async () => {
 			mockExecuteRipgrep.mockResolvedValueOnce([
-				{ path: "zebra/.roo/rules/rule.md", type: "file" },
-				{ path: "apple/.roo/rules/rule.md", type: "file" },
-				{ path: "mango/.roo/rules/rule.md", type: "file" },
+				{ path: "zebra/.kitpilot/rules/rule.md", type: "file" },
+				{ path: "apple/.kitpilot/rules/rule.md", type: "file" },
+				{ path: "mango/.kitpilot/rules/rule.md", type: "file" },
 			])
 
-			const result = await discoverSubfolderRooDirectories("/project/path")
+			const result = await discoverSubfolderKitPilotDirectories("/project/path")
 
 			expect(result).toEqual([
-				path.join("/project/path", "apple", ".roo"),
-				path.join("/project/path", "mango", ".roo"),
-				path.join("/project/path", "zebra", ".roo"),
+				path.join("/project/path", "apple", ".kitpilot"),
+				path.join("/project/path", "mango", ".kitpilot"),
+				path.join("/project/path", "zebra", ".kitpilot"),
 			])
 		})
 
-		it("should exclude root .roo directory", async () => {
-			// This would match the root .roo, which should be excluded
+		it("should exclude root .kitpilot directory", async () => {
+			// This would match the root .kitpilot, which should be excluded
 			mockExecuteRipgrep.mockResolvedValueOnce([
-				{ path: ".roo/rules/rule.md", type: "file" }, // This is root - should be excluded
-				{ path: "subfolder/.roo/rules/rule.md", type: "file" },
+				{ path: ".kitpilot/rules/rule.md", type: "file" }, // This is root - should be excluded
+				{ path: "subfolder/.kitpilot/rules/rule.md", type: "file" },
 			])
 
-			const result = await discoverSubfolderRooDirectories("/project/path")
+			const result = await discoverSubfolderKitPilotDirectories("/project/path")
 
 			// Should only include subfolder, not root
-			expect(result).toEqual([path.join("/project/path", "subfolder", ".roo")])
+			expect(result).toEqual([path.join("/project/path", "subfolder", ".kitpilot")])
 		})
 
 		it("should handle nested subdirectories", async () => {
 			mockExecuteRipgrep.mockResolvedValueOnce([
-				{ path: "packages/core/.roo/rules/rule.md", type: "file" },
-				{ path: "packages/utils/.roo/rules-code/rule.md", type: "file" },
+				{ path: "packages/core/.kitpilot/rules/rule.md", type: "file" },
+				{ path: "packages/utils/.kitpilot/rules-code/rule.md", type: "file" },
 			])
 
-			const result = await discoverSubfolderRooDirectories("/project/path")
+			const result = await discoverSubfolderKitPilotDirectories("/project/path")
 
 			expect(result).toEqual([
-				path.join("/project/path", "packages/core", ".roo"),
-				path.join("/project/path", "packages/utils", ".roo"),
+				path.join("/project/path", "packages/core", ".kitpilot"),
+				path.join("/project/path", "packages/utils", ".kitpilot"),
 			])
 		})
 
 		it("should return empty array on ripgrep error", async () => {
 			mockExecuteRipgrep.mockRejectedValue(new Error("ripgrep failed"))
 
-			const result = await discoverSubfolderRooDirectories("/project/path")
+			const result = await discoverSubfolderKitPilotDirectories("/project/path")
 
 			expect(result).toEqual([])
 		})
 
-		it("should deduplicate .roo directories from multiple files", async () => {
+		it("should deduplicate .kitpilot directories from multiple files", async () => {
 			mockExecuteRipgrep.mockResolvedValueOnce([
-				{ path: "package-a/.roo/rules/rule1.md", type: "file" },
-				{ path: "package-a/.roo/rules/rule2.md", type: "file" },
-				{ path: "package-a/.roo/rules-code/rule3.md", type: "file" },
+				{ path: "package-a/.kitpilot/rules/rule1.md", type: "file" },
+				{ path: "package-a/.kitpilot/rules/rule2.md", type: "file" },
+				{ path: "package-a/.kitpilot/rules-code/rule3.md", type: "file" },
 			])
 
-			const result = await discoverSubfolderRooDirectories("/project/path")
+			const result = await discoverSubfolderKitPilotDirectories("/project/path")
 
-			// Should only include package-a/.roo once
-			expect(result).toEqual([path.join("/project/path", "package-a", ".roo")])
+			// Should only include package-a/.kitpilot once
+			expect(result).toEqual([path.join("/project/path", "package-a", ".kitpilot")])
 		})
 
-		it("should discover .roo directories with any content", async () => {
-			// Should find .roo directories regardless of what's inside them
+		it("should discover .kitpilot directories with any content", async () => {
+			// Should find .kitpilot directories regardless of what's inside them
 			mockExecuteRipgrep.mockResolvedValueOnce([
-				{ path: "package-a/.roo/rules/rule.md", type: "file" },
-				{ path: "package-b/.roo/rules-code/code-rule.md", type: "file" },
-				{ path: "package-c/.roo/rules-architect/arch-rule.md", type: "file" },
-				{ path: "package-d/.roo/config/settings.json", type: "file" },
+				{ path: "package-a/.kitpilot/rules/rule.md", type: "file" },
+				{ path: "package-b/.kitpilot/rules-code/code-rule.md", type: "file" },
+				{ path: "package-c/.kitpilot/rules-architect/arch-rule.md", type: "file" },
+				{ path: "package-d/.kitpilot/config/settings.json", type: "file" },
 			])
 
-			const result = await discoverSubfolderRooDirectories("/project/path")
+			const result = await discoverSubfolderKitPilotDirectories("/project/path")
 
 			expect(result).toEqual([
-				path.join("/project/path", "package-a", ".roo"),
-				path.join("/project/path", "package-b", ".roo"),
-				path.join("/project/path", "package-c", ".roo"),
-				path.join("/project/path", "package-d", ".roo"),
+				path.join("/project/path", "package-a", ".kitpilot"),
+				path.join("/project/path", "package-b", ".kitpilot"),
+				path.join("/project/path", "package-c", ".kitpilot"),
+				path.join("/project/path", "package-d", ".kitpilot"),
 			])
 		})
 	})
 
-	describe("getAllRooDirectoriesForCwd", () => {
+	describe("getAllKitPilotDirectoriesForCwd", () => {
 		it("should return global, project, and subfolder directories", async () => {
-			mockExecuteRipgrep.mockResolvedValueOnce([{ path: "subfolder/.roo/rules/rule.md", type: "file" }])
+			mockExecuteRipgrep.mockResolvedValueOnce([{ path: "subfolder/.kitpilot/rules/rule.md", type: "file" }])
 
-			const result = await getAllRooDirectoriesForCwd("/project/path")
+			const result = await getAllKitPilotDirectoriesForCwd("/project/path")
 
 			expect(result).toEqual([
-				path.join("/mock/home", ".roo"), // global
-				path.join("/project/path", ".roo"), // project
-				path.join("/project/path", "subfolder", ".roo"), // subfolder
+				path.join("/mock/home", ".kitpilot"), // global
+				path.join("/project/path", ".kitpilot"), // project
+				path.join("/project/path", "subfolder", ".kitpilot"), // subfolder
 			])
 		})
 
 		it("should return only global and project when no subfolders", async () => {
 			mockExecuteRipgrep.mockResolvedValue([])
 
-			const result = await getAllRooDirectoriesForCwd("/project/path")
+			const result = await getAllKitPilotDirectoriesForCwd("/project/path")
 
-			expect(result).toEqual([path.join("/mock/home", ".roo"), path.join("/project/path", ".roo")])
+			expect(result).toEqual([path.join("/mock/home", ".kitpilot"), path.join("/project/path", ".kitpilot")])
 		})
 
 		it("should maintain order: global, project, subfolders (alphabetically)", async () => {
 			mockExecuteRipgrep.mockResolvedValueOnce([
-				{ path: "zebra/.roo/rules/rule.md", type: "file" },
-				{ path: "apple/.roo/rules/rule.md", type: "file" },
+				{ path: "zebra/.kitpilot/rules/rule.md", type: "file" },
+				{ path: "apple/.kitpilot/rules/rule.md", type: "file" },
 			])
 
-			const result = await getAllRooDirectoriesForCwd("/project/path")
+			const result = await getAllKitPilotDirectoriesForCwd("/project/path")
 
 			expect(result).toEqual([
-				path.join("/mock/home", ".roo"), // global first
-				path.join("/project/path", ".roo"), // project second
-				path.join("/project/path", "apple", ".roo"), // subfolders alphabetically
-				path.join("/project/path", "zebra", ".roo"),
+				path.join("/mock/home", ".kitpilot"), // global first
+				path.join("/project/path", ".kitpilot"), // project second
+				path.join("/project/path", "apple", ".kitpilot"), // subfolders alphabetically
+				path.join("/project/path", "zebra", ".kitpilot"),
 			])
 		})
 	})
 
 	describe("getAgentsDirectoriesForCwd", () => {
-		it("should return root directory and parent directories of subfolder .roo dirs", async () => {
-			mockExecuteRipgrep.mockResolvedValueOnce([{ path: "package-a/.roo/rules/rule.md", type: "file" }])
+		it("should return root directory and parent directories of subfolder .kitpilot dirs", async () => {
+			mockExecuteRipgrep.mockResolvedValueOnce([{ path: "package-a/.kitpilot/rules/rule.md", type: "file" }])
 
 			const result = await getAgentsDirectoriesForCwd("/project/path")
 
 			expect(result).toEqual([
 				"/project/path", // root
-				path.join("/project/path", "package-a"), // parent of .roo
+				path.join("/project/path", "package-a"), // parent of .kitpilot
 			])
 		})
 
@@ -498,9 +498,9 @@ describe("RooConfigService", () => {
 
 		it("should include multiple subfolder parent directories", async () => {
 			mockExecuteRipgrep.mockResolvedValueOnce([
-				{ path: "package-a/.roo/rules/rule.md", type: "file" },
-				{ path: "package-b/.roo/rules-code/rule.md", type: "file" },
-				{ path: "packages/core/.roo/rules/rule.md", type: "file" },
+				{ path: "package-a/.kitpilot/rules/rule.md", type: "file" },
+				{ path: "package-b/.kitpilot/rules-code/rule.md", type: "file" },
+				{ path: "packages/core/.kitpilot/rules/rule.md", type: "file" },
 			])
 
 			const result = await getAgentsDirectoriesForCwd("/project/path")

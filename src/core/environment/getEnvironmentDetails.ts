@@ -38,9 +38,9 @@ export async function getEnvironmentDetails(cline: Task, includeFileDetails: boo
 		.map((absolutePath) => path.relative(cline.cwd, absolutePath))
 		.slice(0, maxWorkspaceFiles)
 
-	// Filter paths through rooIgnoreController
-	const rawVisibleFiles = cline.rooIgnoreController
-		? cline.rooIgnoreController.filterPaths(visibleFilePaths)
+	// Filter paths through kitpilotIgnoreController
+	const rawVisibleFiles = cline.kitpilotIgnoreController
+		? cline.kitpilotIgnoreController.filterPaths(visibleFilePaths)
 		: visibleFilePaths.map((p) => p.toPosix()).join("\n")
 	const allowedVisibleFiles = Array.isArray(rawVisibleFiles) ? rawVisibleFiles.join("\n") : rawVisibleFiles
 
@@ -61,9 +61,9 @@ export async function getEnvironmentDetails(cline: Task, includeFileDetails: boo
 		.map((absolutePath) => path.relative(cline.cwd, absolutePath).toPosix())
 		.slice(0, maxTabs)
 
-	// Filter paths through rooIgnoreController
-	const rawOpenTabs = cline.rooIgnoreController
-		? cline.rooIgnoreController.filterPaths(openTabPaths)
+	// Filter paths through kitpilotIgnoreController
+	const rawOpenTabs = cline.kitpilotIgnoreController
+		? cline.kitpilotIgnoreController.filterPaths(openTabPaths)
 		: openTabPaths.map((p) => p.toPosix()).join("\n")
 	const allowedOpenTabs = Array.isArray(rawOpenTabs) ? rawOpenTabs.join("\n") : rawOpenTabs
 
@@ -259,14 +259,14 @@ export async function getEnvironmentDetails(cline: Task, includeFileDetails: boo
 				details += "(Workspace files context disabled. Use list_files to explore if needed.)"
 			} else {
 				const [files, didHitLimit] = await listFiles(cline.cwd, true, maxFiles)
-				const { showRooIgnoredFiles = false } = state ?? {}
+				const { showKitPilotIgnoredFiles = false } = state ?? {}
 
 				const result = formatResponse.formatFilesList(
 					cline.cwd,
 					files,
 					didHitLimit,
-					cline.rooIgnoreController,
-					showRooIgnoredFiles,
+					cline.kitpilotIgnoreController,
+					showKitPilotIgnoredFiles,
 				)
 
 				details += result

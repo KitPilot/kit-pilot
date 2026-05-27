@@ -234,7 +234,7 @@
 			},
 			"protected": {
 				"label": "包含受保护的文件",
-				"description": "允许 KitPilot 创建和编辑受保护的文件（如 .rooignore 和 .roo/ 配置文件），无需批准。"
+				"description": "允许 KitPilot 创建和编辑受保护的文件（如 .kitpilotignore 和 .kitpilot/ 配置文件），无需批准。"
 			}
 		},
 		"mcp": {
@@ -518,7 +518,7 @@
 		},
 		"consecutiveMistakeLimit": {
 			"label": "错误和重复限制",
-			"description": "在显示“Roo遇到问题”对话框前允许的连续错误或重复操作次数。设置为 0 可禁用此安全机制（它将永远不会触发）。",
+			"description": "在显示“KitPilot遇到问题”对话框前允许的连续错误或重复操作次数。设置为 0 可禁用此安全机制（它将永远不会触发）。",
 			"unlimitedDescription": "已启用无限重试（自动继续）。对话框将永远不会出现。",
 			"warning": "⚠️ 设置为 0 允许无限重试，这可能会消耗大量 API 使用量"
 		},
@@ -546,7 +546,7 @@
 			"maxTokensLabel": "最大输出 Token",
 			"maxTokensDescription": "Claude Code 响应的最大输出 Token 数量。默认为 8000。"
 		},
-		"retiredRooProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredKitPilotProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -600,9 +600,9 @@
 			"label": "工作区文件限制",
 			"description": "允许纳入上下文的最大文件数（值越大消耗token越多）"
 		},
-		"rooignore": {
-			"label": "在列表和搜索中显示 .rooignore 文件",
-			"description": "启用后，与 .rooignore 中模式匹配的文件将在列表中显示锁定符号。禁用时，这些文件将从文件列表和搜索中完全隐藏。"
+		"kitpilotignore": {
+			"label": "在列表和搜索中显示 .kitpilotignore 文件",
+			"description": "启用后，与 .kitpilotignore 中模式匹配的文件将在列表中显示锁定符号。禁用时，这些文件将从文件列表和搜索中完全隐藏。"
 		},
 		"maxReadFile": {
 			"label": "文件读取自动截断阈值",
@@ -663,7 +663,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "启用子文件夹规则",
-			"description": "递归发现并加载子目录中的 .roo/rules 和 AGENTS.md 文件。适用于具有每包规则的 monorepo。"
+			"description": "递归发现并加载子目录中的 .kitpilot/rules 和 AGENTS.md 文件。适用于具有每包规则的 monorepo。"
 		}
 	},
 	"terminal": {
@@ -803,9 +803,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "启用自定义工具",
-			"description": "启用后 KitPilot 可从项目中的 .roo/tools 目录或全局工具目录 ~/.roo/tools 加载并使用自定义 TypeScript/JavaScript 工具。注意：这些工具将自动获批。",
+			"description": "启用后 KitPilot 可从项目中的 .kitpilot/tools 目录或全局工具目录 ~/.kitpilot/tools 加载并使用自定义 TypeScript/JavaScript 工具。注意：这些工具将自动获批。",
 			"toolsHeader": "可用自定义工具",
-			"noTools": "未加载自定义工具。请向项目的 .roo/tools 目录或全局工具目录 ~/.roo/tools 添加 .ts 或 .js 文件。",
+			"noTools": "未加载自定义工具。请向项目的 .kitpilot/tools 目录或全局工具目录 ~/.kitpilot/tools 添加 .ts 或 .js 文件。",
 			"refreshButton": "刷新",
 			"refreshing": "正在刷新...",
 			"refreshSuccess": "工具刷新成功",

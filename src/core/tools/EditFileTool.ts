@@ -206,19 +206,19 @@ export class EditFileTool extends BaseTool<"edit_file"> {
 							return `replacing: "${preview}"`
 						})()
 
-			const accessAllowed = task.rooIgnoreController?.validateAccess(relPath)
+			const accessAllowed = task.kitpilotIgnoreController?.validateAccess(relPath)
 
 			if (!accessAllowed) {
 				// Finalize the partial tool preview before emitting any say() messages.
 				await finalizePartialToolAskIfNeeded(relPath)
 				task.didToolFailInCurrentTurn = true
-				await task.say("rooignore_error", relPath)
-				pushToolResult(formatResponse.rooIgnoreError(relPath))
+				await task.say("kitpilotignore_error", relPath)
+				pushToolResult(formatResponse.kitpilotIgnoreError(relPath))
 				return
 			}
 
 			// Check if file is write-protected
-			const isWriteProtected = task.rooProtectedController?.isWriteProtected(relPath) || false
+			const isWriteProtected = task.kitpilotProtectedController?.isWriteProtected(relPath) || false
 
 			const absolutePath = path.resolve(task.cwd, relPath)
 			const fileExists = await fileExistsAtPath(absolutePath)

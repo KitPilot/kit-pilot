@@ -234,7 +234,7 @@
 			},
 			"protected": {
 				"label": "Uwzględnij pliki chronione",
-				"description": "Pozwól KitPilot na tworzenie i edycję plików chronionych (takich jak .rooignore i pliki konfiguracyjne .roo/) bez konieczności zatwierdzania."
+				"description": "Pozwól KitPilot na tworzenie i edycję plików chronionych (takich jak .kitpilotignore i pliki konfiguracyjne .kitpilot/) bez konieczności zatwierdzania."
 			}
 		},
 		"mcp": {
@@ -546,7 +546,7 @@
 			"maxTokensLabel": "Maksymalna liczba tokenów wyjściowych",
 			"maxTokensDescription": "Maksymalna liczba tokenów wyjściowych dla odpowiedzi Claude Code. Domyślnie 8000."
 		},
-		"retiredRooProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredKitPilotProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -600,9 +600,9 @@
 			"label": "Limit kontekstu plików obszaru roboczego",
 			"description": "Maksymalna liczba plików do uwzględnienia w szczegółach bieżącego katalogu roboczego. Wyższe wartości zapewniają więcej kontekstu, ale zwiększają zużycie token."
 		},
-		"rooignore": {
-			"label": "Pokaż pliki .rooignore na listach i w wyszukiwaniach",
-			"description": "Gdy włączone, pliki pasujące do wzorców w .rooignore będą pokazywane na listach z symbolem kłódki. Gdy wyłączone, te pliki będą całkowicie ukryte z list plików i wyszukiwań."
+		"kitpilotignore": {
+			"label": "Pokaż pliki .kitpilotignore na listach i w wyszukiwaniach",
+			"description": "Gdy włączone, pliki pasujące do wzorców w .kitpilotignore będą pokazywane na listach z symbolem kłódki. Gdy wyłączone, te pliki będą całkowicie ukryte z list plików i wyszukiwań."
 		},
 		"maxReadFile": {
 			"label": "Próg automatycznego skracania odczytu pliku",
@@ -663,7 +663,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "Włącz reguły podfolderów",
-			"description": "Rekursywnie odkrywaj i ładuj pliki .roo/rules i AGENTS.md z podkatalogów. Przydatne dla monorepo z regułami dla poszczególnych pakietów."
+			"description": "Rekursywnie odkrywaj i ładuj pliki .kitpilot/rules i AGENTS.md z podkatalogów. Przydatne dla monorepo z regułami dla poszczególnych pakietów."
 		}
 	},
 	"terminal": {
@@ -803,9 +803,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Włącz niestandardowe narzędzia",
-			"description": "Gdy włączone, KitPilot może ładować i używać niestandardowych narzędzi TypeScript/JavaScript z katalogu .roo/tools Twojego projektu lub ~/.roo/tools dla narzędzi globalnych. Uwaga: te narzędzia będą automatycznie zatwierdzane.",
+			"description": "Gdy włączone, KitPilot może ładować i używać niestandardowych narzędzi TypeScript/JavaScript z katalogu .kitpilot/tools Twojego projektu lub ~/.kitpilot/tools dla narzędzi globalnych. Uwaga: te narzędzia będą automatycznie zatwierdzane.",
 			"toolsHeader": "Dostępne niestandardowe narzędzia",
-			"noTools": "Nie załadowano niestandardowych narzędzi. Dodaj pliki .ts lub .js do katalogu .roo/tools swojego projektu lub ~/.roo/tools dla narzędzi globalnych.",
+			"noTools": "Nie załadowano niestandardowych narzędzi. Dodaj pliki .ts lub .js do katalogu .kitpilot/tools swojego projektu lub ~/.kitpilot/tools dla narzędzi globalnych.",
 			"refreshButton": "Odśwież",
 			"refreshing": "Odświeżanie...",
 			"refreshSuccess": "Narzędzia odświeżone pomyślnie",

@@ -1,7 +1,7 @@
 import { Package } from "../../shared/package"
 
 export const DEFAULT_HEADERS = {
-	"HTTP-Referer": "https://github.com/RooVetGit/Roo-Cline",
+	"HTTP-Referer": "https://github.com/KitPilotVetGit/KitPilot-Cline",
 	"X-Title": "KitPilot",
-	"User-Agent": `RooCode/${Package.version}`,
+	"User-Agent": `KitPilot/${Package.version}`,
 }

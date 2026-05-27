@@ -6,8 +6,8 @@ import { FileWatcher } from "../file-watcher"
 
 // Mock dependencies
 vi.mock("../../cache-manager")
-vi.mock("../../../core/ignore/RooIgnoreController", () => ({
-	RooIgnoreController: vi.fn().mockImplementation(() => ({
+vi.mock("../../../core/ignore/KitPilotIgnoreController", () => ({
+	KitPilotIgnoreController: vi.fn().mockImplementation(() => ({
 		validateAccess: vi.fn().mockReturnValue(true),
 	})),
 }))

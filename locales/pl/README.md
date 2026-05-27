@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=RooVeterinaryInc.roo-cline"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/roocode"><img src="https://img.shields.io/badge/roocode-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=KitPilotVeterinaryInc.kit-pilot"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
+  <a href="https://x.com/kitpilot"><img src="https://img.shields.io/badge/kitpilot-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
 </p>
-# Roo Code
+# KitPilot
 
 > Twój zespół deweloperski zasilany AI — prosto w edytorze
 
@@ -32,7 +32,7 @@
 
 ---
 
-## Co Roo Code może zrobić dla CIEBIE?
+## Co KitPilot może zrobić dla CIEBIE?
 
 - Generowanie kodu z opisów w języku naturalnym
 - Dostosuj się za pomocą trybów: Kod, Architekt, Zapytaj, Debugowanie i Tryby niestandardowe
@@ -44,7 +44,7 @@
 
 ## Tryby
 
-Roo Code dostosowuje się do Twojego sposobu pracy, a nie odwrotnie:
+KitPilot dostosowuje się do Twojego sposobu pracy, a nie odwrotnie:
 
 - Tryb Kod: codzienne kodowanie, edycje i operacje na plikach
 - Tryb Architekt: planowanie systemów, specyfikacji i migracji
@@ -52,21 +52,21 @@ Roo Code dostosowuje się do Twojego sposobu pracy, a nie odwrotnie:
 - Tryb Debugowanie: śledzenie problemów, dodawanie logów, izolowanie przyczyn źródłowych
 - Tryby niestandardowe: buduj specjalistyczne tryby dla swojego zespołu lub przepływu pracy
 
-Więcej: [Korzystanie z trybów](https://docs.roocode.com/basic-usage/using-modes) • [Tryby niestandardowe](https://docs.roocode.com/advanced-usage/custom-modes)
+Więcej: [Korzystanie z trybów](https://docs.kitpilot.com/basic-usage/using-modes) • [Tryby niestandardowe](https://docs.kitpilot.com/advanced-usage/custom-modes)
 
 ## Zasoby
 
-- **[Dokumentacja](https://docs.roocode.com):** Oficjalny przewodnik po instalacji, konfiguracji i opanowaniu Roo Code.
-- **[Problemy na GitHub](https://github.com/RooCodeInc/Roo-Code/issues):** Zgłaszaj błędy i śledź rozwój.
+- **[Dokumentacja](https://docs.kitpilot.com):** Oficjalny przewodnik po instalacji, konfiguracji i opanowaniu KitPilot.
+- **[Problemy na GitHub](https://github.com/KitPilotInc/KitPilot/issues):** Zgłaszaj błędy i śledź rozwój.
 
 ---
 
 ## Zastrzeżenie
 
-**Uwaga** Roo Code, Inc. **nie** składa żadnych oświadczeń ani nie udziela żadnych gwarancji dotyczących jakiegokolwiek kodu, modeli lub innych narzędzi dostarczonych lub udostępnionych w związku z Roo Code, jakimikolwiek powiązanymi narzędziami stron trzecich ani żadnymi wynikami. Użytkownik przyjmuje na siebie **wszelkie ryzyko** związane z korzystaniem z takich narzędzi lub wyników; takie narzędzia są dostarczane na zasadzie **"TAK JAK JEST"** i **"W MIARĘ DOSTĘPNOŚCI"**. Takie ryzyko może obejmować, bez ograniczeń, naruszenie własności intelektualnej, luki w zabezpieczeniach cybernetycznych lub ataki, stronniczość, niedokładności, błędy, wady, wirusy, przestoje, utratę lub uszkodzenie mienia i/lub obrażenia ciała. Użytkownik ponosi wyłączną odpowiedzialność za korzystanie z takich narzędzi lub wyników (w tym, bez ograniczeń, za ich legalność, stosowność i wyniki).
+**Uwaga** KitPilot, Inc. **nie** składa żadnych oświadczeń ani nie udziela żadnych gwarancji dotyczących jakiegokolwiek kodu, modeli lub innych narzędzi dostarczonych lub udostępnionych w związku z KitPilot, jakimikolwiek powiązanymi narzędziami stron trzecich ani żadnymi wynikami. Użytkownik przyjmuje na siebie **wszelkie ryzyko** związane z korzystaniem z takich narzędzi lub wyników; takie narzędzia są dostarczane na zasadzie **"TAK JAK JEST"** i **"W MIARĘ DOSTĘPNOŚCI"**. Takie ryzyko może obejmować, bez ograniczeń, naruszenie własności intelektualnej, luki w zabezpieczeniach cybernetycznych lub ataki, stronniczość, niedokładności, błędy, wady, wirusy, przestoje, utratę lub uszkodzenie mienia i/lub obrażenia ciała. Użytkownik ponosi wyłączną odpowiedzialność za korzystanie z takich narzędzi lub wyników (w tym, bez ograniczeń, za ich legalność, stosowność i wyniki).
 
 ---
 
 ## Licencja
 
-[Apache 2.0 © 2025 Roo Code, Inc.](../../LICENSE)
+[Apache 2.0 © 2025 KitPilot, Inc.](../../LICENSE)

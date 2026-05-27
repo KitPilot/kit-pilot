@@ -2,7 +2,7 @@ import { Fzf } from "fzf"
 
 import type { ModeConfig, Command } from "@kit-pilot/types"
 
-import { mentionRegex } from "@roo/context-mentions"
+import { mentionRegex } from "@kitpilot/context-mentions"
 
 import { escapeSpaces } from "./path-mentions"
 

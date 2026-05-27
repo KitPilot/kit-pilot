@@ -234,7 +234,7 @@
 			},
 			"protected": {
 				"label": "संरक्षित फाइलें शामिल करें",
-				"description": "KitPilot को अनुमोदन की आवश्यकता के बिना संरक्षित फाइलें (.rooignore और .roo/ कॉन्फ़िगरेशन फाइलें जैसी) बनाने और संपादित करने की अनुमति दें।"
+				"description": "KitPilot को अनुमोदन की आवश्यकता के बिना संरक्षित फाइलें (.kitpilotignore और .kitpilot/ कॉन्फ़िगरेशन फाइलें जैसी) बनाने और संपादित करने की अनुमति दें।"
 			}
 		},
 		"mcp": {
@@ -546,7 +546,7 @@
 			"maxTokensLabel": "अधिकतम आउटपुट टोकन",
 			"maxTokensDescription": "Claude Code प्रतिक्रियाओं के लिए आउटपुट टोकन की अधिकतम संख्या। डिफ़ॉल्ट 8000 है।"
 		},
-		"retiredRooProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredKitPilotProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -600,9 +600,9 @@
 			"label": "वर्कस्पेस फाइल संदर्भ सीमा",
 			"description": "वर्तमान कार्य निर्देशिका विवरण में शामिल करने के लिए फाइलों की अधिकतम संख्या। उच्च मान अधिक संदर्भ प्रदान करते हैं लेकिन token उपयोग बढ़ाते हैं।"
 		},
-		"rooignore": {
-			"label": "सूचियों और खोजों में .rooignore फाइलें दिखाएँ",
-			"description": "जब सक्षम होता है, .rooignore में पैटर्न से मेल खाने वाली फाइलें लॉक प्रतीक के साथ सूचियों में दिखाई जाएंगी। जब अक्षम होता है, ये फाइलें फाइल सूचियों और खोजों से पूरी तरह छिपा दी जाएंगी।"
+		"kitpilotignore": {
+			"label": "सूचियों और खोजों में .kitpilotignore फाइलें दिखाएँ",
+			"description": "जब सक्षम होता है, .kitpilotignore में पैटर्न से मेल खाने वाली फाइलें लॉक प्रतीक के साथ सूचियों में दिखाई जाएंगी। जब अक्षम होता है, ये फाइलें फाइल सूचियों और खोजों से पूरी तरह छिपा दी जाएंगी।"
 		},
 		"maxReadFile": {
 			"label": "फ़ाइल पढ़ने का स्वचालित काटने की सीमा",
@@ -663,7 +663,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "सबफ़ोल्डर नियम सक्षम करें",
-			"description": "उपनिर्देशिकाओं से .roo/rules और AGENTS.md फ़ाइलों को पुनरावर्ती रूप से खोजें और लोड करें। प्रति-पैकेज नियमों वाले मोनोरेपो के लिए उपयोगी।"
+			"description": "उपनिर्देशिकाओं से .kitpilot/rules और AGENTS.md फ़ाइलों को पुनरावर्ती रूप से खोजें और लोड करें। प्रति-पैकेज नियमों वाले मोनोरेपो के लिए उपयोगी।"
 		}
 	},
 	"terminal": {
@@ -803,9 +803,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "कस्टम टूल्स सक्षम करें",
-			"description": "सक्षम होने पर, KitPilot आपके प्रोजेक्ट की .roo/tools निर्देशिका या वैश्विक टूल्स के लिए ~/.roo/tools से कस्टम TypeScript/JavaScript टूल्स लोड और उपयोग कर सकता है। नोट: ये टूल्स स्वचालित रूप से स्वत:-अनुमोदित होंगे।",
+			"description": "सक्षम होने पर, KitPilot आपके प्रोजेक्ट की .kitpilot/tools निर्देशिका या वैश्विक टूल्स के लिए ~/.kitpilot/tools से कस्टम TypeScript/JavaScript टूल्स लोड और उपयोग कर सकता है। नोट: ये टूल्स स्वचालित रूप से स्वत:-अनुमोदित होंगे।",
 			"toolsHeader": "उपलब्ध कस्टम टूल्स",
-			"noTools": "कोई कस्टम टूल लोड नहीं हुआ। अपने प्रोजेक्ट की .roo/tools निर्देशिका या वैश्विक टूल्स के लिए ~/.roo/tools में .ts या .js फ़ाइलें जोड़ें।",
+			"noTools": "कोई कस्टम टूल लोड नहीं हुआ। अपने प्रोजेक्ट की .kitpilot/tools निर्देशिका या वैश्विक टूल्स के लिए ~/.kitpilot/tools में .ts या .js फ़ाइलें जोड़ें।",
 			"refreshButton": "रिफ्रेश करें",
 			"refreshing": "रिफ्रेश हो रहा है...",
 			"refreshSuccess": "टूल्स सफलतापूर्वक रिफ्रेश हुए",

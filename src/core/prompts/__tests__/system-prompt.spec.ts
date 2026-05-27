@@ -79,7 +79,7 @@ __setMockImplementation(
 		globalCustomInstructions: string,
 		cwd: string,
 		mode: string,
-		options?: { language?: string; rooIgnoreInstructions?: string; settings?: Record<string, any> },
+		options?: { language?: string; kitpilotIgnoreInstructions?: string; settings?: Record<string, any> },
 	) => {
 		const sections = []
 
@@ -226,7 +226,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 		)
 
 		expect(prompt).toMatchFileSnapshot("./__snapshots__/system-prompt/consistent-system-prompt.snap")
@@ -247,7 +247,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 		)
 
 		expect(prompt).toMatchFileSnapshot("./__snapshots__/system-prompt/with-mcp-hub-provided.snap")
@@ -266,7 +266,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 		)
 
 		expect(prompt).toMatchFileSnapshot("./__snapshots__/system-prompt/with-undefined-mcp-hub.snap")
@@ -312,7 +312,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			undefined, // experiments
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 		)
 
 		expect(prompt).toContain("Language Preference:")
@@ -369,7 +369,7 @@ describe("SYSTEM_PROMPT", () => {
 			"Global instructions", // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 		)
 
 		// Role definition should be at the top
@@ -403,7 +403,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			undefined, // experiments
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 		)
 
 		// Role definition from promptComponent should be at the top
@@ -432,7 +432,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			undefined, // experiments
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 		)
 
 		// Should use the default mode's role definition
@@ -458,7 +458,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 			settings, // settings
 		)
 
@@ -486,7 +486,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 			settings, // settings
 		)
 
@@ -514,7 +514,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 			settings, // settings
 		)
 
@@ -542,7 +542,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 			settings, // settings
 		)
 

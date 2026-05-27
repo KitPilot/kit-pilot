@@ -60,10 +60,10 @@ export class GenerateImageTool extends BaseTool<"generate_image"> {
 			return
 		}
 
-		const accessAllowed = task.rooIgnoreController?.validateAccess(relPath)
+		const accessAllowed = task.kitpilotIgnoreController?.validateAccess(relPath)
 		if (!accessAllowed) {
-			await task.say("rooignore_error", relPath)
-			pushToolResult(formatResponse.rooIgnoreError(relPath))
+			await task.say("kitpilotignore_error", relPath)
+			pushToolResult(formatResponse.kitpilotIgnoreError(relPath))
 			return
 		}
 
@@ -81,10 +81,10 @@ export class GenerateImageTool extends BaseTool<"generate_image"> {
 				return
 			}
 
-			const inputImageAccessAllowed = task.rooIgnoreController?.validateAccess(inputImagePath)
+			const inputImageAccessAllowed = task.kitpilotIgnoreController?.validateAccess(inputImagePath)
 			if (!inputImageAccessAllowed) {
-				await task.say("rooignore_error", inputImagePath)
-				pushToolResult(formatResponse.rooIgnoreError(inputImagePath))
+				await task.say("kitpilotignore_error", inputImagePath)
+				pushToolResult(formatResponse.kitpilotIgnoreError(inputImagePath))
 				return
 			}
 
@@ -124,7 +124,7 @@ export class GenerateImageTool extends BaseTool<"generate_image"> {
 			}
 		}
 
-		const isWriteProtected = task.rooProtectedController?.isWriteProtected(relPath) || false
+		const isWriteProtected = task.kitpilotProtectedController?.isWriteProtected(relPath) || false
 
 		// Use shared utility for backwards compatibility logic
 		const imageProvider = getImageGenerationProvider(

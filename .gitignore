@@ -49,7 +49,7 @@ logs
 .idea/
 .qodo/
 .vercel
-.roo/mcp.json
+.kitpilot/mcp.json
 
 # Qdrant
 qdrant_storage/
@@ -57,8 +57,11 @@ qdrant_storage/
 # Architect plans
 plans/
 
-roo-cli-*.tar.gz*
+kitpilot-cli-*.tar.gz*
 
 # Maintainer-local notes and implementation guidance — never push these.
-ROO_CODE_VSCODE_LM_NOTES.md
+KITPILOT_VSCODE_LM_NOTES.md
 claude_code_instructions.md
+
+# Local-only codebase-indexing token A/B experiment (harness, results, report) — not for push.
+scripts/ab-token-harness/

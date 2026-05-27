@@ -123,7 +123,7 @@
 	"about": "KitPilot adalah seluruh tim pengembang AI di editor Anda.",
 	"docs": "Lihat <DocsLink>dokumentasi</DocsLink> kami untuk mempelajari lebih lanjut.",
 	"onboarding": "Daftar tugas Anda di ruang kerja ini kosong.",
-	"rooTips": {
+	"kitpilotTips": {
 		"customizableModes": {
 			"title": "Mode yang dapat disesuaikan",
 			"description": "Persona khusus yang tetap mengerjakan tugas dan memberikan hasil."
@@ -287,7 +287,7 @@
 	"response": "Respons",
 	"arguments": "Argumen",
 	"text": {
-		"rooSaid": "KitPilot berkata"
+		"kitpilotSaid": "KitPilot berkata"
 	},
 	"feedback": {
 		"youSaid": "Anda bilang"
@@ -492,6 +492,6 @@
 		"title": "Penyedia tidak lagi didukung",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Buka Pengaturan",
-		"rooMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

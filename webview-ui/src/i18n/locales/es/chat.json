@@ -93,7 +93,7 @@
 	"about": "KitPilot es todo un equipo de desarrollo de IA en tu editor.",
 	"docs": "Consulta nuestra <DocsLink>documentación</DocsLink> para saber más.",
 	"onboarding": "Tu lista de tareas en este espacio de trabajo está vacía.",
-	"rooTips": {
+	"kitpilotTips": {
 		"customizableModes": {
 			"title": "Modos personalizables",
 			"description": "Personajes especializados que se mantienen en la tarea y cumplen."
@@ -236,7 +236,7 @@
 	"response": "Respuesta",
 	"arguments": "Argumentos",
 	"text": {
-		"rooSaid": "KitPilot ha dicho"
+		"kitpilotSaid": "KitPilot ha dicho"
 	},
 	"feedback": {
 		"youSaid": "Has dicho"
@@ -486,6 +486,6 @@
 		"title": "Proveedor ya no compatible",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Abrir configuración",
-		"rooMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

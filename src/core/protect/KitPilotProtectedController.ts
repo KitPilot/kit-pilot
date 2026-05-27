@@ -4,20 +4,20 @@ import ignore, { Ignore } from "ignore"
 export const SHIELD_SYMBOL = "\u{1F6E1}"
 
 /**
- * Controls write access to Roo configuration files by enforcing protection patterns.
- * Prevents auto-approved modifications to sensitive Roo configuration files.
+ * Controls write access to KitPilot configuration files by enforcing protection patterns.
+ * Prevents auto-approved modifications to sensitive KitPilot configuration files.
  */
-export class RooProtectedController {
+export class KitPilotProtectedController {
 	private cwd: string
 	private ignoreInstance: Ignore
 
-	// Predefined list of protected Roo configuration patterns
+	// Predefined list of protected KitPilot configuration patterns
 	private static readonly PROTECTED_PATTERNS = [
-		".rooignore",
-		".roomodes",
+		".kitpilotignore",
+		".kitpilotmodes",
 		".roorules*",
 		".clinerules*",
-		".roo/**",
+		".kitpilot/**",
 		".vscode/**",
 		"*.code-workspace",
 		".rooprotected", // For future use
@@ -29,7 +29,7 @@ export class RooProtectedController {
 		this.cwd = cwd
 		// Initialize ignore instance with protected patterns
 		this.ignoreInstance = ignore()
-		this.ignoreInstance.add(RooProtectedController.PROTECTED_PATTERNS)
+		this.ignoreInstance.add(KitPilotProtectedController.PROTECTED_PATTERNS)
 	}
 
 	/**
@@ -91,7 +91,7 @@ export class RooProtectedController {
 	 * Get display message for protected file operations
 	 */
 	getProtectionMessage(): string {
-		return "This is a Roo configuration file and requires approval for modifications"
+		return "This is a KitPilot configuration file and requires approval for modifications"
 	}
 
 	/**
@@ -99,14 +99,14 @@ export class RooProtectedController {
 	 * @returns Formatted instructions about file protection
 	 */
 	getInstructions(): string {
-		const patterns = RooProtectedController.PROTECTED_PATTERNS.join(", ")
-		return `# Protected Files\n\n(The following Roo configuration file patterns are write-protected and always require approval for modifications, regardless of autoapproval settings. When using list_files, you'll notice a ${SHIELD_SYMBOL} next to files that are write-protected.)\n\nProtected patterns: ${patterns}`
+		const patterns = KitPilotProtectedController.PROTECTED_PATTERNS.join(", ")
+		return `# Protected Files\n\n(The following KitPilot configuration file patterns are write-protected and always require approval for modifications, regardless of autoapproval settings. When using list_files, you'll notice a ${SHIELD_SYMBOL} next to files that are write-protected.)\n\nProtected patterns: ${patterns}`
 	}
 
 	/**
 	 * Get the list of protected patterns (for testing/debugging)
 	 */
 	static getProtectedPatterns(): readonly string[] {
-		return RooProtectedController.PROTECTED_PATTERNS
+		return KitPilotProtectedController.PROTECTED_PATTERNS
 	}
 }

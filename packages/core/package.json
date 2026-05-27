@@ -1,6 +1,6 @@
 {
 	"name": "@kit-pilot/core",
-	"description": "Platform agnostic core functionality for Roo Code.",
+	"description": "Platform agnostic core functionality for KitPilot.",
 	"version": "0.0.1",
 	"type": "module",
 	"exports": {

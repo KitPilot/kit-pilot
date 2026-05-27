@@ -93,7 +93,7 @@
 	"about": "KitPilot là một đội ngũ phát triển AI đầy đủ trong trình chỉnh sửa của bạn.",
 	"docs": "Kiểm tra <DocsLink>tài liệu</DocsLink> của chúng tôi để tìm hiểu thêm.",
 	"onboarding": "Danh sách nhiệm vụ của bạn trong không gian làm việc này đang trống.",
-	"rooTips": {
+	"kitpilotTips": {
 		"customizableModes": {
 			"title": "Chế độ có thể tùy chỉnh",
 			"description": "Các nhân vật chuyên biệt luôn bám sát nhiệm vụ và mang lại hiệu quả."
@@ -237,7 +237,7 @@
 	"response": "Phản hồi",
 	"arguments": "Tham số",
 	"text": {
-		"rooSaid": "KitPilot đã nói"
+		"kitpilotSaid": "KitPilot đã nói"
 	},
 	"feedback": {
 		"youSaid": "Bạn đã nói"
@@ -487,6 +487,6 @@
 		"title": "Nhà cung cấp không còn được hỗ trợ",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Mở cài đặt",
-		"rooMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

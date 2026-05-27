@@ -37,8 +37,8 @@ export async function processUserContentMentions({
 	userContent,
 	cwd,
 	fileContextTracker,
-	rooIgnoreController,
-	showRooIgnoredFiles = false,
+	kitpilotIgnoreController,
+	showKitPilotIgnoredFiles = false,
 	includeDiagnosticMessages = true,
 	maxDiagnosticMessages = 50,
 	skillsManager,
@@ -47,8 +47,8 @@ export async function processUserContentMentions({
 	userContent: Anthropic.Messages.ContentBlockParam[]
 	cwd: string
 	fileContextTracker: FileContextTracker
-	rooIgnoreController?: any
-	showRooIgnoredFiles?: boolean
+	kitpilotIgnoreController?: any
+	showKitPilotIgnoredFiles?: boolean
 	includeDiagnosticMessages?: boolean
 	maxDiagnosticMessages?: number
 	skillsManager?: SkillLookup
@@ -70,8 +70,8 @@ export async function processUserContentMentions({
 							block.text,
 							cwd,
 							fileContextTracker,
-							rooIgnoreController,
-							showRooIgnoredFiles,
+							kitpilotIgnoreController,
+							showKitPilotIgnoredFiles,
 							includeDiagnosticMessages,
 							maxDiagnosticMessages,
 							skillsManager,
@@ -115,8 +115,8 @@ export async function processUserContentMentions({
 								block.content,
 								cwd,
 								fileContextTracker,
-								rooIgnoreController,
-								showRooIgnoredFiles,
+								kitpilotIgnoreController,
+								showKitPilotIgnoredFiles,
 								includeDiagnosticMessages,
 								maxDiagnosticMessages,
 								skillsManager,
@@ -166,8 +166,8 @@ export async function processUserContentMentions({
 											contentBlock.text,
 											cwd,
 											fileContextTracker,
-											rooIgnoreController,
-											showRooIgnoredFiles,
+											kitpilotIgnoreController,
+											showKitPilotIgnoredFiles,
 											includeDiagnosticMessages,
 											maxDiagnosticMessages,
 											skillsManager,
@@ -215,7 +215,7 @@ export async function processUserContentMentions({
 				}
 
 				// Legacy backward compat: tool_result / tool-result blocks from older formats
-				// are passed through unchanged (tool results are now in separate RooToolMessages).
+				// are passed through unchanged (tool results are now in separate KitPilotToolMessages).
 				return block
 			}),
 		)

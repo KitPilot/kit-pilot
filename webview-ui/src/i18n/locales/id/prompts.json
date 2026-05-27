@@ -8,7 +8,7 @@
 		"noMatchFound": "Tidak ada mode yang ditemukan",
 		"editModesConfig": "Edit konfigurasi mode",
 		"editGlobalModes": "Edit Mode Global",
-		"editProjectModes": "Edit Mode Proyek (.roomodes)",
+		"editProjectModes": "Edit Mode Proyek (.kitpilotmodes)",
 		"createModeHelpText": "Mode adalah persona khusus yang menyesuaikan perilaku KitPilot. <0>Pelajari tentang Menggunakan Mode</0> atau <1>Menyesuaikan Mode.</1>",
 		"selectMode": "Cari mode"
 	},
@@ -49,7 +49,7 @@
 		"title": "Instruksi Kustom Khusus Mode (opsional)",
 		"resetToDefault": "Reset ke default",
 		"description": "Tambahkan panduan perilaku khusus untuk mode {{modeName}}.",
-		"loadFromFile": "Instruksi khusus untuk mode {{mode}} juga dapat dimuat dari folder <span>.roo/rules-{{slug}}/</span> di ruang kerja Anda atau dari global <0>.roo/rules-{{slug}}/</0> (.roorules-{{slug}} dan .clinerules-{{slug}} sudah usang dan akan segera berhenti berfungsi)."
+		"loadFromFile": "Instruksi khusus untuk mode {{mode}} juga dapat dimuat dari folder <span>.kitpilot/rules-{{slug}}/</span> di ruang kerja Anda atau dari global <0>.kitpilot/rules-{{slug}}/</0> (.roorules-{{slug}} dan .clinerules-{{slug}} sudah usang dan akan segera berhenti berfungsi)."
 	},
 	"exportMode": {
 		"title": "Ekspor Mode",
@@ -67,13 +67,13 @@
 		},
 		"project": {
 			"label": "Tingkat Proyek",
-			"description": "Hanya tersedia di ruang kerja ini. Jika mode yang diekspor berisi file aturan, file tersebut akan dibuat ulang di folder .roo/rules-{slug}/."
+			"description": "Hanya tersedia di ruang kerja ini. Jika mode yang diekspor berisi file aturan, file tersebut akan dibuat ulang di folder .kitpilot/rules-{slug}/."
 		}
 	},
 	"globalCustomInstructions": {
 		"title": "Instruksi Kustom untuk Semua Mode",
 		"description": "Instruksi ini berlaku untuk semua mode. Mereka menyediakan set dasar perilaku yang dapat ditingkatkan oleh instruksi khusus mode di bawah. <0>Pelajari lebih lanjut</0>",
-		"loadFromFile": "Instruksi juga dapat dimuat dari folder <span>.roo/rules/</span> di ruang kerja Anda atau dari global <0>.roo/rules/</0> (.roorules dan .clinerules sudah usang dan akan segera berhenti berfungsi)."
+		"loadFromFile": "Instruksi juga dapat dimuat dari folder <span>.kitpilot/rules/</span> di ruang kerja Anda atau dari global <0>.kitpilot/rules/</0> (.roorules dan .clinerules sudah usang dan akan segera berhenti berfungsi)."
 	},
 	"systemPrompt": {
 		"preview": "Pratinjau System Prompt",
@@ -161,7 +161,7 @@
 				"description": "Tersedia di semua workspace"
 			},
 			"project": {
-				"label": "Khusus proyek (.roomodes)",
+				"label": "Khusus proyek (.kitpilotmodes)",
 				"description": "Hanya tersedia di workspace ini, lebih diutamakan daripada global"
 			}
 		},

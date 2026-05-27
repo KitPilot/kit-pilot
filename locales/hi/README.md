@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=RooVeterinaryInc.roo-cline"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/roocode"><img src="https://img.shields.io/badge/roocode-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=KitPilotVeterinaryInc.kit-pilot"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
+  <a href="https://x.com/kitpilot"><img src="https://img.shields.io/badge/kitpilot-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
 </p>
-# Roo Code
+# KitPilot
 
 > तुम्हारी AI-संचालित डेवलपमेंट टीम, सीधे तुम्हारे एडिटर में
 
@@ -32,7 +32,7 @@
 
 ---
 
-## Roo Code आपके लिए क्या कर सकता है?
+## KitPilot आपके लिए क्या कर सकता है?
 
 - प्राकृतिक भाषा विवरण से कोड उत्पन्न करें
 - मोड के साथ अनुकूलन: कोड, आर्किटेक्ट, पूछें, डीबग और कस्टम मोड
@@ -52,12 +52,12 @@
 - डीबग मोड: समस्याओं का पता लगाएं, लॉग जोड़ें, मूल कारणों को अलग करें
 - कस्टम मोड: अपनी टीम या वर्कफ़्लो के लिए विशेष मोड बनाएं
 
-और जानो: [मोड्स का इस्तेमाल](https://docs.roocode.com/basic-usage/using-modes) • [कस्टम मोड्स](https://docs.roocode.com/advanced-usage/custom-modes)
+और जानो: [मोड्स का इस्तेमाल](https://docs.kitpilot.com/basic-usage/using-modes) • [कस्टम मोड्स](https://docs.kitpilot.com/advanced-usage/custom-modes)
 
 ## संसाधन
 
-- **[दस्तावेज़ीकरण](https://docs.roocode.com):** Roo Code को स्थापित करने, कॉन्फ़िगर करने और उसमें महारत हासिल करने के लिए आधिकारिक गाइड।
-- **[गिटहब मुद्दे](https://github.com/RooCodeInc/Roo-Code/issues):** बग की रिपोर्ट करें और विकास को ट्रैक करें।
+- **[दस्तावेज़ीकरण](https://docs.kitpilot.com):** KitPilot को स्थापित करने, कॉन्फ़िगर करने और उसमें महारत हासिल करने के लिए आधिकारिक गाइड।
+- **[गिटहब मुद्दे](https://github.com/KitPilotInc/KitPilot/issues):** बग की रिपोर्ट करें और विकास को ट्रैक करें।
 
 ---
 
@@ -69,4 +69,4 @@
 
 ## लाइसेंस
 
-[Apache 2.0 © 2025 Roo Code, Inc.](../../LICENSE)
+[Apache 2.0 © 2025 KitPilot, Inc.](../../LICENSE)

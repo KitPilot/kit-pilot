@@ -234,7 +234,7 @@
 			},
 			"protected": {
 				"label": "Inclusief beschermde bestanden",
-				"description": "Sta KitPilot toe om beschermde bestanden (zoals .rooignore en .roo/ configuratiebestanden) aan te maken en te bewerken zonder goedkeuring."
+				"description": "Sta KitPilot toe om beschermde bestanden (zoals .kitpilotignore en .kitpilot/ configuratiebestanden) aan te maken en te bewerken zonder goedkeuring."
 			}
 		},
 		"mcp": {
@@ -546,7 +546,7 @@
 			"maxTokensLabel": "Max Output Tokens",
 			"maxTokensDescription": "Maximaal aantal output-tokens voor Claude Code-reacties. Standaard is 8000."
 		},
-		"retiredRooProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredKitPilotProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -600,9 +600,9 @@
 			"label": "Limiet werkruimtebestanden in context",
 			"description": "Maximaal aantal bestanden dat wordt opgenomen in details van de huidige werkmap. Hogere waarden geven meer context maar verhogen het tokengebruik."
 		},
-		"rooignore": {
-			"label": ".rooignore-bestanden tonen in lijsten en zoekopdrachten",
-			"description": "Indien ingeschakeld, worden bestanden die overeenkomen met patronen in .rooignore getoond in lijsten met een slotje. Indien uitgeschakeld, worden deze bestanden volledig verborgen in lijsten en zoekopdrachten."
+		"kitpilotignore": {
+			"label": ".kitpilotignore-bestanden tonen in lijsten en zoekopdrachten",
+			"description": "Indien ingeschakeld, worden bestanden die overeenkomen met patronen in .kitpilotignore getoond in lijsten met een slotje. Indien uitgeschakeld, worden deze bestanden volledig verborgen in lijsten en zoekopdrachten."
 		},
 		"maxReadFile": {
 			"label": "Automatisch afkappen bij bestandslezen",
@@ -663,7 +663,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "Submap-regels inschakelen",
-			"description": "Recursief .roo/rules en AGENTS.md-bestanden uit submappen ontdekken en laden. Handig voor monorepo's met regels per pakket."
+			"description": "Recursief .kitpilot/rules en AGENTS.md-bestanden uit submappen ontdekken en laden. Handig voor monorepo's met regels per pakket."
 		}
 	},
 	"terminal": {
@@ -803,9 +803,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Aangepaste tools inschakelen",
-			"description": "Indien ingeschakeld kan KitPilot aangepaste TypeScript/JavaScript-tools laden en gebruiken uit de map .roo/tools van je project of ~/.roo/tools voor globale tools. Opmerking: deze tools worden automatisch goedgekeurd.",
+			"description": "Indien ingeschakeld kan KitPilot aangepaste TypeScript/JavaScript-tools laden en gebruiken uit de map .kitpilot/tools van je project of ~/.kitpilot/tools voor globale tools. Opmerking: deze tools worden automatisch goedgekeurd.",
 			"toolsHeader": "Beschikbare aangepaste tools",
-			"noTools": "Geen aangepaste tools geladen. Voeg .ts- of .js-bestanden toe aan de map .roo/tools van je project of ~/.roo/tools voor globale tools.",
+			"noTools": "Geen aangepaste tools geladen. Voeg .ts- of .js-bestanden toe aan de map .kitpilot/tools van je project of ~/.kitpilot/tools voor globale tools.",
 			"refreshButton": "Vernieuwen",
 			"refreshing": "Vernieuwen...",
 			"refreshSuccess": "Tools succesvol vernieuwd",

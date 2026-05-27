@@ -1,3 +1,3 @@
-# @roo-code/ipc
+# @kit-pilot/ipc
 
 ## 0.0.1

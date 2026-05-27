@@ -20,7 +20,7 @@ vi.mock("@kit-pilot/vscode-shim", () => ({
 }))
 
 vi.mock("@/lib/storage/index.js", () => ({
-	createEphemeralStorageDir: vi.fn(() => Promise.resolve("/tmp/roo-cli-test-ephemeral")),
+	createEphemeralStorageDir: vi.fn(() => Promise.resolve("/tmp/kitpilot-cli-test-ephemeral")),
 }))
 
 /**
@@ -83,14 +83,14 @@ function spyOnPrivate(host: ExtensionHost, method: string) {
 }
 
 describe("ExtensionHost", () => {
-	const initialRooCliRuntimeEnv = process.env.ROO_CLI_RUNTIME
+	const initialKitPilotCliRuntimeEnv = process.env.KITPILOT_CLI_RUNTIME
 
 	beforeEach(() => {
 		vi.resetAllMocks()
-		if (initialRooCliRuntimeEnv === undefined) {
-			delete process.env.ROO_CLI_RUNTIME
+		if (initialKitPilotCliRuntimeEnv === undefined) {
+			delete process.env.KITPILOT_CLI_RUNTIME
 		} else {
-			process.env.ROO_CLI_RUNTIME = initialRooCliRuntimeEnv
+			process.env.KITPILOT_CLI_RUNTIME = initialKitPilotCliRuntimeEnv
 		}
 		// Clean up globals
 		delete (global as Record<string, unknown>).vscode
@@ -98,10 +98,10 @@ describe("ExtensionHost", () => {
 	})
 
 	afterAll(() => {
-		if (initialRooCliRuntimeEnv === undefined) {
-			delete process.env.ROO_CLI_RUNTIME
+		if (initialKitPilotCliRuntimeEnv === undefined) {
+			delete process.env.KITPILOT_CLI_RUNTIME
 		} else {
-			process.env.ROO_CLI_RUNTIME = initialRooCliRuntimeEnv
+			process.env.KITPILOT_CLI_RUNTIME = initialKitPilotCliRuntimeEnv
 		}
 	})
 
@@ -155,9 +155,9 @@ describe("ExtensionHost", () => {
 		})
 
 		it("should mark process as CLI runtime", () => {
-			delete process.env.ROO_CLI_RUNTIME
+			delete process.env.KITPILOT_CLI_RUNTIME
 			createTestHost()
-			expect(process.env.ROO_CLI_RUNTIME).toBe("1")
+			expect(process.env.KITPILOT_CLI_RUNTIME).toBe("1")
 		})
 
 		it("should set execaShellPath in initialSettings when terminalShell is provided", () => {
@@ -490,24 +490,24 @@ describe("ExtensionHost", () => {
 			expect(restoreConsoleSpy).toHaveBeenCalled()
 		})
 
-		it("should clear ROO_CLI_RUNTIME on dispose when it was previously unset", async () => {
-			delete process.env.ROO_CLI_RUNTIME
+		it("should clear KITPILOT_CLI_RUNTIME on dispose when it was previously unset", async () => {
+			delete process.env.KITPILOT_CLI_RUNTIME
 			host = createTestHost()
-			expect(process.env.ROO_CLI_RUNTIME).toBe("1")
+			expect(process.env.KITPILOT_CLI_RUNTIME).toBe("1")
 
 			await host.dispose()
 
-			expect(process.env.ROO_CLI_RUNTIME).toBeUndefined()
+			expect(process.env.KITPILOT_CLI_RUNTIME).toBeUndefined()
 		})
 
-		it("should restore prior ROO_CLI_RUNTIME value on dispose", async () => {
-			process.env.ROO_CLI_RUNTIME = "preexisting-value"
+		it("should restore prior KITPILOT_CLI_RUNTIME value on dispose", async () => {
+			process.env.KITPILOT_CLI_RUNTIME = "preexisting-value"
 			host = createTestHost()
-			expect(process.env.ROO_CLI_RUNTIME).toBe("1")
+			expect(process.env.KITPILOT_CLI_RUNTIME).toBe("1")
 
 			await host.dispose()
 
-			expect(process.env.ROO_CLI_RUNTIME).toBe("preexisting-value")
+			expect(process.env.KITPILOT_CLI_RUNTIME).toBe("preexisting-value")
 		})
 	})
 
@@ -705,7 +705,7 @@ describe("ExtensionHost", () => {
 			const host = createTestHost({ ephemeral: true })
 
 			// Set up a mock ephemeral storage directory
-			const mockEphemeralDir = "/tmp/roo-cli-test-ephemeral-cleanup"
+			const mockEphemeralDir = "/tmp/kitpilot-cli-test-ephemeral-cleanup"
 			setPrivate(host, "ephemeralStorageDir", mockEphemeralDir)
 
 			// Mock fs.promises.rm
@@ -739,7 +739,7 @@ describe("ExtensionHost", () => {
 			const host = createTestHost({ ephemeral: true })
 
 			// Set up a mock ephemeral storage directory
-			setPrivate(host, "ephemeralStorageDir", "/tmp/roo-cli-test-ephemeral-error")
+			setPrivate(host, "ephemeralStorageDir", "/tmp/kitpilot-cli-test-ephemeral-error")
 
 			// Mock fs.promises.rm to throw an error
 			const rmMock = vi.spyOn(fs.promises, "rm").mockRejectedValue(new Error("Cleanup failed"))

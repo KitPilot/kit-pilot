@@ -131,7 +131,7 @@ export class JsonEventEmitter {
 		this.stdout = options.stdout ?? process.stdout
 		this.requestIdProvider = options.requestIdProvider ?? (() => undefined)
 		this.schemaVersion = options.schemaVersion ?? 1
-		this.protocol = options.protocol ?? "roo-cli-stream"
+		this.protocol = options.protocol ?? "kitpilot-cli-stream"
 		this.capabilities = options.capabilities ?? [
 			"stdin:start",
 			"stdin:message",

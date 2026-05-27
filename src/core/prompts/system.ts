@@ -51,7 +51,7 @@ async function generatePrompt(
 	globalCustomInstructions?: string,
 	experiments?: Record<string, boolean>,
 	language?: string,
-	rooIgnoreInstructions?: string,
+	kitpilotIgnoreInstructions?: string,
 	settings?: SystemPromptSettings,
 	todoList?: TodoItem[],
 	modelId?: string,
@@ -104,7 +104,7 @@ ${getObjectiveSection(vscode.workspace.getConfiguration("kit-pilot").get<string>
 ${userMemorySection ? `\n${userMemorySection}\n` : ""}
 ${await addCustomInstructions(baseInstructions, globalCustomInstructions || "", cwd, mode, {
 	language: language ?? formatLanguage(vscode.env.language),
-	rooIgnoreInstructions,
+	kitpilotIgnoreInstructions,
 	settings,
 })}`
 
@@ -123,7 +123,7 @@ export const SYSTEM_PROMPT = async (
 	globalCustomInstructions?: string,
 	experiments?: Record<string, boolean>,
 	language?: string,
-	rooIgnoreInstructions?: string,
+	kitpilotIgnoreInstructions?: string,
 	settings?: SystemPromptSettings,
 	todoList?: TodoItem[],
 	modelId?: string,
@@ -151,7 +151,7 @@ export const SYSTEM_PROMPT = async (
 		globalCustomInstructions,
 		experiments,
 		language,
-		rooIgnoreInstructions,
+		kitpilotIgnoreInstructions,
 		settings,
 		todoList,
 		modelId,

@@ -1,86 +1,86 @@
 import { z } from "zod"
 
-import { rooCodeSettingsSchema } from "./global-settings.js"
+import { kitpilotCodeSettingsSchema } from "./global-settings.js"
 
 /**
- * Roo CLI stdin commands
+ * KitPilot CLI stdin commands
  */
 
-export const rooCliCommandNames = ["start", "message", "cancel", "ping", "shutdown"] as const
+export const kitpilotCliCommandNames = ["start", "message", "cancel", "ping", "shutdown"] as const
 
-export const rooCliCommandNameSchema = z.enum(rooCliCommandNames)
+export const kitpilotCliCommandNameSchema = z.enum(kitpilotCliCommandNames)
 
-export type RooCliCommandName = z.infer<typeof rooCliCommandNameSchema>
+export type KitPilotCliCommandName = z.infer<typeof kitpilotCliCommandNameSchema>
 
-export const rooCliCommandBaseSchema = z.object({
-	command: rooCliCommandNameSchema,
+export const kitpilotCliCommandBaseSchema = z.object({
+	command: kitpilotCliCommandNameSchema,
 	requestId: z.string().min(1),
 })
 
-export type RooCliCommandBase = z.infer<typeof rooCliCommandBaseSchema>
+export type KitPilotCliCommandBase = z.infer<typeof kitpilotCliCommandBaseSchema>
 
-const rooCliSessionIdSchema = z
+const kitpilotCliSessionIdSchema = z
 	.string()
 	.trim()
 	.regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
 
-export const rooCliStartCommandSchema = rooCliCommandBaseSchema.extend({
+export const kitpilotCliStartCommandSchema = kitpilotCliCommandBaseSchema.extend({
 	command: z.literal("start"),
 	prompt: z.string(),
-	taskId: rooCliSessionIdSchema.optional(),
+	taskId: kitpilotCliSessionIdSchema.optional(),
 	images: z.array(z.string()).optional(),
-	configuration: rooCodeSettingsSchema.optional(),
+	configuration: kitpilotCodeSettingsSchema.optional(),
 })
 
-export type RooCliStartCommand = z.infer<typeof rooCliStartCommandSchema>
+export type KitPilotCliStartCommand = z.infer<typeof kitpilotCliStartCommandSchema>
 
-export const rooCliMessageCommandSchema = rooCliCommandBaseSchema.extend({
+export const kitpilotCliMessageCommandSchema = kitpilotCliCommandBaseSchema.extend({
 	command: z.literal("message"),
 	prompt: z.string(),
 	images: z.array(z.string()).optional(),
 })
 
-export type RooCliMessageCommand = z.infer<typeof rooCliMessageCommandSchema>
+export type KitPilotCliMessageCommand = z.infer<typeof kitpilotCliMessageCommandSchema>
 
-export const rooCliCancelCommandSchema = rooCliCommandBaseSchema.extend({
+export const kitpilotCliCancelCommandSchema = kitpilotCliCommandBaseSchema.extend({
 	command: z.literal("cancel"),
 })
 
-export type RooCliCancelCommand = z.infer<typeof rooCliCancelCommandSchema>
+export type KitPilotCliCancelCommand = z.infer<typeof kitpilotCliCancelCommandSchema>
 
-export const rooCliPingCommandSchema = rooCliCommandBaseSchema.extend({
+export const kitpilotCliPingCommandSchema = kitpilotCliCommandBaseSchema.extend({
 	command: z.literal("ping"),
 })
 
-export type RooCliPingCommand = z.infer<typeof rooCliPingCommandSchema>
+export type KitPilotCliPingCommand = z.infer<typeof kitpilotCliPingCommandSchema>
 
-export const rooCliShutdownCommandSchema = rooCliCommandBaseSchema.extend({
+export const kitpilotCliShutdownCommandSchema = kitpilotCliCommandBaseSchema.extend({
 	command: z.literal("shutdown"),
 })
 
-export type RooCliShutdownCommand = z.infer<typeof rooCliShutdownCommandSchema>
+export type KitPilotCliShutdownCommand = z.infer<typeof kitpilotCliShutdownCommandSchema>
 
-export const rooCliInputCommandSchema = z.discriminatedUnion("command", [
-	rooCliStartCommandSchema,
-	rooCliMessageCommandSchema,
-	rooCliCancelCommandSchema,
-	rooCliPingCommandSchema,
-	rooCliShutdownCommandSchema,
+export const kitpilotCliInputCommandSchema = z.discriminatedUnion("command", [
+	kitpilotCliStartCommandSchema,
+	kitpilotCliMessageCommandSchema,
+	kitpilotCliCancelCommandSchema,
+	kitpilotCliPingCommandSchema,
+	kitpilotCliShutdownCommandSchema,
 ])
 
-export type RooCliInputCommand = z.infer<typeof rooCliInputCommandSchema>
+export type KitPilotCliInputCommand = z.infer<typeof kitpilotCliInputCommandSchema>
 
 /**
- * Roo CLI stream-json output
+ * KitPilot CLI stream-json output
  */
 
-export const rooCliOutputFormats = ["text", "json", "stream-json"] as const
+export const kitpilotCliOutputFormats = ["text", "json", "stream-json"] as const
 
-export const rooCliOutputFormatSchema = z.enum(rooCliOutputFormats)
+export const kitpilotCliOutputFormatSchema = z.enum(kitpilotCliOutputFormats)
 
-export type RooCliOutputFormat = z.infer<typeof rooCliOutputFormatSchema>
+export type KitPilotCliOutputFormat = z.infer<typeof kitpilotCliOutputFormatSchema>
 
-export const rooCliEventTypes = [
+export const kitpilotCliEventTypes = [
 	"system",
 	"control",
 	"queue",
@@ -93,42 +93,42 @@ export const rooCliEventTypes = [
 	"result",
 ] as const
 
-export const rooCliEventTypeSchema = z.enum(rooCliEventTypes)
+export const kitpilotCliEventTypeSchema = z.enum(kitpilotCliEventTypes)
 
-export type RooCliEventType = z.infer<typeof rooCliEventTypeSchema>
+export type KitPilotCliEventType = z.infer<typeof kitpilotCliEventTypeSchema>
 
-export const rooCliControlSubtypes = ["ack", "done", "error"] as const
+export const kitpilotCliControlSubtypes = ["ack", "done", "error"] as const
 
-export const rooCliControlSubtypeSchema = z.enum(rooCliControlSubtypes)
+export const kitpilotCliControlSubtypeSchema = z.enum(kitpilotCliControlSubtypes)
 
-export type RooCliControlSubtype = z.infer<typeof rooCliControlSubtypeSchema>
+export type KitPilotCliControlSubtype = z.infer<typeof kitpilotCliControlSubtypeSchema>
 
-export const rooCliQueueItemSchema = z.object({
+export const kitpilotCliQueueItemSchema = z.object({
 	id: z.string().min(1),
 	text: z.string().optional(),
 	imageCount: z.number().optional(),
 	timestamp: z.number().optional(),
 })
 
-export type RooCliQueueItem = z.infer<typeof rooCliQueueItemSchema>
+export type KitPilotCliQueueItem = z.infer<typeof kitpilotCliQueueItemSchema>
 
-export const rooCliToolUseSchema = z.object({
+export const kitpilotCliToolUseSchema = z.object({
 	name: z.string(),
 	input: z.record(z.unknown()).optional(),
 })
 
-export type RooCliToolUse = z.infer<typeof rooCliToolUseSchema>
+export type KitPilotCliToolUse = z.infer<typeof kitpilotCliToolUseSchema>
 
-export const rooCliToolResultSchema = z.object({
+export const kitpilotCliToolResultSchema = z.object({
 	name: z.string(),
 	output: z.string().optional(),
 	error: z.string().optional(),
 	exitCode: z.number().optional(),
 })
 
-export type RooCliToolResult = z.infer<typeof rooCliToolResultSchema>
+export type KitPilotCliToolResult = z.infer<typeof kitpilotCliToolResultSchema>
 
-export const rooCliCostSchema = z.object({
+export const kitpilotCliCostSchema = z.object({
 	totalCost: z.number().optional(),
 	inputTokens: z.number().optional(),
 	outputTokens: z.number().optional(),
@@ -136,14 +136,14 @@ export const rooCliCostSchema = z.object({
 	cacheReads: z.number().optional(),
 })
 
-export type RooCliCost = z.infer<typeof rooCliCostSchema>
+export type KitPilotCliCost = z.infer<typeof kitpilotCliCostSchema>
 
-export const rooCliStreamEventSchema = z
+export const kitpilotCliStreamEventSchema = z
 	.object({
-		type: rooCliEventTypeSchema.optional(),
+		type: kitpilotCliEventTypeSchema.optional(),
 		subtype: z.string().optional(),
 		requestId: z.string().optional(),
-		command: rooCliCommandNameSchema.optional(),
+		command: kitpilotCliCommandNameSchema.optional(),
 		taskId: z.string().optional(),
 		code: z.string().optional(),
 		content: z.string().optional(),
@@ -151,32 +151,32 @@ export const rooCliStreamEventSchema = z
 		id: z.number().optional(),
 		done: z.boolean().optional(),
 		queueDepth: z.number().optional(),
-		queue: z.array(rooCliQueueItemSchema).optional(),
+		queue: z.array(kitpilotCliQueueItemSchema).optional(),
 		schemaVersion: z.number().optional(),
 		protocol: z.string().optional(),
 		capabilities: z.array(z.string()).optional(),
-		tool_use: rooCliToolUseSchema.optional(),
-		tool_result: rooCliToolResultSchema.optional(),
-		cost: rooCliCostSchema.optional(),
+		tool_use: kitpilotCliToolUseSchema.optional(),
+		tool_result: kitpilotCliToolResultSchema.optional(),
+		cost: kitpilotCliCostSchema.optional(),
 	})
 	.passthrough()
 
-export type RooCliStreamEvent = z.infer<typeof rooCliStreamEventSchema>
+export type KitPilotCliStreamEvent = z.infer<typeof kitpilotCliStreamEventSchema>
 
-export const rooCliControlEventSchema = rooCliStreamEventSchema.extend({
+export const kitpilotCliControlEventSchema = kitpilotCliStreamEventSchema.extend({
 	type: z.literal("control"),
-	subtype: rooCliControlSubtypeSchema,
+	subtype: kitpilotCliControlSubtypeSchema,
 	requestId: z.string().min(1),
 })
 
-export type RooCliControlEvent = z.infer<typeof rooCliControlEventSchema>
+export type KitPilotCliControlEvent = z.infer<typeof kitpilotCliControlEventSchema>
 
-export const rooCliFinalOutputSchema = z.object({
+export const kitpilotCliFinalOutputSchema = z.object({
 	type: z.literal("result"),
 	success: z.boolean(),
 	content: z.string().optional(),
-	cost: rooCliCostSchema.optional(),
-	events: z.array(rooCliStreamEventSchema),
+	cost: kitpilotCliCostSchema.optional(),
+	events: z.array(kitpilotCliStreamEventSchema),
 })
 
-export type RooCliFinalOutput = z.infer<typeof rooCliFinalOutputSchema>
+export type KitPilotCliFinalOutput = z.infer<typeof kitpilotCliFinalOutputSchema>

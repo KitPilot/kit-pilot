@@ -4,7 +4,7 @@ import { Trans } from "react-i18next"
 
 import { buildDocLink } from "@src/utils/docLinks"
 
-const RooTips = () => {
+const KitPilotTips = () => {
 	const { t } = useTranslation("chat")
 
 	return (
@@ -14,7 +14,7 @@ const RooTips = () => {
 					<Trans i18nKey="chat:about" />
 				</h2>
 				<p className="m-0 text-sm text-vscode-descriptionForeground leading-relaxed">
-					{t("rooTips.modelAgnostic.description")}
+					{t("kitpilotTips.modelAgnostic.description")}
 				</p>
 				<p className="m-0 text-sm text-vscode-descriptionForeground">
 					<Trans
@@ -34,4 +34,4 @@ const RooTips = () => {
 	)
 }
 
-export default RooTips
+export default KitPilotTips

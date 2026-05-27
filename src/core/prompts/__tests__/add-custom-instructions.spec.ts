@@ -211,7 +211,7 @@ describe("addCustomInstructions", () => {
 			undefined, // globalCustomInstructions
 			undefined, // experiments
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 			undefined, // partialReadsEnabled
 		)
 
@@ -231,7 +231,7 @@ describe("addCustomInstructions", () => {
 			undefined, // globalCustomInstructions
 			undefined, // experiments
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 			undefined, // partialReadsEnabled
 		)
 
@@ -253,7 +253,7 @@ describe("addCustomInstructions", () => {
 			undefined, // globalCustomInstructions
 			undefined, // experiments
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // kitpilotIgnoreInstructions
 			undefined, // partialReadsEnabled
 		)
 

@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-const RooHero = () => {
+const KitPilotHero = () => {
 	const [imagesBaseUri] = useState(() => {
 		const w = window as any
 		return w.IMAGES_BASE_URI || ""
@@ -24,4 +24,4 @@ const RooHero = () => {
 	)
 }
 
-export default RooHero
+export default KitPilotHero

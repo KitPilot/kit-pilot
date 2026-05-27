@@ -8,28 +8,28 @@ import * as vscode from "vscode"
 export const LOCK_TEXT_SYMBOL = "\u{1F512}"
 
 const KITPILOT_IGNORE_FILENAME = ".kitpilotignore"
-const LEGACY_IGNORE_FILENAME = ".rooignore"
+const LEGACY_IGNORE_FILENAME = ".kitpilotignore"
 
 /**
  * Controls LLM access to files by enforcing ignore patterns.
- * Reads either `.kitpilotignore` (preferred) or legacy `.rooignore` from the workspace root.
+ * Reads either `.kitpilotignore` (preferred) or legacy `.kitpilotignore` from the workspace root.
  */
-export class RooIgnoreController {
+export class KitPilotIgnoreController {
 	private cwd: string
 	private ignoreInstance: Ignore
 	private disposables: vscode.Disposable[] = []
 	private activeIgnoreFilename: string = KITPILOT_IGNORE_FILENAME
-	rooIgnoreContent: string | undefined
+	kitpilotIgnoreContent: string | undefined
 
 	constructor(cwd: string) {
 		this.cwd = cwd
 		this.ignoreInstance = ignore()
-		this.rooIgnoreContent = undefined
+		this.kitpilotIgnoreContent = undefined
 		this.setupFileWatcher()
 	}
 
 	async initialize(): Promise<void> {
-		await this.loadRooIgnore()
+		await this.loadKitPilotIgnore()
 	}
 
 	private setupFileWatcher(): void {
@@ -38,15 +38,15 @@ export class RooIgnoreController {
 			const pattern = new vscode.RelativePattern(this.cwd, name)
 			const watcher = vscode.workspace.createFileSystemWatcher(pattern)
 			this.disposables.push(
-				watcher.onDidChange(() => this.loadRooIgnore()),
-				watcher.onDidCreate(() => this.loadRooIgnore()),
-				watcher.onDidDelete(() => this.loadRooIgnore()),
+				watcher.onDidChange(() => this.loadKitPilotIgnore()),
+				watcher.onDidCreate(() => this.loadKitPilotIgnore()),
+				watcher.onDidDelete(() => this.loadKitPilotIgnore()),
 				watcher,
 			)
 		}
 	}
 
-	private async loadRooIgnore(): Promise<void> {
+	private async loadKitPilotIgnore(): Promise<void> {
 		try {
 			this.ignoreInstance = ignore()
 			const kitpilotPath = path.join(this.cwd, KITPILOT_IGNORE_FILENAME)
@@ -63,11 +63,11 @@ export class RooIgnoreController {
 
 			if (activePath) {
 				const content = await fs.readFile(activePath, "utf8")
-				this.rooIgnoreContent = content
+				this.kitpilotIgnoreContent = content
 				this.ignoreInstance.add(content)
 				this.ignoreInstance.add(this.activeIgnoreFilename)
 			} else {
-				this.rooIgnoreContent = undefined
+				this.kitpilotIgnoreContent = undefined
 				this.activeIgnoreFilename = KITPILOT_IGNORE_FILENAME
 			}
 		} catch (error) {
@@ -82,8 +82,8 @@ export class RooIgnoreController {
 	 * @returns true if file is accessible, false if ignored
 	 */
 	validateAccess(filePath: string): boolean {
-		// Always allow access if .rooignore does not exist
-		if (!this.rooIgnoreContent) {
+		// Always allow access if .kitpilotignore does not exist
+		if (!this.kitpilotIgnoreContent) {
 			return true
 		}
 		try {
@@ -99,7 +99,7 @@ export class RooIgnoreController {
 				realPath = absolutePath
 			}
 
-			// Convert real path to relative for .rooignore checking
+			// Convert real path to relative for .kitpilotignore checking
 			const relativePath = path.relative(this.cwd, realPath).toPosix()
 
 			// Check if the real path is ignored
@@ -116,8 +116,8 @@ export class RooIgnoreController {
 	 * @returns path of file that is being accessed if it is being accessed, undefined if command is allowed
 	 */
 	validateCommand(command: string): string | undefined {
-		// Always allow if no .rooignore exists
-		if (!this.rooIgnoreContent) {
+		// Always allow if no .kitpilotignore exists
+		if (!this.kitpilotIgnoreContent) {
 			return undefined
 		}
 
@@ -199,10 +199,10 @@ export class RooIgnoreController {
 	 * @returns Formatted instructions or undefined if no ignore file exists
 	 */
 	getInstructions(): string | undefined {
-		if (!this.rooIgnoreContent) {
+		if (!this.kitpilotIgnoreContent) {
 			return undefined
 		}
 		const name = this.activeIgnoreFilename
-		return `# ${name}\n\n(The following is provided by a root-level ${name} file where the user has specified files and directories that should not be accessed. When using list_files, you'll notice a ${LOCK_TEXT_SYMBOL} next to files that are blocked. Attempting to access the file's contents e.g. through read_file will result in an error.)\n\n${this.rooIgnoreContent}\n${name}`
+		return `# ${name}\n\n(The following is provided by a root-level ${name} file where the user has specified files and directories that should not be accessed. When using list_files, you'll notice a ${LOCK_TEXT_SYMBOL} next to files that are blocked. Attempting to access the file's contents e.g. through read_file will result in an error.)\n\n${this.kitpilotIgnoreContent}\n${name}`
 	}
 }

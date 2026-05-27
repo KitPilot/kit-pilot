@@ -294,7 +294,7 @@
 			},
 			"protected": {
 				"label": "Include protected files",
-				"description": "Allow KitPilot to create and edit protected files (like .rooignore and .roo/ configuration files) without requiring approval."
+				"description": "Allow KitPilot to create and edit protected files (like .kitpilotignore and .kitpilot/ configuration files) without requiring approval."
 			}
 		},
 		"mcp": {
@@ -608,7 +608,7 @@
 			"maxTokensLabel": "Max Output Tokens",
 			"maxTokensDescription": "Maximum number of output tokens for Claude Code responses. Default is 8000."
 		},
-		"retiredRooProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredKitPilotProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -662,9 +662,9 @@
 			"label": "Workspace files context limit",
 			"description": "Maximum number of files to include in current working directory details. Higher values provide more context but increase token usage."
 		},
-		"rooignore": {
-			"label": "Show .rooignore'd files in lists and searches",
-			"description": "When enabled, files matching patterns in .rooignore will be shown in lists with a lock symbol. When disabled, these files will be completely hidden from file lists and searches."
+		"kitpilotignore": {
+			"label": "Show .kitpilotignore'd files in lists and searches",
+			"description": "When enabled, files matching patterns in .kitpilotignore will be shown in lists with a lock symbol. When disabled, these files will be completely hidden from file lists and searches."
 		},
 		"maxConcurrentFileReads": {
 			"label": "Concurrent file reads limit",
@@ -725,7 +725,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "Enable subfolder rules",
-			"description": "Recursively discover and load .roo/rules and AGENTS.md files from subdirectories. Useful for monorepos with per-package rules."
+			"description": "Recursively discover and load .kitpilot/rules and AGENTS.md files from subdirectories. Useful for monorepos with per-package rules."
 		}
 	},
 	"terminal": {
@@ -865,9 +865,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Enable custom tools",
-			"description": "When enabled, KitPilot can load and use custom TypeScript/JavaScript tools from your project's .roo/tools directory or ~/.roo/tools for global tools. Note: these tools will automatically be auto-approved.",
+			"description": "When enabled, KitPilot can load and use custom TypeScript/JavaScript tools from your project's .kitpilot/tools directory or ~/.kitpilot/tools for global tools. Note: these tools will automatically be auto-approved.",
 			"toolsHeader": "Available Custom Tools",
-			"noTools": "No custom tools loaded. Add .ts or .js files to your project's .roo/tools directory or ~/.roo/tools for global tools.",
+			"noTools": "No custom tools loaded. Add .ts or .js files to your project's .kitpilot/tools directory or ~/.kitpilot/tools for global tools.",
 			"refreshButton": "Refresh",
 			"refreshing": "Refreshing...",
 			"refreshSuccess": "Tools refreshed successfully",

@@ -8,7 +8,7 @@
 		"noMatchFound": "Geen modi gevonden",
 		"editModesConfig": "Modusconfiguratie bewerken",
 		"editGlobalModes": "Globale modi bewerken",
-		"editProjectModes": "Projectmodi bewerken (.roomodes)",
+		"editProjectModes": "Projectmodi bewerken (.kitpilotmodes)",
 		"createModeHelpText": "Modi zijn gespecialiseerde persona's die het gedrag van KitPilot aanpassen. <0>Meer informatie over het gebruik van modi</0> of <1>het aanpassen van modi.</1>",
 		"selectMode": "Modus zoeken"
 	},
@@ -49,7 +49,7 @@
 		"title": "Modusspecifieke instructies (optioneel)",
 		"resetToDefault": "Terugzetten naar standaard",
 		"description": "Voeg gedragsrichtlijnen toe die specifiek zijn voor de modus {{modeName}}.",
-		"loadFromFile": "Aangepaste instructies specifiek voor de {{mode}} modus kunnen ook worden geladen vanuit de map <span>.roo/rules-{{slug}}/</span> in je werkruimte of vanuit de globale <0>.roo/rules-{{slug}}/</0> (.roorules-{{slug}} en .clinerules-{{slug}} zijn verouderd en zullen binnenkort niet meer werken)."
+		"loadFromFile": "Aangepaste instructies specifiek voor de {{mode}} modus kunnen ook worden geladen vanuit de map <span>.kitpilot/rules-{{slug}}/</span> in je werkruimte of vanuit de globale <0>.kitpilot/rules-{{slug}}/</0> (.roorules-{{slug}} en .clinerules-{{slug}} zijn verouderd en zullen binnenkort niet meer werken)."
 	},
 	"exportMode": {
 		"title": "Modus exporteren",
@@ -67,13 +67,13 @@
 		},
 		"project": {
 			"label": "Projectniveau",
-			"description": "Alleen beschikbaar in deze werkruimte. Als de geëxporteerde modus regelbestanden bevatte, worden deze opnieuw gemaakt in de map .roo/rules-{slug}/."
+			"description": "Alleen beschikbaar in deze werkruimte. Als de geëxporteerde modus regelbestanden bevatte, worden deze opnieuw gemaakt in de map .kitpilot/rules-{slug}/."
 		}
 	},
 	"globalCustomInstructions": {
 		"title": "Aangepaste instructies voor alle modi",
 		"description": "Deze instructies gelden voor alle modi. Ze bieden een basisset aan gedragingen die kunnen worden uitgebreid met modusspecifieke instructies hieronder. <0>Meer informatie</0>",
-		"loadFromFile": "Instructies kunnen ook worden geladen vanuit de map <span>.roo/rules/</span> in je werkruimte of vanuit de globale <0>.roo/rules/</0> (.roorules en .clinerules zijn verouderd en zullen binnenkort niet meer werken)."
+		"loadFromFile": "Instructies kunnen ook worden geladen vanuit de map <span>.kitpilot/rules/</span> in je werkruimte of vanuit de globale <0>.kitpilot/rules/</0> (.roorules en .clinerules zijn verouderd en zullen binnenkort niet meer werken)."
 	},
 	"systemPrompt": {
 		"preview": "Systeemprompt bekijken",
@@ -161,7 +161,7 @@
 				"description": "Beschikbaar in alle werkruimtes"
 			},
 			"project": {
-				"label": "Projectspecifiek (.roomodes)",
+				"label": "Projectspecifiek (.kitpilotmodes)",
 				"description": "Alleen beschikbaar in deze werkruimte, heeft voorrang op globaal"
 			}
 		},

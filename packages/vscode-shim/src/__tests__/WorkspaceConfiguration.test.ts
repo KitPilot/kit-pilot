@@ -195,7 +195,7 @@ describe("MockWorkspaceConfiguration", () => {
 		})
 
 		it("should return runtime config value over disk-based values", async () => {
-			const config = new MockWorkspaceConfiguration("roo-cline", context)
+			const config = new MockWorkspaceConfiguration("kit-pilot", context)
 
 			// Set a value in disk-based storage
 			await config.update("commandExecutionTimeout", 10)
@@ -204,20 +204,20 @@ describe("MockWorkspaceConfiguration", () => {
 			expect(config.get("commandExecutionTimeout")).toBe(10)
 
 			// Set runtime config (should take precedence)
-			setRuntimeConfig("roo-cline", "commandExecutionTimeout", 20)
+			setRuntimeConfig("kit-pilot", "commandExecutionTimeout", 20)
 
 			// Now runtime value should be returned
 			expect(config.get("commandExecutionTimeout")).toBe(20)
 		})
 
 		it("should set and get runtime config values", () => {
-			setRuntimeConfig("roo-cline", "testSetting", "testValue")
+			setRuntimeConfig("kit-pilot", "testSetting", "testValue")
 
 			expect(getRuntimeConfig("kit-pilot.testSetting")).toBe("testValue")
 		})
 
 		it("should set multiple runtime config values at once", () => {
-			setRuntimeConfigValues("roo-cline", {
+			setRuntimeConfigValues("kit-pilot", {
 				setting1: "value1",
 				setting2: 42,
 				setting3: true,
@@ -229,7 +229,7 @@ describe("MockWorkspaceConfiguration", () => {
 		})
 
 		it("should ignore undefined values in setRuntimeConfigValues", () => {
-			setRuntimeConfigValues("roo-cline", {
+			setRuntimeConfigValues("kit-pilot", {
 				defined: "value",
 				notDefined: undefined,
 			})
@@ -239,8 +239,8 @@ describe("MockWorkspaceConfiguration", () => {
 		})
 
 		it("should clear all runtime config values", () => {
-			setRuntimeConfig("roo-cline", "setting1", "value1")
-			setRuntimeConfig("roo-cline", "setting2", "value2")
+			setRuntimeConfig("kit-pilot", "setting1", "value1")
+			setRuntimeConfig("kit-pilot", "setting2", "value2")
 
 			clearRuntimeConfig()
 
@@ -249,7 +249,7 @@ describe("MockWorkspaceConfiguration", () => {
 		})
 
 		it("should return default value when no runtime config is set", () => {
-			const config = new MockWorkspaceConfiguration("roo-cline", context)
+			const config = new MockWorkspaceConfiguration("kit-pilot", context)
 
 			expect(config.get("nonexistent", 0)).toBe(0)
 			expect(config.get("nonexistent", "default")).toBe("default")
@@ -257,12 +257,12 @@ describe("MockWorkspaceConfiguration", () => {
 
 		it("should work with MockWorkspaceConfiguration.get() for CLI settings", () => {
 			// Simulate CLI setting commandExecutionTimeout
-			setRuntimeConfigValues("roo-cline", {
+			setRuntimeConfigValues("kit-pilot", {
 				commandExecutionTimeout: 20,
 				commandTimeoutAllowlist: ["npm", "yarn"],
 			})
 
-			const config = new MockWorkspaceConfiguration("roo-cline", context)
+			const config = new MockWorkspaceConfiguration("kit-pilot", context)
 
 			// These should return the runtime config values
 			expect(config.get<number>("commandExecutionTimeout", 0)).toBe(20)

@@ -1,12 +1,12 @@
 {
 	"name": "@kit-pilot/cli",
 	"version": "0.1.17",
-	"description": "Roo Code CLI - Run the Roo Code agent from the command line",
+	"description": "KitPilot CLI - Run the KitPilot agent from the command line",
 	"private": true,
 	"type": "module",
 	"main": "dist/index.js",
 	"bin": {
-		"roo": "dist/index.js"
+		"kitpilot": "dist/index.js"
 	},
 	"scripts": {
 		"format": "prettier --write 'src/**/*.ts'",
@@ -15,7 +15,7 @@
 		"test": "vitest run",
 		"test:integration": "tsx scripts/integration/run.ts",
 		"build": "tsup",
-		"build:extension": "pnpm --filter roo-cline bundle",
+		"build:extension": "pnpm --filter kit-pilot bundle",
 		"dev": "tsx src/index.ts",
 		"dev:local": "tsx src/index.ts",
 		"clean": "rimraf dist .turbo"

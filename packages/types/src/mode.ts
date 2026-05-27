@@ -85,7 +85,7 @@ const rawGroupEntryArraySchema = z.array(groupEntrySchema).refine(
  *
  * The type assertion to `z.ZodType<GroupEntry[], z.ZodTypeDef, GroupEntry[]>` is
  * required because `z.preprocess` erases the input type to `unknown`, which
- * propagates through `modeConfigSchema → rooCodeSettingsSchema → createRunSchema`
+ * propagates through `modeConfigSchema → kitpilotCodeSettingsSchema → createRunSchema`
  * and breaks `zodResolver` generic inference in downstream consumers.
  */
 export const groupEntryArraySchema = z.preprocess((val) => {

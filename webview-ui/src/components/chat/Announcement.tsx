@@ -2,7 +2,7 @@ import { memo, type ReactNode, useState } from "react"
 import { Trans } from "react-i18next"
 import { VSCodeLink } from "@vscode/webview-ui-toolkit/react"
 
-import { Package } from "@roo/package"
+import { Package } from "@kitpilot/package"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { vscode } from "@src/utils/vscode"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@src/components/ui"
@@ -43,7 +43,7 @@ const Announcement = ({ hideAnnouncement }: AnnouncementProps) => {
 						<Trans
 							i18nKey="chat:announcement.finalRelease.intro"
 							components={{
-								announcementLink: <ExternalLink href="https://github.com/RooCodeInc/Roo-Code" />,
+								announcementLink: <ExternalLink href="https://github.com/KitPilotInc/KitPilot" />,
 								roomoteLink: (
 									<ExternalLink href="https://code.visualstudio.com/api/extension-guides/language-model" />
 								),

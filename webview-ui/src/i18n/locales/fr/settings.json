@@ -235,7 +235,7 @@
 			},
 			"protected": {
 				"label": "Inclure les fichiers protégés",
-				"description": "Permettre à KitPilot de créer et modifier des fichiers protégés (comme .rooignore et les fichiers de configuration .roo/) sans nécessiter d'approbation."
+				"description": "Permettre à KitPilot de créer et modifier des fichiers protégés (comme .kitpilotignore et les fichiers de configuration .kitpilot/) sans nécessiter d'approbation."
 			}
 		},
 		"mcp": {
@@ -546,7 +546,7 @@
 			"maxTokensLabel": "Jetons de sortie max",
 			"maxTokensDescription": "Nombre maximum de jetons de sortie pour les réponses de Claude Code. La valeur par défaut est 8000."
 		},
-		"retiredRooProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredKitPilotProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -600,9 +600,9 @@
 			"label": "Limite de contexte des fichiers de l'espace de travail",
 			"description": "Nombre maximum de fichiers à inclure dans les détails du répertoire de travail actuel. Des valeurs plus élevées fournissent plus de contexte mais augmentent l'utilisation de token."
 		},
-		"rooignore": {
-			"label": "Afficher les fichiers .rooignore dans les listes et recherches",
-			"description": "Lorsque cette option est activée, les fichiers correspondant aux modèles dans .rooignore seront affichés dans les listes avec un symbole de cadenas. Lorsqu'elle est désactivée, ces fichiers seront complètement masqués des listes de fichiers et des recherches."
+		"kitpilotignore": {
+			"label": "Afficher les fichiers .kitpilotignore dans les listes et recherches",
+			"description": "Lorsque cette option est activée, les fichiers correspondant aux modèles dans .kitpilotignore seront affichés dans les listes avec un symbole de cadenas. Lorsqu'elle est désactivée, ces fichiers seront complètement masqués des listes de fichiers et des recherches."
 		},
 		"maxReadFile": {
 			"label": "Seuil d'auto-troncature de lecture de fichier",
@@ -663,7 +663,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "Activer les règles des sous-dossiers",
-			"description": "Découvrir et charger récursivement les fichiers .roo/rules et AGENTS.md depuis les sous-répertoires. Utile pour les monorepos avec des règles par package."
+			"description": "Découvrir et charger récursivement les fichiers .kitpilot/rules et AGENTS.md depuis les sous-répertoires. Utile pour les monorepos avec des règles par package."
 		}
 	},
 	"terminal": {
@@ -803,9 +803,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Activer les outils personnalisés",
-			"description": "Lorsqu'activé, KitPilot peut charger et utiliser des outils TypeScript/JavaScript personnalisés à partir du répertoire .roo/tools de votre projet ou ~/.roo/tools pour des outils globaux. Remarque : ces outils seront automatiquement approuvés.",
+			"description": "Lorsqu'activé, KitPilot peut charger et utiliser des outils TypeScript/JavaScript personnalisés à partir du répertoire .kitpilot/tools de votre projet ou ~/.kitpilot/tools pour des outils globaux. Remarque : ces outils seront automatiquement approuvés.",
 			"toolsHeader": "Outils personnalisés disponibles",
-			"noTools": "Aucun outil personnalisé chargé. Ajoutez des fichiers .ts ou .js au répertoire .roo/tools de votre projet ou ~/.roo/tools pour des outils globaux.",
+			"noTools": "Aucun outil personnalisé chargé. Ajoutez des fichiers .ts ou .js au répertoire .kitpilot/tools de votre projet ou ~/.kitpilot/tools pour des outils globaux.",
 			"refreshButton": "Actualiser",
 			"refreshing": "Actualisation...",
 			"refreshSuccess": "Outils actualisés avec succès",

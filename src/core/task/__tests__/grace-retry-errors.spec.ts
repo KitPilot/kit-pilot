@@ -124,7 +124,7 @@ vi.mock("../../environment/getEnvironmentDetails", () => ({
 	getEnvironmentDetails: vi.fn().mockResolvedValue(""),
 }))
 
-vi.mock("../../ignore/RooIgnoreController")
+vi.mock("../../ignore/KitPilotIgnoreController")
 
 vi.mock("../../../utils/storage", () => ({
 	getTaskDirectoryPath: vi

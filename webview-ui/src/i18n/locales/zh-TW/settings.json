@@ -242,7 +242,7 @@
 			},
 			"protected": {
 				"label": "包含受保護的檔案",
-				"description": "允許 KitPilot 建立與編輯受保護的檔案（如 .rooignore 和 .roo/ 設定檔）且無需核准。"
+				"description": "允許 KitPilot 建立與編輯受保護的檔案（如 .kitpilotignore 和 .kitpilot/ 設定檔）且無需核准。"
 			}
 		},
 		"mcp": {
@@ -556,7 +556,7 @@
 			"maxTokensLabel": "最大輸出 Token",
 			"maxTokensDescription": "Claude Code 回應的最大輸出 Token 數量。預設為 8000。"
 		},
-		"retiredRooProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredKitPilotProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -610,9 +610,9 @@
 			"label": "工作區檔案的上下文限制",
 			"description": "目前工作目錄中最多包含多少個檔案。數值越高提供的上下文越多，但 Token 用量也會增加。"
 		},
-		"rooignore": {
-			"label": "在清單和搜尋中顯示被 .rooignore 排除的檔案",
-			"description": "啟用後，符合 .rooignore 規則的檔案會在清單中顯示並標示鎖定圖示。停用後，這些檔案將完全從檔案清單和搜尋結果中隱藏。"
+		"kitpilotignore": {
+			"label": "在清單和搜尋中顯示被 .kitpilotignore 排除的檔案",
+			"description": "啟用後，符合 .kitpilotignore 規則的檔案會在清單中顯示並標示鎖定圖示。停用後，這些檔案將完全從檔案清單和搜尋結果中隱藏。"
 		},
 		"maxConcurrentFileReads": {
 			"label": "並行檔案讀取限制",
@@ -673,7 +673,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "啟用子資料夾規則",
-			"description": "遞迴發現並載入子目錄中的 .roo/rules 和 AGENTS.md 檔案。適用於具有每包規則的 monorepo。"
+			"description": "遞迴發現並載入子目錄中的 .kitpilot/rules 和 AGENTS.md 檔案。適用於具有每包規則的 monorepo。"
 		}
 	},
 	"terminal": {
@@ -813,9 +813,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "啟用自訂工具",
-			"description": "啟用後，KitPilot 可以從專案中的 .roo/tools 目錄或全域工具目錄 ~/.roo/tools 載入並使用自訂 TypeScript/JavaScript 工具。注意：這些工具將自動獲得核准。",
+			"description": "啟用後，KitPilot 可以從專案中的 .kitpilot/tools 目錄或全域工具目錄 ~/.kitpilot/tools 載入並使用自訂 TypeScript/JavaScript 工具。注意：這些工具將自動獲得核准。",
 			"toolsHeader": "可用自訂工具",
-			"noTools": "未載入自訂工具。請向專案的 .roo/tools 目錄或全域工具目錄 ~/.roo/tools 新增 .ts 或 .js 檔案。",
+			"noTools": "未載入自訂工具。請向專案的 .kitpilot/tools 目錄或全域工具目錄 ~/.kitpilot/tools 新增 .ts 或 .js 檔案。",
 			"refreshButton": "重新整理",
 			"refreshing": "正在重新整理...",
 			"refreshSuccess": "工具重新整理成功",

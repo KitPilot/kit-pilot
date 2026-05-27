@@ -17,7 +17,7 @@ const tmpDir = path.join(os.tmpdir(), "CheckpointService")
 const initWorkspaceRepo = async ({
 	workspaceDir,
 	userName = "KitPilot",
-	userEmail = "support@roocode.com",
+	userEmail = "support@kitpilot.com",
 	testFileName = "test.txt",
 	textFileContent = "Hello, world!",
 }: {
@@ -389,7 +389,7 @@ describe.each([[RepoPerTaskCheckpointService, "RepoPerTaskCheckpointService"]])(
 				const mainGit = simpleGit(workspaceDir)
 				await mainGit.init()
 				await mainGit.addConfig("user.name", "KitPilot")
-				await mainGit.addConfig("user.email", "support@roocode.com")
+				await mainGit.addConfig("user.email", "support@kitpilot.com")
 
 				// Create a nested repo inside the workspace.
 				const nestedRepoPath = path.join(workspaceDir, "nested-project")
@@ -397,7 +397,7 @@ describe.each([[RepoPerTaskCheckpointService, "RepoPerTaskCheckpointService"]])(
 				const nestedGit = simpleGit(nestedRepoPath)
 				await nestedGit.init()
 				await nestedGit.addConfig("user.name", "KitPilot")
-				await nestedGit.addConfig("user.email", "support@roocode.com")
+				await nestedGit.addConfig("user.email", "support@kitpilot.com")
 
 				// Add a file to the nested repo.
 				const nestedFile = path.join(nestedRepoPath, "nested-file.txt")
@@ -459,7 +459,7 @@ describe.each([[RepoPerTaskCheckpointService, "RepoPerTaskCheckpointService"]])(
 				const mainGit = simpleGit(workspaceDir)
 				await mainGit.init()
 				await mainGit.addConfig("user.name", "KitPilot")
-				await mainGit.addConfig("user.email", "support@roocode.com")
+				await mainGit.addConfig("user.email", "support@kitpilot.com")
 
 				// Create a test file in the main workspace.
 				const mainFile = path.join(workspaceDir, "main-file.txt")
@@ -876,7 +876,7 @@ describe.each([[RepoPerTaskCheckpointService, "RepoPerTaskCheckpointService"]])(
 			it("isolates checkpoint operations from GIT_DIR environment variable", async () => {
 				// This test verifies the fix for the issue where GIT_DIR environment variable
 				// causes checkpoint commits to go to the wrong repository.
-				// In the real-world Dev Container scenario, GIT_DIR is set BEFORE Roo starts,
+				// In the real-world Dev Container scenario, GIT_DIR is set BEFORE KitPilot starts,
 				// so we need to set it BEFORE creating the checkpoint service.
 
 				// Create a separate git directory to simulate GIT_DIR pointing elsewhere
@@ -975,7 +975,7 @@ describe("worktree path comparison", () => {
 			const mainGit = simpleGit(workspaceDir)
 			await mainGit.init()
 			await mainGit.addConfig("user.name", "KitPilot")
-			await mainGit.addConfig("user.email", "support@roocode.com")
+			await mainGit.addConfig("user.email", "support@kitpilot.com")
 
 			await fs.writeFile(path.join(workspaceDir, "main.txt"), "main content")
 			await mainGit.add("main.txt")
@@ -1010,7 +1010,7 @@ describe("worktree path comparison", () => {
 			const mainGit = simpleGit(workspaceDir)
 			await mainGit.init()
 			await mainGit.addConfig("user.name", "KitPilot")
-			await mainGit.addConfig("user.email", "support@roocode.com")
+			await mainGit.addConfig("user.email", "support@kitpilot.com")
 
 			await fs.writeFile(path.join(workspaceDir, "main.txt"), "main content")
 			await mainGit.add("main.txt")

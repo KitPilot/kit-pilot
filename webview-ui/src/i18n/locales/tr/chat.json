@@ -93,7 +93,7 @@
 	"about": "KitPilot, düzenleyicinizdeki bütün bir yapay zeka geliştirme ekibidir.",
 	"docs": "Daha fazla bilgi için <DocsLink>belgelerimize</DocsLink> göz atın.",
 	"onboarding": "Bu çalışma alanındaki görev listeniz boş.",
-	"rooTips": {
+	"kitpilotTips": {
 		"customizableModes": {
 			"title": "Özelleştirilebilir modlar",
 			"description": "Göreve odaklanan ve sonuç veren özel kişilikler."
@@ -237,7 +237,7 @@
 	"response": "Yanıt",
 	"arguments": "Argümanlar",
 	"text": {
-		"rooSaid": "KitPilot dedi"
+		"kitpilotSaid": "KitPilot dedi"
 	},
 	"feedback": {
 		"youSaid": "Dediniz ki"
@@ -487,6 +487,6 @@
 		"title": "Sağlayıcı artık desteklenmiyor",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Ayarları aç",
-		"rooMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

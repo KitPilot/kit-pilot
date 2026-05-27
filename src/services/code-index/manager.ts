@@ -8,7 +8,7 @@ import { CodeIndexServiceFactory } from "./service-factory"
 import { CodeIndexSearchService } from "./search-service"
 import { CodeIndexOrchestrator } from "./orchestrator"
 import { CacheManager } from "./cache-manager"
-import { RooIgnoreController } from "../../core/ignore/RooIgnoreController"
+import { KitPilotIgnoreController } from "../../core/ignore/KitPilotIgnoreController"
 import fs from "fs/promises"
 import ignore from "ignore"
 import path from "path"
@@ -379,16 +379,16 @@ export class CodeIndexManager {
 			console.error("Unexpected error loading .gitignore:", error)
 		}
 
-		// Create RooIgnoreController instance
-		const rooIgnoreController = new RooIgnoreController(workspacePath)
-		await rooIgnoreController.initialize()
+		// Create KitPilotIgnoreController instance
+		const kitpilotIgnoreController = new KitPilotIgnoreController(workspacePath)
+		await kitpilotIgnoreController.initialize()
 
 		// (Re)Create shared service instances
 		const { embedder, vectorStore, scanner, fileWatcher } = this._serviceFactory.createServices(
 			this.context,
 			this._cacheManager!,
 			ignoreInstance,
-			rooIgnoreController,
+			kitpilotIgnoreController,
 		)
 
 		// Validate embedder configuration before proceeding

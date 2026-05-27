@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Migrate Roo Code conversation history into KitPilot.
+# Migrate KitPilot conversation history into KitPilot.
 #
 # Both extensions are forks of the same codebase, so their VS Code
 # globalStorage layouts are identical: tasks/<uuid>/*.json plus a master
@@ -8,7 +8,7 @@
 #   1) detects the right storage path for your OS (macOS / Linux / WSL)
 #   2) shows you what would be imported, asks to confirm
 #   3) backs up KitPilot storage to ~/kitpilot-storage-backup-<timestamp>
-#   4) copies any Roo task directories not already in KitPilot
+#   4) copies any KitPilot task directories not already in KitPilot
 #   5) merges the master _index.json (dedupes by id; KitPilot wins on conflict)
 #
 # Re-running is safe: tasks already imported are skipped.
@@ -32,11 +32,11 @@ else
     esac
 fi
 
-ROO="$BASE/rooveterinaryinc.roo-cline"
+ROO="$BASE/rooveterinaryinc.kit-pilot"
 KP="$BASE/kitpilot.kit-pilot"
 
 echo "VS Code globalStorage: $BASE"
-echo "  Roo Code:  $ROO"
+echo "  KitPilot:  $ROO"
 echo "  KitPilot:  $KP"
 echo
 
@@ -49,7 +49,7 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 if [ ! -d "$ROO/tasks" ]; then
-    echo "No Roo Code tasks found at: $ROO/tasks"
+    echo "No KitPilot tasks found at: $ROO/tasks"
     echo "Nothing to migrate."
     exit 0
 fi
@@ -65,17 +65,17 @@ mkdir -p "$KP/tasks"
 
 # --- 3. Inventory -----------------------------------------------------------
 shopt -s nullglob
-ROO_TASKS=( "$ROO/tasks"/*/ )
+KITPILOT_TASKS=( "$ROO/tasks"/*/ )
 shopt -u nullglob
 
-if [ ${#ROO_TASKS[@]} -eq 0 ]; then
-    echo "No Roo task directories found. Exiting."
+if [ ${#KITPILOT_TASKS[@]} -eq 0 ]; then
+    echo "No KitPilot task directories found. Exiting."
     exit 0
 fi
 
 NEW_COUNT=0
 SKIP_COUNT=0
-for task in "${ROO_TASKS[@]}"; do
+for task in "${KITPILOT_TASKS[@]}"; do
     task_id=$(basename "$task")
     if [ -d "$KP/tasks/$task_id" ]; then
         SKIP_COUNT=$((SKIP_COUNT + 1))
@@ -84,7 +84,7 @@ for task in "${ROO_TASKS[@]}"; do
     fi
 done
 
-echo "Roo tasks total:        ${#ROO_TASKS[@]}"
+echo "KitPilot tasks total:        ${#KITPILOT_TASKS[@]}"
 echo "  new (will copy):      $NEW_COUNT"
 echo "  already in KitPilot:  $SKIP_COUNT (skip)"
 echo
@@ -106,7 +106,7 @@ cp -R "$KP" "$BACKUP"
 
 # --- 5. Copy task directories -----------------------------------------------
 copied=0
-for task in "${ROO_TASKS[@]}"; do
+for task in "${KITPILOT_TASKS[@]}"; do
     task_id=$(basename "$task")
     [ -d "$KP/tasks/$task_id" ] && continue
     cp -R "$task" "$KP/tasks/"
@@ -127,5 +127,5 @@ TOTAL=$(jq '.entries | length' "$KP/tasks/_index.json")
 echo "Merged _index.json (now $TOTAL total entries)."
 
 echo
-echo "Done. Open KitPilot — your Roo tasks should appear in the history view."
+echo "Done. Open KitPilot — your KitPilot tasks should appear in the history view."
 echo "If anything looks wrong, restore from: $BACKUP"

@@ -108,15 +108,15 @@ export class ApplyPatchTool extends BaseTool<"apply_patch"> {
 				const absolutePath = path.resolve(task.cwd, relPath)
 
 				// Check access permissions
-				const accessAllowed = task.rooIgnoreController?.validateAccess(relPath)
+				const accessAllowed = task.kitpilotIgnoreController?.validateAccess(relPath)
 				if (!accessAllowed) {
-					await task.say("rooignore_error", relPath)
-					pushToolResult(formatResponse.rooIgnoreError(relPath))
+					await task.say("kitpilotignore_error", relPath)
+					pushToolResult(formatResponse.kitpilotIgnoreError(relPath))
 					return
 				}
 
 				// Check if file is write-protected
-				const isWriteProtected = task.rooProtectedController?.isWriteProtected(relPath) || false
+				const isWriteProtected = task.kitpilotProtectedController?.isWriteProtected(relPath) || false
 
 				if (change.type === "add") {
 					// Create new file
@@ -375,16 +375,16 @@ export class ApplyPatchTool extends BaseTool<"apply_patch"> {
 			const moveAbsolutePath = path.resolve(task.cwd, change.movePath)
 
 			// Validate destination path access permissions
-			const moveAccessAllowed = task.rooIgnoreController?.validateAccess(change.movePath)
+			const moveAccessAllowed = task.kitpilotIgnoreController?.validateAccess(change.movePath)
 			if (!moveAccessAllowed) {
-				await task.say("rooignore_error", change.movePath)
-				pushToolResult(formatResponse.rooIgnoreError(change.movePath))
+				await task.say("kitpilotignore_error", change.movePath)
+				pushToolResult(formatResponse.kitpilotIgnoreError(change.movePath))
 				await task.diffViewProvider.reset()
 				return
 			}
 
 			// Check if destination path is write-protected
-			const isMovePathWriteProtected = task.rooProtectedController?.isWriteProtected(change.movePath) || false
+			const isMovePathWriteProtected = task.kitpilotProtectedController?.isWriteProtected(change.movePath) || false
 			if (isMovePathWriteProtected) {
 				task.consecutiveMistakeCount++
 				task.recordToolError("apply_patch")

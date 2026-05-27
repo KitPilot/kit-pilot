@@ -112,17 +112,17 @@ vi.mock("../QueuedMessages", () => ({
 	},
 }))
 
-// Mock RooTips component
-vi.mock("@src/components/welcome/RooTips", () => ({
-	default: function MockRooTips() {
-		return <div data-testid="roo-tips">Tips content</div>
+// Mock KitPilotTips component
+vi.mock("@src/components/welcome/KitPilotTips", () => ({
+	default: function MockKitPilotTips() {
+		return <div data-testid="kitpilot-tips">Tips content</div>
 	},
 }))
 
-// Mock RooHero component
-vi.mock("@src/components/welcome/RooHero", () => ({
-	default: function MockRooHero() {
-		return <div data-testid="roo-hero">Hero content</div>
+// Mock KitPilotHero component
+vi.mock("@src/components/welcome/KitPilotHero", () => ({
+	default: function MockKitPilotHero() {
+		return <div data-testid="kitpilot-hero">Hero content</div>
 	},
 }))
 

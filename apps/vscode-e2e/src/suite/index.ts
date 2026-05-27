@@ -3,12 +3,12 @@ import Mocha from "mocha"
 import { glob } from "glob"
 import * as vscode from "vscode"
 
-import type { RooCodeAPI } from "@kit-pilot/types"
+import type { KitPilotAPI } from "@kit-pilot/types"
 
 import { waitFor } from "./utils"
 
 export async function run() {
-	const extension = vscode.extensions.getExtension<RooCodeAPI>("KitPilot.roo-cline")
+	const extension = vscode.extensions.getExtension<KitPilotAPI>("KitPilot.kit-pilot")
 
 	if (!extension) {
 		throw new Error("Extension not found")

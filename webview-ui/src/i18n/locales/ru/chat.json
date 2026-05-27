@@ -93,7 +93,7 @@
 	"about": "KitPilot — это целая команда разработчиков ИИ в вашем редакторе.",
 	"docs": "Ознакомьтесь с нашей <DocsLink>документацией</DocsLink>, чтобы узнать больше.",
 	"onboarding": "Ваш список задач в этом рабочем пространстве пуст.",
-	"rooTips": {
+	"kitpilotTips": {
 		"customizableModes": {
 			"title": "Настраиваемые режимы",
 			"description": "Специализированные персонажи, которые придерживаются задачи и выполняют ее."
@@ -232,7 +232,7 @@
 	"response": "Ответ",
 	"arguments": "Аргументы",
 	"text": {
-		"rooSaid": "Ру сказал"
+		"kitpilotSaid": "Ру сказал"
 	},
 	"feedback": {
 		"youSaid": "Вы сказали"
@@ -487,6 +487,6 @@
 		"title": "Провайдер больше не поддерживается",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Открыть настройки",
-		"rooMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

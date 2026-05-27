@@ -234,7 +234,7 @@
 			},
 			"protected": {
 				"label": "Bao gồm các tệp được bảo vệ",
-				"description": "Cho phép KitPilot tạo và chỉnh sửa các tệp được bảo vệ (như .rooignore và các tệp cấu hình .roo/) mà không yêu cầu phê duyệt."
+				"description": "Cho phép KitPilot tạo và chỉnh sửa các tệp được bảo vệ (như .kitpilotignore và các tệp cấu hình .kitpilot/) mà không yêu cầu phê duyệt."
 			}
 		},
 		"mcp": {
@@ -546,7 +546,7 @@
 			"maxTokensLabel": "Số token đầu ra tối đa",
 			"maxTokensDescription": "Số lượng token đầu ra tối đa cho các phản hồi của Claude Code. Mặc định là 8000."
 		},
-		"retiredRooProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredKitPilotProviderMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -600,9 +600,9 @@
 			"label": "Giới hạn ngữ cảnh tệp workspace",
 			"description": "Số lượng tệp tối đa để đưa vào chi tiết thư mục làm việc hiện tại. Giá trị cao hơn cung cấp nhiều ngữ cảnh hơn nhưng tăng sử dụng token."
 		},
-		"rooignore": {
-			"label": "Hiển thị tệp .rooignore trong danh sách và tìm kiếm",
-			"description": "Khi được bật, các tệp khớp với mẫu trong .rooignore sẽ được hiển thị trong danh sách với biểu tượng khóa. Khi bị tắt, các tệp này sẽ hoàn toàn bị ẩn khỏi danh sách tệp và tìm kiếm."
+		"kitpilotignore": {
+			"label": "Hiển thị tệp .kitpilotignore trong danh sách và tìm kiếm",
+			"description": "Khi được bật, các tệp khớp với mẫu trong .kitpilotignore sẽ được hiển thị trong danh sách với biểu tượng khóa. Khi bị tắt, các tệp này sẽ hoàn toàn bị ẩn khỏi danh sách tệp và tìm kiếm."
 		},
 		"maxReadFile": {
 			"label": "Ngưỡng tự động cắt ngắn khi đọc tệp",
@@ -663,7 +663,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "Bật quy tắc thư mục con",
-			"description": "Khám phá và tải đệ quy các tệp .roo/rules và AGENTS.md từ các thư mục con. Hữu ích cho monorepo có quy tắc theo gói."
+			"description": "Khám phá và tải đệ quy các tệp .kitpilot/rules và AGENTS.md từ các thư mục con. Hữu ích cho monorepo có quy tắc theo gói."
 		}
 	},
 	"terminal": {
@@ -803,9 +803,9 @@
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Bật công cụ tùy chỉnh",
-			"description": "Khi được bật, KitPilot có thể tải và sử dụng các công cụ TypeScript/JavaScript tùy chỉnh từ thư mục .roo/tools của dự án hoặc ~/.roo/tools cho các công cụ toàn cục. Lưu ý: các công cụ này sẽ được tự động phê duyệt.",
+			"description": "Khi được bật, KitPilot có thể tải và sử dụng các công cụ TypeScript/JavaScript tùy chỉnh từ thư mục .kitpilot/tools của dự án hoặc ~/.kitpilot/tools cho các công cụ toàn cục. Lưu ý: các công cụ này sẽ được tự động phê duyệt.",
 			"toolsHeader": "Công cụ tùy chỉnh có sẵn",
-			"noTools": "Không có công cụ tùy chỉnh nào được tải. Thêm tệp .ts hoặc .js vào thư mục .roo/tools của dự án hoặc ~/.roo/tools cho các công cụ toàn cục.",
+			"noTools": "Không có công cụ tùy chỉnh nào được tải. Thêm tệp .ts hoặc .js vào thư mục .kitpilot/tools của dự án hoặc ~/.kitpilot/tools cho các công cụ toàn cục.",
 			"refreshButton": "Làm mới",
 			"refreshing": "Đang làm mới...",
 			"refreshSuccess": "Làm mới công cụ thành công",

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react"
 import { validateSkillName as validateSkillNameShared, SkillNameValidationError } from "@kit-pilot/types"
 
-import { getAllModes } from "@roo/modes"
+import { getAllModes } from "@kitpilot/modes"
 
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { useExtensionState } from "@/context/ExtensionStateContext"

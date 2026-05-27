@@ -5,7 +5,7 @@ import { codebaseIndexProviderSchema } from "./codebase-index.js"
 import { vscodeLlmModels } from "./providers/index.js"
 
 /**
- * vscode-lm-only build of Roo Code: every non-vscode-lm provider has been
+ * vscode-lm-only build of KitPilot: every non-vscode-lm provider has been
  * stripped. The classification lists below are preserved (mostly empty) so
  * existing imports across the codebase keep type-checking.
  */
@@ -78,7 +78,7 @@ export const retiredProviderNames = [
 	"groq",
 	"huggingface",
 	"io-intelligence",
-	"roo",
+	"kitpilot",
 	// Providers removed in the vscode-lm-only build
 	"anthropic",
 	"openrouter",

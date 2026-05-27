@@ -1,7 +1,7 @@
 // @ts-nocheck — vscode-lm-only build: CLI app is not the target. It can't
 // use vscode-lm at runtime (requires VS Code's API) and its provider list
 // references names that have been narrowed out of ProviderName.
-import { RooCodeSettings } from "@kit-pilot/types"
+import { KitPilotSettings } from "@kit-pilot/types"
 
 import type { SupportedProvider } from "@/types/index.js"
 
@@ -26,8 +26,8 @@ export function getProviderSettings(
 	provider: SupportedProvider,
 	apiKey: string | undefined,
 	model: string | undefined,
-): RooCodeSettings {
-	const config: RooCodeSettings = { apiProvider: provider }
+): KitPilotSettings {
+	const config: KitPilotSettings = { apiProvider: provider }
 
 	switch (provider) {
 		case "anthropic":

@@ -6,7 +6,7 @@ import type { LanguageModelChatSelector } from "vscode"
 import type { ExtensionMessage } from "@kit-pilot/types"
 
 import { cn } from "@/lib/utils"
-import { useRooPortal } from "@/components/ui/hooks/useRooPortal"
+import { useKitPilotPortal } from "@/components/ui/hooks/useKitPilotPortal"
 import { Popover, PopoverContent, PopoverTrigger, StandardTooltip } from "@/components/ui"
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { vscode } from "@/utils/vscode"
@@ -24,7 +24,7 @@ export const ModelSelector = ({ value, title, onChange, triggerClassName, disabl
 	const [open, setOpen] = useState(false)
 	const [searchValue, setSearchValue] = useState("")
 	const [models, setModels] = useState<LanguageModelChatSelector[]>([])
-	const portalContainer = useRooPortal("roo-portal")
+	const portalContainer = useKitPilotPortal("kitpilot-portal")
 
 	useEffect(() => {
 		vscode.postMessage({ type: "requestVsCodeLmModels" })

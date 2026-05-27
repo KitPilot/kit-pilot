@@ -6,7 +6,7 @@ import type { ProviderSettings, ModeConfig, ModelInfo } from "@kit-pilot/types"
 import { customToolRegistry, formatNative } from "@kit-pilot/core"
 
 import type { ClineProvider } from "../webview/ClineProvider"
-import { getRooDirectoriesForCwd } from "../../services/roo-config/index.js"
+import { getKitPilotDirectoriesForCwd } from "../../services/kitpilot-config/index.js"
 
 import { getNativeTools, getMcpServerTools } from "../prompts/tools/native-tools"
 import {
@@ -132,7 +132,7 @@ export async function buildNativeToolsArrayWithRestrictions(options: BuildToolsO
 	let nativeCustomTools: OpenAI.Chat.ChatCompletionFunctionTool[] = []
 
 	if (experiments?.customTools) {
-		const toolDirs = getRooDirectoriesForCwd(cwd).map((dir) => path.join(dir, "tools"))
+		const toolDirs = getKitPilotDirectoriesForCwd(cwd).map((dir) => path.join(dir, "tools"))
 		await customToolRegistry.loadFromDirectoriesIfStale(toolDirs)
 		const customTools = customToolRegistry.getAllSerialized()
 

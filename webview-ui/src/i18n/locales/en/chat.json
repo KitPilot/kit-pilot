@@ -120,7 +120,7 @@
 	"about": "Supercharge GitHub Copilot.",
 	"docs": "Check our <DocsLink>docs</DocsLink> to get started",
 	"onboarding": "What would you like to do?",
-	"rooTips": {
+	"kitpilotTips": {
 		"customizableModes": {
 			"title": "Customizable modes that don't swerve",
 			"description": "Specialized personas that stay on-task and deliver."
@@ -282,7 +282,7 @@
 	"response": "Response",
 	"arguments": "Arguments",
 	"text": {
-		"rooSaid": "KitPilot said"
+		"kitpilotSaid": "KitPilot said"
 	},
 	"feedback": {
 		"youSaid": "You said"
@@ -355,7 +355,7 @@
 		"support": "Please support KitPilot by starring us on <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "Welcome to KitPilot",
-			"intro": "KitPilot is a streamlined agentic coding assistant for Copilot users. It is a fork of <announcementLink>Roo Code</announcementLink>, slimmed down to run exclusively on <roomoteLink>GitHub Copilot's VS Code Language Model API</roomoteLink> — no separate API keys, no third-party providers.",
+			"intro": "KitPilot is a streamlined agentic coding assistant for Copilot users. It is a fork of <announcementLink>KitPilot</announcementLink>, slimmed down to run exclusively on <roomoteLink>GitHub Copilot's VS Code Language Model API</roomoteLink> — no separate API keys, no third-party providers.",
 			"continuity": "If your organization permits GitHub Copilot, you can use KitPilot. The provider integration, code indexing dependencies, and image-generation tooling that other extensions require have been removed.",
 			"alternatives": "Full agentic workflows are supported: multi-mode chat (Architect, Code, Ask, Debug, Orchestrator), file edits, terminal execution, semantic codebase search via local Ollama embeddings, MCP servers, and custom slash commands.",
 			"signoff": "Happy coding!"
@@ -482,6 +482,6 @@
 		"title": "Provider no longer supported",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Open Settings",
-		"rooMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

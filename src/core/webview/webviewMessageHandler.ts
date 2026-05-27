@@ -2,7 +2,7 @@ import { safeWriteJson } from "../../utils/safeWriteJson"
 import * as path from "path"
 import * as os from "os"
 import * as fs from "fs/promises"
-import { getRooDirectoriesForCwd } from "../../services/roo-config/index.js"
+import { getKitPilotDirectoriesForCwd } from "../../services/kitpilot-config/index.js"
 import pWaitFor from "p-wait-for"
 import * as vscode from "vscode"
 
@@ -14,7 +14,7 @@ import {
 	type Command as SlashCommand,
 	type WebviewMessage,
 	type EditQueuedMessagePayload,
-	RooCodeSettings,
+	KitPilotSettings,
 	ExperimentId,
 	checkoutDiffPayloadSchema,
 	checkoutRestorePayloadSchema,
@@ -64,7 +64,7 @@ const getOpenAiModels = async (
 import { getVsCodeLmModels } from "../../api/providers/vscode-lm"
 import { openMention } from "../mentions"
 import { resolveImageMentions } from "../mentions/resolveImageMentions"
-import { RooIgnoreController } from "../ignore/RooIgnoreController"
+import { KitPilotIgnoreController } from "../ignore/KitPilotIgnoreController"
 import { getWorkspacePath } from "../../utils/path"
 import { isPathOutsideWorkspace } from "../../utils/pathUtils"
 import { Mode, defaultModeSlug } from "../../shared/modes"
@@ -179,7 +179,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			text,
 			images,
 			cwd: getCurrentCwd(),
-			rooIgnoreController: currentTask?.rooIgnoreController,
+			kitpilotIgnoreController: currentTask?.kitpilotIgnoreController,
 			maxImageFileSize: state.maxImageFileSize,
 			maxTotalImageSize: state.maxTotalImageSize,
 		})
@@ -732,7 +732,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 						}
 					}
 
-					await provider.contextProxy.setValue(key as keyof RooCodeSettings, newValue)
+					await provider.contextProxy.setValue(key as keyof KitPilotSettings, newValue)
 				}
 
 				await provider.postStateToWebview()
@@ -1145,12 +1145,12 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			}
 
 			const workspaceFolder = getCurrentCwd()
-			// Write to the new ".kitpilot/" directory; reads elsewhere fall back to legacy ".roo/" automatically.
-			const rooDir = path.join(workspaceFolder, ".kitpilot")
-			const mcpPath = path.join(rooDir, "mcp.json")
+			// Write to the new ".kitpilot/" directory; reads elsewhere fall back to legacy ".kitpilot/" automatically.
+			const kitpilotDir = path.join(workspaceFolder, ".kitpilot")
+			const mcpPath = path.join(kitpilotDir, "mcp.json")
 
 			try {
-				await fs.mkdir(rooDir, { recursive: true })
+				await fs.mkdir(kitpilotDir, { recursive: true })
 				const exists = await fileExistsAtPath(mcpPath)
 
 				if (!exists) {
@@ -1509,26 +1509,26 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					20, // Use default limit, as filtering is now done in the backend
 				)
 
-				// Get the RooIgnoreController from the current task, or create a new one
+				// Get the KitPilotIgnoreController from the current task, or create a new one
 				const currentTask = provider.getCurrentTask()
-				let rooIgnoreController = currentTask?.rooIgnoreController
-				let tempController: RooIgnoreController | undefined
+				let kitpilotIgnoreController = currentTask?.kitpilotIgnoreController
+				let tempController: KitPilotIgnoreController | undefined
 
 				// If no current task or no controller, create a temporary one
-				if (!rooIgnoreController) {
-					tempController = new RooIgnoreController(workspacePath)
+				if (!kitpilotIgnoreController) {
+					tempController = new KitPilotIgnoreController(workspacePath)
 					await tempController.initialize()
-					rooIgnoreController = tempController
+					kitpilotIgnoreController = tempController
 				}
 
 				try {
-					// Get showRooIgnoredFiles setting from state
-					const { showRooIgnoredFiles = false } = (await provider.getState()) ?? {}
+					// Get showKitPilotIgnoredFiles setting from state
+					const { showKitPilotIgnoredFiles = false } = (await provider.getState()) ?? {}
 
-					// Filter results using RooIgnoreController if showRooIgnoredFiles is false
+					// Filter results using KitPilotIgnoreController if showKitPilotIgnoredFiles is false
 					let filteredResults = results
-					if (!showRooIgnoredFiles && rooIgnoreController) {
-						const allowedPaths = rooIgnoreController.filterPaths(results.map((r) => r.path))
+					if (!showKitPilotIgnoredFiles && kitpilotIgnoreController) {
+						const allowedPaths = kitpilotIgnoreController.filterPaths(results.map((r) => r.path))
 						filteredResults = results.filter((r) => allowedPaths.includes(r.path))
 					}
 
@@ -1565,7 +1565,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		}
 		case "refreshCustomTools": {
 			try {
-				const toolDirs = getRooDirectoriesForCwd(getCurrentCwd()).map((dir) => path.join(dir, "tools"))
+				const toolDirs = getKitPilotDirectoriesForCwd(getCurrentCwd()).map((dir) => path.join(dir, "tools"))
 				await customToolRegistry.loadFromDirectories(toolDirs)
 
 				await provider.postMessageToWebview({
@@ -1778,11 +1778,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				const scope = modeToDelete.source || "global"
 
 				// Determine the rules folder path. Prefer the new ".kitpilot/" location;
-				// fall back to legacy ".roo/" only if it exists and the new one doesn't.
+				// fall back to legacy ".kitpilot/" only if it exists and the new one doesn't.
 				const pickRulesFolder = async (base: string): Promise<string> => {
 					const kitpilotPath = path.join(base, ".kitpilot", `rules-${message.slug}`)
 					if (await fileExistsAtPath(kitpilotPath)) return kitpilotPath
-					const legacyPath = path.join(base, ".roo", `rules-${message.slug}`)
+					const legacyPath = path.join(base, ".kitpilot", `rules-${message.slug}`)
 					if (await fileExistsAtPath(legacyPath)) return legacyPath
 					return kitpilotPath
 				}
@@ -2543,7 +2543,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				// Determine the commands directory based on source
 				let commandsDir: string
 				if (source === "global") {
-					const globalConfigDir = path.join(os.homedir(), ".roo")
+					const globalConfigDir = path.join(os.homedir(), ".kitpilot")
 					commandsDir = path.join(globalConfigDir, "commands")
 				} else {
 					if (!vscode.workspace.workspaceFolders?.length) {
@@ -2556,7 +2556,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 						vscode.window.showErrorMessage(t("common:errors.no_workspace_for_project_command"))
 						break
 					}
-					commandsDir = path.join(workspaceRoot, ".roo", "commands")
+					commandsDir = path.join(workspaceRoot, ".kitpilot", "commands")
 				}
 
 				// Ensure the commands directory exists
@@ -2723,7 +2723,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				try {
 					const tmpDir = os.tmpdir()
 					const timestamp = Date.now()
-					const tempFileName = `roo-preview-${timestamp}.md`
+					const tempFileName = `kitpilot-preview-${timestamp}.md`
 					const tempFilePath = path.join(tmpDir, tempFileName)
 
 					await fs.writeFile(tempFilePath, message.text, "utf8")
@@ -2811,7 +2811,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				// Create a temporary file
 				const tmpDir = os.tmpdir()
 				const timestamp = Date.now()
-				const tempFileName = `roo-debug-${message.type === "openDebugApiHistory" ? "api" : "ui"}-${currentTask.taskId.slice(0, 8)}-${timestamp}.json`
+				const tempFileName = `kitpilot-debug-${message.type === "openDebugApiHistory" ? "api" : "ui"}-${currentTask.taskId.slice(0, 8)}-${timestamp}.json`
 				const tempFilePath = path.join(tmpDir, tempFileName)
 
 				await fs.writeFile(tempFilePath, prettifiedContent, "utf8")

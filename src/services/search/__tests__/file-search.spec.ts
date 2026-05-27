@@ -4,10 +4,10 @@ import * as vscode from "vscode"
 // Mock Package
 vi.mock("../../../shared/package", () => ({
 	Package: {
-		name: "roo-cline",
+		name: "kit-pilot",
 		publisher: "KitPilot",
 		version: "1.0.0",
-		outputChannel: "Roo-Code",
+		outputChannel: "KitPilot",
 	},
 }))
 
@@ -42,13 +42,13 @@ describe("file-search", () => {
 					return undefined
 				}),
 			}
-			const mockRooConfig = {
+			const mockKitPilotConfig = {
 				get: vi.fn(() => 10000),
 			}
 
 			;(vscode.workspace.getConfiguration as any).mockImplementation((section: string) => {
 				if (section === "search") return mockSearchConfig
-				if (section === "roo-cline") return mockRooConfig
+				if (section === "kit-pilot") return mockKitPilotConfig
 				return { get: vi.fn() }
 			})
 
@@ -61,7 +61,7 @@ describe("file-search", () => {
 
 		it("should read maximumIndexedFilesForFileSearch configuration", async () => {
 			const { Package } = await import("../../../shared/package")
-			const mockRooConfig = {
+			const mockKitPilotConfig = {
 				get: vi.fn((key: string, defaultValue: number) => {
 					if (key === "maximumIndexedFilesForFileSearch") return 50000
 					return defaultValue
@@ -69,7 +69,7 @@ describe("file-search", () => {
 			}
 
 			;(vscode.workspace.getConfiguration as any).mockImplementation((section: string) => {
-				if (section === Package.name) return mockRooConfig
+				if (section === Package.name) return mockKitPilotConfig
 				return { get: vi.fn() }
 			})
 
@@ -82,12 +82,12 @@ describe("file-search", () => {
 
 		it("should use default limit when configuration is not provided", async () => {
 			const { Package } = await import("../../../shared/package")
-			const mockRooConfig = {
+			const mockKitPilotConfig = {
 				get: vi.fn((key: string, defaultValue: number) => defaultValue),
 			}
 
 			;(vscode.workspace.getConfiguration as any).mockImplementation((section: string) => {
-				if (section === Package.name) return mockRooConfig
+				if (section === Package.name) return mockKitPilotConfig
 				return { get: vi.fn() }
 			})
 

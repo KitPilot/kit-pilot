@@ -34,7 +34,7 @@ Issues considered in scope:
 
 - Code execution from untrusted MCP servers, slash commands, or workspace
   files
-- Bypasses of the Roo-ignore / file-allowlist protections
+- Bypasses of the KitPilot-ignore / file-allowlist protections
 - Credential or token leakage through logs, errors, or transcripts
 - Sandbox escapes affecting host system files outside the user's workspace
 - Vulnerabilities in third-party dependencies that ship with the extension

@@ -93,7 +93,7 @@
 	"about": "KitPilot to cały zespół deweloperów AI w Twoim edytorze.",
 	"docs": "Sprawdź naszą <DocsLink>dokumentację</DocsLink>, aby dowiedzieć się więcej.",
 	"onboarding": "Twoja lista zadań w tym obszarze roboczym jest pusta.",
-	"rooTips": {
+	"kitpilotTips": {
 		"customizableModes": {
 			"title": "Konfigurowalne tryby",
 			"description": "Wyspecjalizowane persony, które trzymają się zadania i dostarczają."
@@ -236,7 +236,7 @@
 	"response": "Odpowiedź",
 	"arguments": "Argumenty",
 	"text": {
-		"rooSaid": "KitPilot powiedział"
+		"kitpilotSaid": "KitPilot powiedział"
 	},
 	"feedback": {
 		"youSaid": "Powiedziałeś"
@@ -486,6 +486,6 @@
 		"title": "Dostawca nie jest już obsługiwany",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Otwórz ustawienia",
-		"rooMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

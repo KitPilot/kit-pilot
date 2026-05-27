@@ -1,9 +1,9 @@
 /**
- * Validates the generated schemas/roomodes.json against sample configurations
+ * Validates the generated schemas/kitpilotmodes.json against sample configurations
  * using AJV. The schema itself is dynamically generated from the Zod types in
- * packages/types/src/mode.ts -- see packages/types/scripts/generate-roomodes-schema.ts.
+ * packages/types/src/mode.ts -- see packages/types/scripts/generate-kitpilotmodes-schema.ts.
  *
- * A separate drift-detection test (roomodes-schema-sync.spec.ts) ensures the
+ * A separate drift-detection test (kitpilotmodes-schema-sync.spec.ts) ensures the
  * checked-in schema stays in sync with the Zod source of truth.
  */
 import { describe, it, expect, beforeAll } from "vitest"
@@ -12,13 +12,13 @@ import * as fs from "fs"
 import * as path from "path"
 import { fileURLToPath } from "url"
 
-describe("roomodes JSON schema", () => {
+describe("kitpilotmodes JSON schema", () => {
 	let schema: Record<string, unknown>
 	let validate: ValidateFunction
 
 	beforeAll(() => {
 		const __dirname = path.dirname(fileURLToPath(import.meta.url))
-		const schemaPath = path.resolve(__dirname, "../../../../schemas/roomodes.json")
+		const schemaPath = path.resolve(__dirname, "../../../../schemas/kitpilotmodes.json")
 		schema = JSON.parse(fs.readFileSync(schemaPath, "utf-8"))
 		const ajv = new Ajv.default({ strict: false })
 		validate = ajv.compile(schema)
@@ -28,7 +28,7 @@ describe("roomodes JSON schema", () => {
 		expect(validate).toBeDefined()
 	})
 
-	it("should accept a minimal valid .roomodes config", () => {
+	it("should accept a minimal valid .kitpilotmodes config", () => {
 		const config = {
 			customModes: [
 				{

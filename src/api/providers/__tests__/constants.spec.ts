@@ -11,7 +11,7 @@ describe("DEFAULT_HEADERS", () => {
 	})
 
 	it("should have correct HTTP-Referer value", () => {
-		expect(DEFAULT_HEADERS["HTTP-Referer"]).toBe("https://github.com/RooVetGit/Roo-Cline")
+		expect(DEFAULT_HEADERS["HTTP-Referer"]).toBe("https://github.com/KitPilotVetGit/KitPilot-Cline")
 	})
 
 	it("should have correct X-Title value", () => {
@@ -20,7 +20,7 @@ describe("DEFAULT_HEADERS", () => {
 
 	it("should have correct User-Agent format", () => {
 		const userAgent = DEFAULT_HEADERS["User-Agent"]
-		expect(userAgent).toBe(`RooCode/${Package.version}`)
+		expect(userAgent).toBe(`KitPilot/${Package.version}`)
 
 		// Verify it follows the tool_name/version pattern
 		expect(userAgent).toMatch(/^[a-zA-Z-]+\/\d+\.\d+\.\d+$/)
@@ -28,7 +28,7 @@ describe("DEFAULT_HEADERS", () => {
 
 	it("should have User-Agent with correct tool name", () => {
 		const userAgent = DEFAULT_HEADERS["User-Agent"]
-		expect(userAgent.startsWith("RooCode/")).toBe(true)
+		expect(userAgent.startsWith("KitPilot/")).toBe(true)
 	})
 
 	it("should have User-Agent with semantic version format", () => {

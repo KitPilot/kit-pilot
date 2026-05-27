@@ -9,11 +9,11 @@ import type { SystemPromptSettings } from "../types"
 
 import { LANGUAGES } from "../../../shared/language"
 import {
-	getRooDirectoriesForCwd,
-	getAllRooDirectoriesForCwd,
+	getKitPilotDirectoriesForCwd,
+	getAllKitPilotDirectoriesForCwd,
 	getAgentsDirectoriesForCwd,
-	getGlobalRooDirectory,
-} from "../../../services/roo-config"
+	getGlobalKitPilotDirectory,
+} from "../../../services/kitpilot-config"
 
 /**
  * Safely read a file and return its trimmed content
@@ -206,11 +206,11 @@ function formatDirectoryContent(files: Array<{ filename: string; content: string
 export async function loadRuleFiles(cwd: string, enableSubfolderRules: boolean = false): Promise<string> {
 	const rules: string[] = []
 	// Use recursive discovery only if enableSubfolderRules is true
-	const rooDirectories = enableSubfolderRules ? await getAllRooDirectoriesForCwd(cwd) : getRooDirectoriesForCwd(cwd)
+	const kitpilotDirectories = enableSubfolderRules ? await getAllKitPilotDirectoriesForCwd(cwd) : getKitPilotDirectoriesForCwd(cwd)
 
-	// Check for .roo/rules/ directories in order (global, project-local, and optionally subfolders)
-	for (const rooDir of rooDirectories) {
-		const rulesDir = path.join(rooDir, "rules")
+	// Check for .kitpilot/rules/ directories in order (global, project-local, and optionally subfolders)
+	for (const kitpilotDir of kitpilotDirectories) {
+		const rulesDir = path.join(kitpilotDir, "rules")
 		if (await directoryExists(rulesDir)) {
 			const files = await readTextFilesFromDirectory(rulesDir)
 			if (files.length > 0) {
@@ -220,9 +220,9 @@ export async function loadRuleFiles(cwd: string, enableSubfolderRules: boolean =
 		}
 	}
 
-	// If we found rules in .roo/rules/ directories, return them
+	// If we found rules in .kitpilot/rules/ directories, return them
 	if (rules.length > 0) {
-		return "\n# Rules from .roo directories:\n\n" + rules.join("\n\n")
+		return "\n# Rules from .kitpilot directories:\n\n" + rules.join("\n\n")
 	}
 
 	// Fall back to existing behavior for legacy single-file rules. Prefer .kitpilotrules; honor .roorules and .clinerules for back-compat.
@@ -345,7 +345,7 @@ async function loadAgentRulesFile(cwd: string): Promise<string> {
 }
 
 /**
- * Load all AGENTS.md files from project root and optionally subdirectories with .roo folders
+ * Load all AGENTS.md files from project root and optionally subdirectories with .kitpilot folders
  * Returns combined content with clear path headers for each file
  *
  * @param cwd - Current working directory (project root)
@@ -364,7 +364,7 @@ async function loadAllAgentRulesFiles(cwd: string, enableSubfolderRules: boolean
 		return agentRules.join("\n\n")
 	}
 
-	// When enabled, load from root and all subdirectories with .roo folders
+	// When enabled, load from root and all subdirectories with .kitpilot folders
 	const directories = await getAgentsDirectoriesForCwd(cwd)
 
 	for (const directory of directories) {
@@ -386,7 +386,7 @@ export async function addCustomInstructions(
 	mode: string,
 	options: {
 		language?: string
-		rooIgnoreInstructions?: string
+		kitpilotIgnoreInstructions?: string
 		settings?: SystemPromptSettings
 	} = {},
 ): Promise<string> {
@@ -402,13 +402,13 @@ export async function addCustomInstructions(
 	if (mode) {
 		const modeRules: string[] = []
 		// Use recursive discovery only if enableSubfolderRules is true
-		const rooDirectories = enableSubfolderRules
-			? await getAllRooDirectoriesForCwd(cwd)
-			: getRooDirectoriesForCwd(cwd)
+		const kitpilotDirectories = enableSubfolderRules
+			? await getAllKitPilotDirectoriesForCwd(cwd)
+			: getKitPilotDirectoriesForCwd(cwd)
 
-		// Check for .roo/rules-${mode}/ directories in order (global, project-local, and optionally subfolders)
-		for (const rooDir of rooDirectories) {
-			const modeRulesDir = path.join(rooDir, `rules-${mode}`)
+		// Check for .kitpilot/rules-${mode}/ directories in order (global, project-local, and optionally subfolders)
+		for (const kitpilotDir of kitpilotDirectories) {
+			const modeRulesDir = path.join(kitpilotDir, `rules-${mode}`)
 			if (await directoryExists(modeRulesDir)) {
 				const files = await readTextFilesFromDirectory(modeRulesDir)
 				if (files.length > 0) {
@@ -418,7 +418,7 @@ export async function addCustomInstructions(
 			}
 		}
 
-		// If we found mode-specific rules in .roo/rules-${mode}/ directories, use them
+		// If we found mode-specific rules in .kitpilot/rules-${mode}/ directories, use them
 		if (modeRules.length > 0) {
 			modeRuleContent = "\n" + modeRules.join("\n\n")
 			usedRuleFile = `rules-${mode} directories`
@@ -459,19 +459,19 @@ export async function addCustomInstructions(
 
 	// Add mode-specific rules first if they exist
 	if (modeRuleContent && modeRuleContent.trim()) {
-		if (usedRuleFile.includes(path.join(".roo", `rules-${mode}`))) {
+		if (usedRuleFile.includes(path.join(".kitpilot", `rules-${mode}`))) {
 			rules.push(modeRuleContent.trim())
 		} else {
 			rules.push(`# Rules from ${usedRuleFile}:\n${modeRuleContent}`)
 		}
 	}
 
-	if (options.rooIgnoreInstructions) {
-		rules.push(options.rooIgnoreInstructions)
+	if (options.kitpilotIgnoreInstructions) {
+		rules.push(options.kitpilotIgnoreInstructions)
 	}
 
 	// Add AGENTS.md content if enabled (default: true)
-	// Load from root and optionally subdirectories with .roo folders based on enableSubfolderRules setting
+	// Load from root and optionally subdirectories with .kitpilot folders based on enableSubfolderRules setting
 	if (options.settings?.useAgentRules !== false) {
 		const agentRulesContent = await loadAllAgentRulesFiles(cwd, enableSubfolderRules)
 		if (agentRulesContent && agentRulesContent.trim()) {
