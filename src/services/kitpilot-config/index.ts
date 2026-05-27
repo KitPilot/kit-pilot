@@ -1,7 +1,6 @@
 import * as path from "path"
 import * as os from "os"
 import fs from "fs/promises"
-import fsSync from "fs"
 
 /**
  * Gets the global .kitpilot directory path based on the current platform
@@ -290,11 +289,9 @@ export function getKitPilotDirectoriesForCwd(cwd: string): string[] {
 	const globalKitpilot = path.join(os.homedir(), ".kitpilot")
 	const projectKitpilot = path.join(cwd, ".kitpilot")
 
-	const directories: string[] = []
 	// Order: less-specific first, more-specific last (later entries override earlier when merged).
-	if (fsSync.existsSync(globalKitpilot)) directories.push(globalKitpilot)
-	directories.push(projectKitpilot) // project-local kitpilot always included even if absent (for write-site callers)
-	return directories
+	// Both always included even if absent on disk (readers check existence; write-site callers need the paths).
+	return [globalKitpilot, projectKitpilot]
 }
 
 /**

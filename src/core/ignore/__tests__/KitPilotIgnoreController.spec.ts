@@ -153,7 +153,7 @@ describe("KitPilotIgnoreController", () => {
 			await controller.initialize()
 
 			// Verify error was logged
-			expect(consoleSpy).toHaveBeenCalledWith("Unexpected error loading .kitpilotignore:", expect.any(Error))
+			expect(consoleSpy).toHaveBeenCalledWith("Unexpected error loading ignore file:", expect.any(Error))
 
 			// Cleanup
 			consoleSpy.mockRestore()
