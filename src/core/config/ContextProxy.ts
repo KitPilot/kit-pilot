@@ -524,7 +524,7 @@ export class ContextProxy {
 		try {
 			const globalSettings = globalSettingsExportSchema.parse(this.getValues())
 
-			// Exports should only contain global settings, so this skips project custom modes (those exist in the .roomode folder)
+			// Exports should only contain global settings, so this skips project custom modes (those exist in the .kitpilotmodes folder)
 			globalSettings.customModes = globalSettings.customModes?.filter((mode) => mode.source === "global")
 
 			return Object.fromEntries(Object.entries(globalSettings).filter(([_, value]) => value !== undefined))

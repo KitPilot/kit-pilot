@@ -165,8 +165,8 @@ export class FileContextTracker {
 				path: filePath,
 				record_state: "active",
 				record_source: source,
-				roo_read_date: getLatestDateForField(filePath, "roo_read_date"),
-				roo_edit_date: getLatestDateForField(filePath, "roo_edit_date"),
+				kitpilot_read_date: getLatestDateForField(filePath, "kitpilot_read_date"),
+				kitpilot_edit_date: getLatestDateForField(filePath, "kitpilot_edit_date"),
 				user_edit_date: getLatestDateForField(filePath, "user_edit_date"),
 			}
 
@@ -177,10 +177,10 @@ export class FileContextTracker {
 					this.recentlyModifiedFiles.add(filePath)
 					break
 
-				// roo_edited: KitPilot has edited the file
-				case "roo_edited":
-					newEntry.roo_read_date = now
-					newEntry.roo_edit_date = now
+				// kitpilot_edited: KitPilot has edited the file
+				case "kitpilot_edited":
+					newEntry.kitpilot_read_date = now
+					newEntry.kitpilot_edit_date = now
 					this.checkpointPossibleFiles.add(filePath)
 					this.markFileAsEditedByKitPilot(filePath)
 					break
@@ -188,7 +188,7 @@ export class FileContextTracker {
 				// read_tool/file_mentioned: KitPilot has read the file via a tool or file mention
 				case "read_tool":
 				case "file_mentioned":
-					newEntry.roo_read_date = now
+					newEntry.kitpilot_read_date = now
 					break
 			}
 
@@ -227,18 +227,18 @@ export class FileContextTracker {
 				}
 
 				// If sinceTimestamp is provided, only include files read after that time
-				if (sinceTimestamp && entry.roo_read_date) {
-					return entry.roo_read_date >= sinceTimestamp
+				if (sinceTimestamp && entry.kitpilot_read_date) {
+					return entry.kitpilot_read_date >= sinceTimestamp
 				}
 
 				return true
 			})
 
-			// Sort by roo_read_date descending (most recent first)
+			// Sort by kitpilot_read_date descending (most recent first)
 			// Entries without a date go to the end
 			readEntries.sort((a, b) => {
-				const dateA = a.roo_read_date ?? 0
-				const dateB = b.roo_read_date ?? 0
+				const dateA = a.kitpilot_read_date ?? 0
+				const dateB = b.kitpilot_read_date ?? 0
 				return dateB - dateA
 			})
 

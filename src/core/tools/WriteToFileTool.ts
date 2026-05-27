@@ -170,7 +170,7 @@ export class WriteToFileTool extends BaseTool<"write_to_file"> {
 			}
 
 			if (relPath) {
-				await task.fileContextTracker.trackFileContext(relPath, "roo_edited" as RecordSource)
+				await task.fileContextTracker.trackFileContext(relPath, "kitpilot_edited" as RecordSource)
 			}
 
 			task.didEditFile = true

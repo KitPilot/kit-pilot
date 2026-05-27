@@ -388,7 +388,7 @@ describe("searchReplaceTool", () => {
 		it("tracks file context after successful edit", async () => {
 			await executeSearchReplaceTool()
 
-			expect(mockCline.fileContextTracker.trackFileContext).toHaveBeenCalledWith(testFilePath, "roo_edited")
+			expect(mockCline.fileContextTracker.trackFileContext).toHaveBeenCalledWith(testFilePath, "kitpilot_edited")
 		})
 	})
 

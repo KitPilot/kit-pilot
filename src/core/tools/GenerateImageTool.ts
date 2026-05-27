@@ -244,7 +244,7 @@ export class GenerateImageTool extends BaseTool<"generate_image"> {
 			await fs.writeFile(absolutePath, imageBuffer)
 
 			if (finalPath) {
-				await task.fileContextTracker.trackFileContext(finalPath, "roo_edited")
+				await task.fileContextTracker.trackFileContext(finalPath, "kitpilot_edited")
 			}
 
 			task.didEditFile = true

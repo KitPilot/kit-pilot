@@ -16,8 +16,7 @@ import { GlobalFileNames } from "../../shared/globalFileNames"
 import { ensureSettingsDirectoryExists } from "../../utils/globalContext"
 import { t } from "../../i18n"
 
-const ROOMODES_FILENAME = ".kitpilotmodes"
-const LEGACY_ROOMODES_FILENAME = ".kitpilotmodes"
+const KITPILOTMODES_FILENAME = ".kitpilotmodes"
 
 // Type definitions for import/export functionality
 interface RuleFile {
@@ -99,14 +98,9 @@ export class CustomModesManager {
 		}
 
 		const workspaceRoot = getWorkspacePath()
-		// Prefer the new ".kitpilotmodes"; fall back to legacy ".kitpilotmodes" only if the new one is absent.
-		const kitpilotPath = path.join(workspaceRoot, ROOMODES_FILENAME)
+		const kitpilotPath = path.join(workspaceRoot, KITPILOTMODES_FILENAME)
 		if (await fileExistsAtPath(kitpilotPath)) {
 			return kitpilotPath
-		}
-		const legacyPath = path.join(workspaceRoot, LEGACY_ROOMODES_FILENAME)
-		if (await fileExistsAtPath(legacyPath)) {
-			return legacyPath
 		}
 		return undefined
 	}
@@ -341,22 +335,20 @@ export class CustomModesManager {
 				}
 			}
 
-			for (const name of [ROOMODES_FILENAME, LEGACY_ROOMODES_FILENAME]) {
-				const watcherPath = path.join(workspaceRoot, name)
-				const watcher = vscode.workspace.createFileSystemWatcher(watcherPath)
-				this.disposables.push(
-					watcher.onDidChange(handleProjectModesChange),
-					watcher.onDidCreate(handleProjectModesChange),
-					watcher.onDidDelete(handleProjectModesChange),
-					watcher,
-				)
-			}
+			const watcherPath = path.join(workspaceRoot, KITPILOTMODES_FILENAME)
+			const watcher = vscode.workspace.createFileSystemWatcher(watcherPath)
+			this.disposables.push(
+				watcher.onDidChange(handleProjectModesChange),
+				watcher.onDidCreate(handleProjectModesChange),
+				watcher.onDidDelete(handleProjectModesChange),
+				watcher,
+			)
 		}
 	}
 
-	/** True if the path is either the new ".kitpilotmodes" or legacy ".kitpilotmodes" workspace file. */
+	/** True if the path is the ".kitpilotmodes" workspace file. */
 	private isProjectModesPath(filePath: string): boolean {
-		return filePath.endsWith(ROOMODES_FILENAME) || filePath.endsWith(LEGACY_ROOMODES_FILENAME)
+		return filePath.endsWith(KITPILOTMODES_FILENAME)
 	}
 
 	public async getCustomModes(): Promise<ModeConfig[]> {
@@ -433,10 +425,10 @@ export class CustomModesManager {
 				}
 
 				const workspaceRoot = getWorkspacePath()
-				targetPath = path.join(workspaceRoot, ROOMODES_FILENAME)
+				targetPath = path.join(workspaceRoot, KITPILOTMODES_FILENAME)
 				const exists = await fileExistsAtPath(targetPath)
 
-				logger.info(`${exists ? "Updating" : "Creating"} project mode in ${ROOMODES_FILENAME}`, {
+				logger.info(`${exists ? "Updating" : "Creating"} project mode in ${KITPILOTMODES_FILENAME}`, {
 					slug,
 					workspace: workspaceRoot,
 				})
