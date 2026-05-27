@@ -2,7 +2,7 @@
 
 > An agentic coding assistant for VS Code, powered exclusively by GitHub Copilot.
 
-KitPilot is a streamlined fork of [KitPilot](https://github.com/KitPilotInc/KitPilot), purpose-built for users whose organizations only authorize GitHub Copilot. Every non-Copilot AI provider integration has been removed; the extension routes all model traffic through VS Code's [Language Model API](https://code.visualstudio.com/api/extension-guides/language-model) — meaning if you have Copilot, you're already set up.
+KitPilot is a streamlined fork of Roo Code, purpose-built for users whose organizations only authorize GitHub Copilot. Every non-Copilot AI provider integration has been removed; the extension routes all model traffic through VS Code's [Language Model API](https://code.visualstudio.com/api/extension-guides/language-model) — meaning if you have Copilot, you're already set up.
 
 ## Why KitPilot
 
@@ -46,7 +46,7 @@ Semantic `codebase_search` is supported via local [Ollama](https://ollama.ai/) e
 
 ## Credits
 
-KitPilot is a fork of [KitPilot](https://github.com/KitPilotInc/KitPilot), which itself is a fork of [Cline](https://cline.bot/). Both projects deserve the credit for the underlying agent design, mode system, and tool architecture. This fork's contribution is the Copilot-only narrowing, the token-efficiency work, and the rebrand.
+KitPilot is a fork of Roo Code, which itself is a fork of [Cline](https://cline.bot/). Both projects deserve the credit for the underlying agent design, mode system, and tool architecture. This fork's contribution is the Copilot-only narrowing, the token-efficiency work, and the rebrand.
 
 ## License
 
