@@ -120,4 +120,41 @@ describe("hooks/HookEngine", () => {
 		injectVerifyCommandHook(config, "   ")
 		expect(config.PreToolUse).toBeUndefined()
 	})
+
+	it("UserPromptSubmit hook fires and can block on the prompt content", async () => {
+		// Simulates a guardrail hook that blocks prompts mentioning secrets.
+		const config: HooksConfigDict = {
+			UserPromptSubmit: [
+				{
+					matcher: "*",
+					hooks: [
+						{
+							type: "command",
+							command:
+								'if echo "$CLAUDE_TOOL_INPUT" | grep -q "AKIA"; then echo "secret detected" >&2; exit 1; fi; exit 0',
+						},
+					],
+				},
+			],
+		}
+		const engine = new HookEngine(config)
+
+		// Clean prompt → passes
+		const clean = await engine.processEvent({
+			eventType: "UserPromptSubmit",
+			toolName: "user_prompt",
+			toolArgs: { prompt: "refactor the auth module" },
+		})
+		expect(clean.blocked).toBe(false)
+		expect(clean.executedHooks).toBe(1)
+
+		// Prompt with leaked AWS key → blocked
+		const dirty = await engine.processEvent({
+			eventType: "UserPromptSubmit",
+			toolName: "user_prompt",
+			toolArgs: { prompt: "the key is AKIAIOSFODNN7EXAMPLE, deploy with that" },
+		})
+		expect(dirty.blocked).toBe(true)
+		expect(dirty.blockingReason).toContain("secret detected")
+	})
 })

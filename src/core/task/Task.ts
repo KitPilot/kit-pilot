@@ -73,6 +73,7 @@ import { getModelMaxOutputTokens } from "../../shared/api"
 import { McpHub } from "../../services/mcp/McpHub"
 import { McpServerManager } from "../../services/mcp/McpServerManager"
 import { RepoPerTaskCheckpointService } from "../../services/checkpoints"
+import { processHookEvent } from "../../services/hooks"
 
 // integrations
 import { DiffViewProvider } from "../../integrations/editor/DiffViewProvider"
@@ -154,6 +155,23 @@ export interface TaskOptions extends CreateTaskOptions {
 	workspacePath?: string
 	/** Initial status for the task's history item (e.g., "active" for child tasks) */
 	initialStatus?: "active" | "delegated" | "completed"
+}
+
+/**
+ * Pulls the user-supplied text out of a content array, recognized by the
+ * `<user_message>` wrapper that startTask and resumeTaskFromHistory both add.
+ * Used by the UserPromptSubmit hook fire site to skip continuation loops.
+ *
+ * @internal Exported for testing only.
+ */
+export function extractUserPromptText(content: Anthropic.Messages.ContentBlockParam[]): string | undefined {
+	const re = /<user_message>([\s\S]*?)<\/user_message>/
+	for (const block of content) {
+		if (block.type !== "text") continue
+		const match = re.exec(block.text)
+		if (match) return match[1].trim()
+	}
+	return undefined
 }
 
 export class Task extends EventEmitter<TaskEvents> implements TaskLike {
@@ -2529,6 +2547,25 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// Task Loop
 
 	private async initiateTaskLoop(userContent: Anthropic.Messages.ContentBlockParam[]): Promise<void> {
+		// UserPromptSubmit hook — fires only when a genuine user prompt is being submitted.
+		// Detection: at least one text block contains the `<user_message>` marker that both
+		// startTask and resumeTaskFromHistory wrap real user input with. Loop continuations
+		// (askResponseTask, noToolsUsed fallback) don't have it, so they skip the hook.
+		const userPrompt = extractUserPromptText(userContent)
+		if (userPrompt) {
+			const hookResult = await processHookEvent(this.cwd, {
+				eventType: "UserPromptSubmit",
+				toolName: "user_prompt",
+				toolArgs: { prompt: userPrompt },
+				context: { session_id: this.taskId },
+			})
+			if (hookResult.blocked) {
+				const reason = hookResult.blockingReason ?? "Blocked by UserPromptSubmit hook."
+				await this.say("error", reason)
+				return
+			}
+		}
+
 		// Kicks off the checkpoints initialization process in the background.
 		getCheckpointService(this)
 
