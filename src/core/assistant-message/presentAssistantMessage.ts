@@ -40,6 +40,7 @@ import { codebaseSearchTool } from "../tools/CodebaseSearchTool"
 
 import { formatResponse } from "../prompts/responses"
 import { sanitizeToolUseId } from "../../utils/tool-id"
+import { processHookEvent } from "../../services/hooks"
 
 /**
  * Processes and presents assistant message content to the user interface.
@@ -664,6 +665,33 @@ export async function presentAssistantMessage(cline: Task) {
 				}
 			}
 
+			// PreToolUse hooks — gives users (and the verifyCommand setting) a chance to block
+			// or annotate the tool call before its handler runs. Only fires on complete blocks
+			// so streaming partials don't trigger hooks repeatedly.
+			if (!block.partial) {
+				const preEvent = {
+					eventType: "PreToolUse" as const,
+					toolName: block.name,
+					toolArgs: ((block.nativeArgs as Record<string, unknown> | undefined) ??
+						(block.params as Record<string, unknown> | undefined) ??
+						{}) as Record<string, unknown>,
+					context: { session_id: cline.taskId },
+				}
+				const preResult = await processHookEvent(cline.cwd, preEvent)
+				if (preResult.blocked) {
+					const reason = preResult.blockingReason ?? "Blocked by PreToolUse hook."
+					cline.consecutiveMistakeCount++
+					try {
+						cline.recordToolError(block.name as ToolName, reason)
+					} catch {
+						// Best-effort only
+					}
+					await cline.say("error", reason)
+					pushToolResult(formatResponse.toolError(reason))
+					break
+				}
+			}
+
 			switch (block.name) {
 				case "write_to_file":
 					await checkpointSaveAndMark(cline)
@@ -917,6 +945,42 @@ export async function presentAssistantMessage(cline: Task) {
 						is_error: true,
 					})
 					break
+				}
+			}
+
+			// PostToolUse hooks — fire after the handler has pushed its tool_result.
+			// If a hook blocks (exit code 1), we rewrite the just-pushed tool_result so the
+			// model sees the block reason instead of the (now-invalidated) success result.
+			if (!block.partial) {
+				const sanitizedId = sanitizeToolUseId(toolCallId)
+				const lastResult = [...cline.userMessageContent]
+					.reverse()
+					.find(
+						(b): b is Anthropic.ToolResultBlockParam =>
+							b.type === "tool_result" && b.tool_use_id === sanitizedId,
+					)
+				const postEvent = {
+					eventType: "PostToolUse" as const,
+					toolName: block.name,
+					toolArgs: ((block.nativeArgs as Record<string, unknown> | undefined) ??
+						(block.params as Record<string, unknown> | undefined) ??
+						{}) as Record<string, unknown>,
+					context: {
+						session_id: cline.taskId,
+						result: typeof lastResult?.content === "string" ? lastResult.content : undefined,
+					},
+				}
+				const postResult = await processHookEvent(cline.cwd, postEvent)
+				if (postResult.blocked && lastResult) {
+					const reason = postResult.blockingReason ?? "Blocked by PostToolUse hook."
+					try {
+						cline.recordToolError(block.name as ToolName, reason)
+					} catch {
+						// Best-effort only
+					}
+					await cline.say("error", reason)
+					lastResult.content = formatResponse.toolError(reason)
+					lastResult.is_error = true
 				}
 			}
 
