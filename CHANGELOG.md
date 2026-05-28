@@ -1,6 +1,19 @@
 # KitPilot Changelog
 
+## 0.1.18
+
+### Added
+
+- **Hook system — declarative shell guards around tool execution.** Three event types fire around every tool call: `PreToolUse` (before the handler runs — exit code `1` blocks it), `PostToolUse` (after the handler runs — exit `1` rewrites the tool result to an error so the model reacts), and `UserPromptSubmit` (when a fresh user prompt arrives — exit `1` aborts the prompt before any LLM call). Wire format is identical to Claude Code hooks (stdin JSON, `CLAUDE_*` env vars, exit-code semantics 0/1/2) so hook scripts are portable across Claude Code, code_puppy, and KitPilot. Config lives in `~/.kitpilot/hooks.json` (global) and `.kitpilot/hooks.json` (project); matcher syntax supports `*`, exact tool name, file extension (`.ts`), `A && B`, `A || B`, and regex. See `src/services/hooks/README.md` for a worked example (refuse `rm -rf`, scan prompts for AWS keys).
+- **`verifyCommand` is now actually enforced.** The `kit-pilot.verifyCommand` setting was previously prompt text only — a polite instruction the model could ignore. It is now a synthetic `PreToolUse` hook on `attempt_completion`: the verify command literally runs before the model can declare a task complete, and non-zero exit blocks completion and feeds the failure back to the model. The prompt-text hint is kept so the model knows to expect verification (avoids a wasted round-trip).
+
+### Changed
+
+- **Complete Roo Code → KitPilot rename, hard switch (no back-compat).** All internal references — config directory (`~/.kitpilot/`, project `.kitpilot/`), ignore files (`.kitpilotignore`), modes file (`.kitpilotmodes`), env vars (`KITPILOT_*`), IPC socket name, event names — moved to the KitPilot brand. **Existing pre-release testers with `.roo`/`.rooignore`/`.roomodes`/stored-config setups will need to migrate manually — those paths are no longer read.** Upstream attribution to Roo Code (and Cline before it) preserved in `LICENSE`, `NOTICE`, and `README.md` per Apache-2.0 terms. (Pre-released as 0.1.17 — stable users see the rename + hooks together as one upgrade from 0.1.16.)
+
 ## 0.1.17
+
+> Released to the marketplace pre-release channel only as `v0.1.17-pre.1` (the Roo→KitPilot rename). The same version number couldn't be re-published to stable, so stable users jump straight from 0.1.16 to 0.1.18 — which includes the rename plus the new hook system.
 
 ### Changed
 
