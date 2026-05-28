@@ -60,8 +60,10 @@ plans/
 kitpilot-cli-*.tar.gz*
 
 # Maintainer-local notes and implementation guidance — never push these.
-KITPILOT_VSCODE_LM_NOTES.md
-claude_code_instructions.md
+# Patterns include iCloud-sync duplicate suffixes (" 2.md", " 3.md", ...).
+KITPILOT_VSCODE_LM_NOTES*.md
+ROO_CODE_VSCODE_LM_NOTES*.md
+claude_code_instructions*.md
 
 # Local-only codebase-indexing token A/B experiment (harness, results, report) — not for push.
 scripts/ab-token-harness/
