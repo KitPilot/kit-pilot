@@ -35,6 +35,7 @@ import Announcement from "./Announcement"
 import ChatRow from "./ChatRow"
 import WarningRow from "./WarningRow"
 import { ChatTextArea } from "./ChatTextArea"
+import { KitPilotMascot } from "./KitPilotMascot"
 import TaskHeader from "./TaskHeader"
 import ProfileViolationWarning from "./ProfileViolationWarning"
 import { CheckpointWarning } from "./CheckpointWarning"
@@ -1766,6 +1767,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					/>
 				</div>
 			)}
+			<KitPilotMascot active={isStreaming} label="Working…" />
 			<ChatTextArea
 				ref={textAreaRef}
 				inputValue={inputValue}

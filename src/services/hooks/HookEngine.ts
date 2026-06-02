@@ -76,11 +76,16 @@ export class HookEngine {
 			? `Hook '${blocking!.hookCommand}' failed: ${blocking!.error ?? blocking!.stderr ?? "blocked (no details provided)"}`
 			: undefined
 
+		// First builtin in the result list that requested approval — the
+		// dispatcher prompts the user and treats a deny as a block.
+		const needsApproval = results.find((r) => r.needsApproval !== undefined)?.needsApproval
+
 		return {
 			blocked,
 			executedHooks: results.length,
 			results,
 			blockingReason,
+			needsApproval,
 			totalDurationMs: performance.now() - start,
 		}
 	}

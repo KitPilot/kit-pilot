@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — vscode-lm-only build: CLI app provider tests reference
 // removed provider names.
 import fs from "fs/promises"

@@ -3,7 +3,7 @@
 	"displayName": "%extension.displayName%",
 	"description": "%extension.description%",
 	"publisher": "KitPilot",
-	"version": "0.1.18",
+	"version": "0.1.19",
 	"icon": "assets/icons/icon.png",
 	"galleryBanner": {
 		"color": "#617A91",
@@ -286,6 +286,24 @@
 					"type": "string",
 					"default": "",
 					"description": "Optional shell command (e.g. `pnpm check-types` or `npm test`) that KitPilot should run before finishing any task. When set, the agent is instructed to run this command and address any errors before calling attempt_completion. Leave empty to disable."
+				},
+				"kit-pilot.destructiveCommandGuard": {
+					"type": "string",
+					"enum": [
+						"ask",
+						"off"
+					],
+					"default": "ask",
+					"description": "Pure-regex pre-flight check on every execute_command call. When enabled, KitPilot intercepts dangerous shell commands (rm -rf /, git reset --hard, docker prune -af, Format-Volume, diskpart, etc.) and requires explicit user approval before running them — overriding auto-approval. Set to \"off\" to disable."
+				},
+				"kit-pilot.forcePushGuard": {
+					"type": "string",
+					"enum": [
+						"ask",
+						"off"
+					],
+					"default": "ask",
+					"description": "Pure-regex pre-flight check on every execute_command call. When enabled, KitPilot intercepts git force-push commands (--force, --force-with-lease, --force-if-includes, -f, -F, +refspec) and requires explicit user approval before running them — overriding auto-approval. Set to \"off\" to disable."
 				},
 				"kit-pilot.allowedCommands": {
 					"type": "array",

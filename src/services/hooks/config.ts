@@ -30,10 +30,7 @@ export async function loadHooksConfig(cwd: string): Promise<LoadedHooksConfig> {
 	const globalPath = path.join(getGlobalKitPilotDirectory(), HOOKS_FILE)
 	const projectPath = path.join(getProjectKitPilotDirectoryForCwd(cwd), HOOKS_FILE)
 
-	const [globalText, projectText] = await Promise.all([
-		readFileIfExists(globalPath),
-		readFileIfExists(projectPath),
-	])
+	const [globalText, projectText] = await Promise.all([readFileIfExists(globalPath), readFileIfExists(projectPath)])
 
 	const global = parseHooksJson(globalText)
 	const project = parseHooksJson(projectText)
@@ -95,6 +92,57 @@ export function injectVerifyCommandHook(config: HooksConfigDict, verifyCommand: 
 				type: "command",
 				command: cmd,
 				timeout: 120_000,
+			},
+		],
+	}
+	config[eventType] = [...groups, synthetic]
+}
+
+/**
+ * Injects the built-in destructive-command guard as a PreToolUse hook on
+ * `execute_command`. The guard runs in-process (no subprocess) and asks the
+ * user to approve commands matching dangerous patterns (rm -rf /, git reset
+ * --hard, etc.). Disabled when `mode === "off"`.
+ *
+ * Mutates `config` in place. Idempotent (stable id).
+ */
+export function injectDestructiveCommandGuard(config: HooksConfigDict, mode: "ask" | "off"): void {
+	if (mode === "off") return
+
+	const eventType: HookEventType = "PreToolUse"
+	const groups = (config[eventType] as HookGroup[] | undefined) ?? []
+	const synthetic: HookGroup = {
+		matcher: "execute_command",
+		hooks: [
+			{
+				id: "kitpilot-destructive-command-guard",
+				type: "builtin",
+				command: "destructive_command_guard",
+				timeout: 5_000,
+			},
+		],
+	}
+	config[eventType] = [...groups, synthetic]
+}
+
+/**
+ * Injects the built-in git force-push guard as a PreToolUse hook on
+ * `execute_command`. Asks the user to approve `git push --force`,
+ * `--force-with-lease`, `-f`, `+refspec`, etc. Disabled when `mode === "off"`.
+ */
+export function injectForcePushGuard(config: HooksConfigDict, mode: "ask" | "off"): void {
+	if (mode === "off") return
+
+	const eventType: HookEventType = "PreToolUse"
+	const groups = (config[eventType] as HookGroup[] | undefined) ?? []
+	const synthetic: HookGroup = {
+		matcher: "execute_command",
+		hooks: [
+			{
+				id: "kitpilot-force-push-guard",
+				type: "builtin",
+				command: "force_push_guard",
+				timeout: 5_000,
 			},
 		],
 	}

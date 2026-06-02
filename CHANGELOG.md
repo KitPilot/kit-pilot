@@ -1,5 +1,17 @@
 # KitPilot Changelog
 
+## 0.1.19
+
+### Added
+
+- Added a small animated stick figure above the chat input that appears while KitPilot is working, so you can tell the agent isn't stuck.
+- Added a safety check that asks for confirmation before running dangerous shell commands like `rm -rf /`, `git reset --hard`, `docker prune`, `Format-Volume`, and similar. Can be turned off via the `kit-pilot.destructiveCommandGuard` setting.
+- Added a safety check that asks for confirmation before any `git push --force` (and its variants like `--force-with-lease`, `-f`, `+refspec`). Can be turned off via the `kit-pilot.forcePushGuard` setting.
+
+### Fixed
+
+- Solved an issue where chat got stuck on "API request…" because KitPilot couldn't find the ripgrep binary on newer versions of VS Code. It now also looks in the new location VS Code ships it in.
+
 ## 0.1.18
 
 ### Added
@@ -59,9 +71,9 @@
 ### Added
 
 - **Memory write tools — agent can now save and forget memories on its own.** Completes the persistent memory feature that started in 0.1.8 (which only auto-loaded files the user wrote by hand). Two new tools:
-  - `remember_this(name, type, description, content)` — saves a memory to `~/.kitpilot/memory/{name}.md` and updates the `MEMORY.md` index. Reusing a name overwrites. Types: `user` (who you are), `feedback` (rules to follow), `project` (ongoing work), `reference` (external systems).
-  - `forget_this(name)` — deletes the memory file and removes its index entry. No-op success if it doesn't exist.
-  - Both tools require approval per call (respects existing auto-approval settings).
+    - `remember_this(name, type, description, content)` — saves a memory to `~/.kitpilot/memory/{name}.md` and updates the `MEMORY.md` index. Reusing a name overwrites. Types: `user` (who you are), `feedback` (rules to follow), `project` (ongoing work), `reference` (external systems).
+    - `forget_this(name)` — deletes the memory file and removes its index entry. No-op success if it doesn't exist.
+    - Both tools require approval per call (respects existing auto-approval settings).
 - **Memory guidance in every system prompt.** The `<user_memory>` section now always emits, even when memory is empty, with explicit instructions about when to save (user shares stable facts, corrects your approach, mentions external systems) and when not to save (code patterns, in-progress state). Without this nudge, agents wouldn't proactively use the tools.
 
 ### Changed
@@ -141,7 +153,7 @@ These are disabled by default; turn them on in VS Code Settings (search "kit-pil
 
 ### Changed
 
-- Replaced inherited KitPilot marketplace description (*"A whole dev team of AI agents in your editor"*) with KitPilot-accurate copy: *"An agentic coding assistant powered exclusively by GitHub Copilot."* Applied across all 18 locale files.
+- Replaced inherited KitPilot marketplace description (_"A whole dev team of AI agents in your editor"_) with KitPilot-accurate copy: _"An agentic coding assistant powered exclusively by GitHub Copilot."_ Applied across all 18 locale files.
 - Cleaned marketplace keywords — dropped stale `claude`, `troo pilot`, `troopilot` tags; added `github-copilot`, `agentic`, `code-assistant`, `chat`, `kit-pilot`, `kitpilot` for better discoverability.
 
 ## 0.1.1

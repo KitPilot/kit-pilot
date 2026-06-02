@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — vscode-lm-only build: CLI test references removed providers.
 // pnpm --filter @kit-pilot/cli test src/agent/__tests__/extension-host.test.ts
 

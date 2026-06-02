@@ -494,8 +494,7 @@ export async function presentAssistantMessage(cline: Task) {
 				// formatResponse.toolError / toolDenied. Any non-error result
 				// resets the counter for this tool.
 				const looksLikeError =
-					resultContent.includes('"status":"error"') ||
-					resultContent.includes('"status":"denied"')
+					resultContent.includes('"status":"error"') || resultContent.includes('"status":"denied"')
 				cline.recordToolOutcome(block.name, looksLikeError, looksLikeError ? resultContent : undefined)
 
 				if (imageBlocks.length > 0) {
@@ -689,6 +688,41 @@ export async function presentAssistantMessage(cline: Task) {
 					await cline.say("error", reason)
 					pushToolResult(formatResponse.toolError(reason))
 					break
+				}
+				// Built-in guards (destructive_command_guard, etc.) can request explicit
+				// user approval before the tool runs. Bypasses auto-approval by design —
+				// these patterns are dangerous enough to always warrant a confirmation.
+				if (preResult.needsApproval) {
+					const approval = preResult.needsApproval
+					const warningPayload = JSON.stringify({
+						tool: "destructiveCommandGuard",
+						pattern: approval.patternName,
+						reason: approval.reason,
+						command: approval.subject,
+					})
+					const { response, text, images } = await cline.ask("tool", warningPayload, false)
+					if (response !== "yesButtonClicked") {
+						const denyReason = text
+							? `Destructive command rejected by user: ${approval.patternName}. Feedback: ${text}`
+							: `Destructive command rejected by user: ${approval.patternName} — ${approval.reason}`
+						cline.consecutiveMistakeCount++
+						try {
+							cline.recordToolError(block.name as ToolName, denyReason)
+						} catch {
+							// Best-effort only
+						}
+						if (text) {
+							await cline.say("user_feedback", text, images)
+						}
+						await cline.say("error", denyReason)
+						pushToolResult(formatResponse.toolError(denyReason))
+						break
+					}
+					// Approved — log and fall through. The tool handler will still call
+					// askApproval("command", ...) per its normal flow; auto-approval users
+					// won't see a second prompt, manual users will see the regular command
+					// approval (less verbose than the guard's warning).
+					await cline.say("text", `Destructive command approved (${approval.patternName}).`)
 				}
 			}
 
