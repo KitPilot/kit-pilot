@@ -95,7 +95,7 @@ export interface ApiOptionsProps {
 }
 
 const ApiOptions = ({
-	uriScheme,
+	uriScheme: _uriScheme,
 	apiConfiguration,
 	setApiConfigurationField,
 	fromWelcomeView,
@@ -103,7 +103,7 @@ const ApiOptions = ({
 	setErrorMessage,
 }: ApiOptionsProps) => {
 	const { t } = useAppTranslation()
-	const { organizationAllowList, openAiCodexIsAuthenticated } = useExtensionState()
+	const { organizationAllowList, openAiCodexIsAuthenticated: _openAiCodexIsAuthenticated } = useExtensionState()
 
 	const [customHeaders, setCustomHeaders] = useState<[string, string][]>(() => {
 		const headers = apiConfiguration?.openAiHeaders || {}
@@ -169,7 +169,7 @@ const ApiOptions = ({
 		}
 	}, [apiConfiguration.apiProvider, setApiConfigurationField])
 
-	const { data: routerModels, refetch: refetchRouterModels } = useRouterModels()
+	const { data: routerModels, refetch: _refetchRouterModels } = useRouterModels()
 
 	const { data: openRouterModelProviders } = useOpenRouterModelProviders(
 		apiConfiguration?.openRouterModelId,

@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — vscode-lm-only build: see ../provider.ts.
 import { getApiKeyFromEnv } from "../provider.js"
 

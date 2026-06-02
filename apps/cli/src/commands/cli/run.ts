@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — vscode-lm-only build: CLI command references removed providers.
 import fs from "fs"
 import path from "path"
@@ -227,7 +228,9 @@ export async function run(promptArg: string | undefined, flagOptions: FlagOption
 
 	if (flagOptions.signalOnlyExit && !flagOptions.stdinPromptStream) {
 		console.error("[CLI] Error: --signal-only-exit requires --stdin-prompt-stream")
-		console.error("[CLI] Usage: kitpilot --print --output-format stream-json --stdin-prompt-stream --signal-only-exit")
+		console.error(
+			"[CLI] Usage: kitpilot --print --output-format stream-json --stdin-prompt-stream --signal-only-exit",
+		)
 		process.exit(1)
 	}
 

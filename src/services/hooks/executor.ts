@@ -15,6 +15,7 @@
  */
 
 import { spawn } from "child_process"
+import { getBuiltin } from "./builtins"
 import { extractFilePath } from "./matcher"
 import type { EventData, ExecutionResult, HookConfig } from "./types"
 
@@ -39,6 +40,11 @@ export async function executeHook(
 			durationMs: 0,
 			hookId: hook.id,
 		}
+	}
+
+	// "builtin" type: dispatch to in-process handler by name.
+	if (hook.type === "builtin") {
+		return executeBuiltin(hook, event)
 	}
 
 	const command = substituteVariables(hook.command, event, opts.envVars ?? {}, opts.cwd ?? process.cwd())
@@ -131,6 +137,77 @@ export async function executeHook(
 	})
 }
 
+async function executeBuiltin(hook: HookConfig, event: EventData): Promise<ExecutionResult> {
+	const start = performance.now()
+	const handler = getBuiltin(hook.command)
+	if (!handler) {
+		const durationMs = performance.now() - start
+		return {
+			blocked: false,
+			hookCommand: hook.command,
+			stdout: "",
+			stderr: `Unknown builtin hook: ${hook.command}`,
+			exitCode: -1,
+			durationMs,
+			error: `Unknown builtin hook: ${hook.command}`,
+			hookId: hook.id,
+		}
+	}
+
+	try {
+		const verdict = await handler(event)
+		const durationMs = performance.now() - start
+
+		if (verdict.kind === "allow") {
+			return {
+				blocked: false,
+				hookCommand: hook.command,
+				stdout: "",
+				stderr: "",
+				exitCode: 0,
+				durationMs,
+				hookId: hook.id,
+			}
+		}
+		if (verdict.kind === "block") {
+			return {
+				blocked: true,
+				hookCommand: hook.command,
+				stdout: "",
+				stderr: verdict.reason,
+				exitCode: 1,
+				durationMs,
+				error: verdict.reason,
+				hookId: hook.id,
+			}
+		}
+		// "ask" — do not block here; the dispatcher will prompt the user.
+		return {
+			blocked: false,
+			hookCommand: hook.command,
+			stdout: "",
+			stderr: "",
+			exitCode: 0,
+			durationMs,
+			hookId: hook.id,
+			needsApproval: verdict.approval,
+		}
+	} catch (err) {
+		const durationMs = performance.now() - start
+		const message = err instanceof Error ? err.message : String(err)
+		return {
+			blocked: false,
+			hookCommand: hook.command,
+			stdout: "",
+			stderr: message,
+			exitCode: -1,
+			durationMs,
+			error: `Builtin hook '${hook.command}' threw: ${message}`,
+			hookId: hook.id,
+		}
+	}
+}
+
 function buildStdinPayload(event: EventData, cwd: string): string {
 	const payload: Record<string, unknown> = {
 		session_id: (event.context?.session_id as string) ?? "kitpilot-session",
@@ -168,12 +245,7 @@ function buildEnvironment(
 	return env
 }
 
-function substituteVariables(
-	command: string,
-	event: EventData,
-	envVars: Record<string, string>,
-	cwd: string,
-): string {
+function substituteVariables(command: string, event: EventData, envVars: Record<string, string>, cwd: string): string {
 	const subs: Record<string, string> = {
 		CLAUDE_PROJECT_DIR: cwd,
 		tool_name: event.toolName,

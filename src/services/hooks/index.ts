@@ -9,15 +9,30 @@
 
 export { HookEngine } from "./HookEngine"
 export type { HookEngineOptions, ProcessEventOptions } from "./HookEngine"
-export { injectVerifyCommandHook, loadHooksConfig, parseHooksJson } from "./config"
+export {
+	injectDestructiveCommandGuard,
+	injectForcePushGuard,
+	injectVerifyCommandHook,
+	loadHooksConfig,
+	parseHooksJson,
+} from "./config"
 export type { LoadedHooksConfig } from "./config"
-export type { HookConfig, HookEventType, EventData, ExecutionResult, ProcessEventResult } from "./types"
+export type {
+	HookApprovalRequest,
+	HookConfig,
+	HookEventType,
+	EventData,
+	ExecutionResult,
+	ProcessEventResult,
+} from "./types"
 export { SUPPORTED_EVENT_TYPES, makeHookConfig } from "./types"
 export type { HookGroup, HooksConfigDict } from "./registry"
+// Side-effect: registers all built-in hook handlers.
+import "./builtins"
 
 import * as vscode from "vscode"
 import { HookEngine } from "./HookEngine"
-import { injectVerifyCommandHook, loadHooksConfig } from "./config"
+import { injectDestructiveCommandGuard, injectForcePushGuard, injectVerifyCommandHook, loadHooksConfig } from "./config"
 import type { EventData, ProcessEventResult } from "./types"
 
 /**
@@ -32,6 +47,8 @@ export async function getHookEngine(cwd: string): Promise<HookEngine> {
 	const loaded = await loadHooksConfig(cwd)
 	const verifyCommand = readVerifyCommand()
 	injectVerifyCommandHook(loaded.merged, verifyCommand)
+	injectDestructiveCommandGuard(loaded.merged, readDestructiveCommandGuardMode())
+	injectForcePushGuard(loaded.merged, readForcePushGuardMode())
 
 	const engine = new HookEngine(loaded.merged, { cwd })
 	singleton = { cwd, engine }
@@ -61,5 +78,23 @@ function readVerifyCommand(): string | undefined {
 		return vscode.workspace.getConfiguration("kit-pilot").get<string>("verifyCommand", "")
 	} catch {
 		return undefined
+	}
+}
+
+function readDestructiveCommandGuardMode(): "ask" | "off" {
+	try {
+		const v = vscode.workspace.getConfiguration("kit-pilot").get<string>("destructiveCommandGuard", "ask")
+		return v === "off" ? "off" : "ask"
+	} catch {
+		return "ask"
+	}
+}
+
+function readForcePushGuardMode(): "ask" | "off" {
+	try {
+		const v = vscode.workspace.getConfiguration("kit-pilot").get<string>("forcePushGuard", "ask")
+		return v === "off" ? "off" : "ask"
+	} catch {
+		return "ask"
 	}
 }

@@ -31,7 +31,7 @@ export const SUPPORTED_EVENT_TYPES: readonly HookEventType[] = [
 	"SubagentStop",
 ]
 
-export type HookType = "command" | "prompt"
+export type HookType = "command" | "prompt" | "builtin"
 
 /** Per-hook configuration. */
 export interface HookConfig {
@@ -70,8 +70,8 @@ export function makeHookConfig(input: HookConfigInput): HookConfig {
 	if (!matcher) throw new Error("Hook matcher cannot be empty")
 
 	const type: HookType = input.type ?? "command"
-	if (type !== "command" && type !== "prompt") {
-		throw new Error(`Hook type must be 'command' or 'prompt', got: ${type}`)
+	if (type !== "command" && type !== "prompt" && type !== "builtin") {
+		throw new Error(`Hook type must be 'command', 'prompt', or 'builtin', got: ${type}`)
 	}
 
 	const command = input.command ?? input.prompt ?? ""
@@ -105,6 +105,19 @@ export interface EventData {
 	context?: Record<string, unknown>
 }
 
+/**
+ * Approval request raised by a builtin hook. The dispatcher must prompt the
+ * user; on deny the tool call is blocked, on approve it proceeds.
+ */
+export interface HookApprovalRequest {
+	/** Human-readable reason shown in the prompt. */
+	reason: string
+	/** Short identifier of the matched pattern (e.g. "rm -rf /"). */
+	patternName: string
+	/** The shell command (or other input) the user is approving. */
+	subject: string
+}
+
 /** Result from executing a single hook. */
 export interface ExecutionResult {
 	blocked: boolean
@@ -115,6 +128,8 @@ export interface ExecutionResult {
 	durationMs: number
 	error?: string
 	hookId?: string
+	/** Set by builtin hooks that need user approval before allowing the tool through. */
+	needsApproval?: HookApprovalRequest
 }
 
 export function isResultSuccess(r: ExecutionResult): boolean {
@@ -128,4 +143,6 @@ export interface ProcessEventResult {
 	results: ExecutionResult[]
 	blockingReason?: string
 	totalDurationMs: number
+	/** First builtin hook in the results that requested user approval, if any. */
+	needsApproval?: HookApprovalRequest
 }

@@ -51,6 +51,19 @@ rel/path/to/helper.ts
 const isWindows = process.platform.startsWith("win")
 const binName = isWindows ? "rg.exe" : "rg"
 
+/**
+ * Platform subdirectory used by `@vscode/ripgrep-universal` (the newer
+ * ripgrep package VS Code ships, which slots binaries under platform-arch
+ * folders like `darwin-arm64/`, `linux-x64/`, `win32-x64/`).
+ */
+const ripgrepUniversalArchDir = (() => {
+	const arch = process.arch === "x64" ? "x64" : process.arch === "arm64" ? "arm64" : process.arch
+	if (process.platform === "darwin") return `darwin-${arch}`
+	if (process.platform === "linux") return `linux-${arch}`
+	if (process.platform === "win32") return `win32-${arch}`
+	return ""
+})()
+
 interface SearchFileResult {
 	file: string
 	searchResults: SearchResult[]
@@ -88,11 +101,18 @@ export async function getBinPath(vscodeAppRoot: string): Promise<string | undefi
 		return (await fileExistsAtPath(fullPath)) ? fullPath : undefined
 	}
 
+	const universalSuffix = ripgrepUniversalArchDir ? `bin/${ripgrepUniversalArchDir}/` : "bin/"
+
 	return (
+		// `@vscode/ripgrep-universal` (current VS Code, platform-arch subdir)
+		(await checkPath(`node_modules/@vscode/ripgrep-universal/${universalSuffix}`)) ||
+		(await checkPath(`node_modules.asar.unpacked/@vscode/ripgrep-universal/${universalSuffix}`)) ||
+		// `@vscode/ripgrep` (older VS Code)
 		(await checkPath("node_modules/@vscode/ripgrep/bin/")) ||
+		(await checkPath("node_modules.asar.unpacked/@vscode/ripgrep/bin/")) ||
+		// `vscode-ripgrep` (legacy)
 		(await checkPath("node_modules/vscode-ripgrep/bin")) ||
-		(await checkPath("node_modules.asar.unpacked/vscode-ripgrep/bin/")) ||
-		(await checkPath("node_modules.asar.unpacked/@vscode/ripgrep/bin/"))
+		(await checkPath("node_modules.asar.unpacked/vscode-ripgrep/bin/"))
 	)
 }
 

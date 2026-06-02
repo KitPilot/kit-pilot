@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck — vscode-lm-only build: CLI app is not the target. It can't
 // use vscode-lm at runtime (requires VS Code's API) and its provider list
 // references names that have been narrowed out of ProviderName.
