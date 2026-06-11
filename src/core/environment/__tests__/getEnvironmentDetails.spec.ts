@@ -91,6 +91,7 @@ describe("getEnvironmentDetails", () => {
 			cwd: mockCwd,
 			taskId: mockTaskId,
 			didEditFile: false,
+			envDetailsCache: { visibleFiles: "", openTabs: "", modeSlug: "", lastTimeSentMs: 0 },
 			fileContextTracker: {
 				getAndClearRecentlyModifiedFiles: vi.fn().mockReturnValue([]),
 			} as unknown as FileContextTracker,

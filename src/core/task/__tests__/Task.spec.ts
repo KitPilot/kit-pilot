@@ -123,7 +123,12 @@ vi.mock("vscode", () => {
 				stat: vi.fn().mockResolvedValue({ type: 1 }), // FileType.File = 1
 			},
 			onDidSaveTextDocument: vi.fn(() => mockDisposable),
+			onDidChangeConfiguration: vi.fn(() => mockDisposable),
 			getConfiguration: vi.fn(() => ({ get: (key: string, defaultValue: any) => defaultValue })),
+		},
+		lm: {
+			onDidChangeChatModels: vi.fn(() => mockDisposable),
+			selectChatModels: vi.fn(async () => []),
 		},
 		env: {
 			uriScheme: "vscode",
@@ -269,9 +274,8 @@ describe("Cline", () => {
 
 		// Setup mock API configuration
 		mockApiConfig = {
-			apiProvider: "anthropic",
-			apiModelId: "claude-3-5-sonnet-20241022",
-			apiKey: "test-api-key", // Add API key to mock config
+			apiProvider: "vscode-lm",
+			vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
 		}
 
 		// Mock provider methods
@@ -950,8 +954,8 @@ describe("Cline", () => {
 				Task.resetGlobalApiRequestTime()
 
 				mockApiConfig = {
-					apiProvider: "anthropic",
-					apiKey: "test-key",
+					apiProvider: "vscode-lm",
+					vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
 					rateLimitSeconds: 5,
 				}
 
@@ -1328,8 +1332,8 @@ describe("Cline", () => {
 				vi.clearAllMocks()
 
 				mockApiConfig = {
-					apiProvider: "anthropic",
-					apiKey: "test-key",
+					apiProvider: "vscode-lm",
+					vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
 				}
 
 				mockProvider = {
@@ -1377,98 +1381,44 @@ describe("Cline", () => {
 			})
 		})
 
-		describe("getApiProtocol", () => {
-			it("should determine API protocol based on provider and model", async () => {
-				// Test with Anthropic provider
-				const anthropicConfig = {
-					...mockApiConfig,
-					apiProvider: "anthropic" as const,
-					apiModelId: "gpt-4",
-				}
-				const anthropicTask = new Task({
+		describe("provider gating (vscode-lm-only build)", () => {
+			it("constructs successfully with the vscode-lm provider", () => {
+				const task = new Task({
 					provider: mockProvider,
-					apiConfiguration: anthropicConfig,
+					apiConfiguration: {
+						apiProvider: "vscode-lm" as const,
+						vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
+					},
 					task: "test task",
 					startTask: false,
 				})
-				// Should use anthropic protocol even with non-claude model
-				expect(anthropicTask.apiConfiguration.apiProvider).toBe("anthropic")
+				expect(task.apiConfiguration.apiProvider).toBe("vscode-lm")
+			})
 
-				// Test with OpenRouter provider and Claude model
-				const openrouterClaudeConfig = {
-					apiProvider: "openrouter" as const,
-					openRouterModelId: "anthropic/claude-3-opus",
-				}
-				const openrouterClaudeTask = new Task({
-					provider: mockProvider,
-					apiConfiguration: openrouterClaudeConfig,
-					task: "test task",
-					startTask: false,
-				})
-				expect(openrouterClaudeTask.apiConfiguration.apiProvider).toBe("openrouter")
-
-				// Test with OpenRouter provider and non-Claude model
-				const openrouterGptConfig = {
-					apiProvider: "openrouter" as const,
-					openRouterModelId: "openai/gpt-4",
-				}
-				const openrouterGptTask = new Task({
-					provider: mockProvider,
-					apiConfiguration: openrouterGptConfig,
-					task: "test task",
-					startTask: false,
-				})
-				expect(openrouterGptTask.apiConfiguration.apiProvider).toBe("openrouter")
-
-				// Test with various Claude model formats
-				const claudeModelFormats = [
-					"claude-3-opus",
-					"Claude-3-Sonnet",
-					"CLAUDE-instant",
-					"anthropic/claude-3-haiku",
-					"some-provider/claude-model",
-				]
-
-				for (const modelId of claudeModelFormats) {
-					const config = {
-						apiProvider: "openai" as const,
-						openAiModelId: modelId,
-					}
-					const task = new Task({
-						provider: mockProvider,
-						apiConfiguration: config,
-						task: "test task",
-						startTask: false,
-					})
-					// Verify the model ID contains claude (case-insensitive)
-					expect(modelId.toLowerCase()).toContain("claude")
+			it("throws for retired providers", () => {
+				for (const apiProvider of ["anthropic", "openrouter", "openai"] as const) {
+					expect(
+						() =>
+							new Task({
+								provider: mockProvider,
+								apiConfiguration: { apiProvider },
+								task: "test task",
+								startTask: false,
+							}),
+					).toThrow(/no longer supported/)
 				}
 			})
 
-			it("should handle edge cases for API protocol detection", async () => {
-				// Test with undefined provider
-				const undefinedProviderConfig = {
-					apiModelId: "claude-3-opus",
-				}
-				const undefinedProviderTask = new Task({
-					provider: mockProvider,
-					apiConfiguration: undefinedProviderConfig,
-					task: "test task",
-					startTask: false,
-				})
-				expect(undefinedProviderTask.apiConfiguration.apiProvider).toBeUndefined()
-
-				// Test with no model ID
-				const noModelConfig = {
-					apiProvider: "openai" as const,
-				}
-				const noModelTask = new Task({
-					provider: mockProvider,
-					apiConfiguration: noModelConfig,
-					task: "test task",
-					startTask: false,
-				})
-				expect(noModelTask.apiConfiguration.apiProvider).toBe("openai")
+			it("throws when the provider is unset", () => {
+				expect(
+					() =>
+						new Task({
+							provider: mockProvider,
+							apiConfiguration: {},
+							task: "test task",
+							startTask: false,
+						}),
+				).toThrow(/only supports the VS Code Language Model/)
 			})
 		})
 
@@ -1901,9 +1851,8 @@ describe("Queued message processing after condense", () => {
 	}
 
 	const apiConfig: ProviderSettings = {
-		apiProvider: "anthropic",
-		apiModelId: "claude-3-5-sonnet-20241022",
-		apiKey: "test-api-key",
+		apiProvider: "vscode-lm",
+		vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
 	} as any
 
 	it("processes queued message after condense completes", async () => {
@@ -1987,9 +1936,8 @@ describe("pushToolResultToUserContent", () => {
 
 	beforeEach(() => {
 		mockApiConfig = {
-			apiProvider: "anthropic",
-			apiModelId: "claude-3-5-sonnet-20241022",
-			apiKey: "test-api-key",
+			apiProvider: "vscode-lm",
+			vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
 		}
 
 		const storageUri = { fsPath: path.join(os.tmpdir(), "test-storage") }

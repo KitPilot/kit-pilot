@@ -547,14 +547,15 @@ describe("ClineProvider - API Handler Rebuild Guard", () => {
 
 	describe("getModelId helper", () => {
 		test("correctly extracts model ID from different provider configurations", () => {
-			expect(getModelId({ apiProvider: "openrouter", openRouterModelId: "openai/gpt-4" })).toBe("openai/gpt-4")
-			expect(getModelId({ apiProvider: "anthropic", apiModelId: "claude-3-5-sonnet-20241022" })).toBe(
-				"claude-3-5-sonnet-20241022",
-			)
-			expect(getModelId({ apiProvider: "openai", openAiModelId: "gpt-4-turbo" })).toBe("gpt-4-turbo")
-			expect(getModelId({ apiProvider: "bedrock", apiModelId: "anthropic.claude-v2" })).toBe(
-				"anthropic.claude-v2",
-			)
+			// vscode-lm-only build: the model id lives in vsCodeLmModelSelector.
+			expect(
+				getModelId({
+					apiProvider: "vscode-lm",
+					vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4", id: "claude-sonnet-4" },
+				} as any),
+			).toBe("claude-sonnet-4")
+			// Retired-provider model fields are ignored.
+			expect(getModelId({ apiProvider: "openrouter", openRouterModelId: "openai/gpt-4" } as any)).toBeUndefined()
 		})
 
 		test("returns undefined when no model ID is present", () => {

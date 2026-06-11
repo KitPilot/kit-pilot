@@ -357,9 +357,10 @@ describe("ProviderSettingsManager", () => {
 				}),
 			)
 
+			// Active provider (vscode-lm): settings from other providers are stripped.
 			const newConfig: ProviderSettings = {
-				apiProvider: "anthropic",
-				apiKey: "test-key",
+				apiProvider: "vscode-lm",
+				vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
 			}
 			const newConfigWithExtra: ProviderSettings = {
 				...newConfig,
@@ -390,6 +391,31 @@ describe("ProviderSettingsManager", () => {
 
 			expect(mockSecrets.store.mock.calls[0][0]).toEqual("kitpilot_config_api_config")
 			expect(storedConfig).toEqual(expectedConfig)
+		})
+
+		it("should preserve all fields when saving a retired-provider profile", async () => {
+			mockSecrets.get.mockResolvedValue(
+				JSON.stringify({
+					currentApiConfigName: "default",
+					apiConfigs: { default: {} },
+				}),
+			)
+
+			// Retired providers are stored via passthrough so legacy fields are
+			// not lost when an old profile is re-saved.
+			const legacyConfig: ProviderSettings = {
+				apiProvider: "anthropic",
+				apiKey: "test-key",
+				openRouterApiKey: "another-key",
+			}
+
+			await providerSettingsManager.saveConfig("legacy", legacyConfig)
+
+			const storedConfig = JSON.parse(mockSecrets.store.mock.calls[mockSecrets.store.mock.calls.length - 1][1])
+			expect(storedConfig.apiConfigs.legacy).toEqual({
+				...legacyConfig,
+				id: storedConfig.apiConfigs.legacy.id,
+			})
 		})
 
 		it("should update existing config", async () => {

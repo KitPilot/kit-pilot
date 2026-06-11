@@ -134,6 +134,11 @@ vi.mock("vscode", () => {
 			},
 			onDidSaveTextDocument: vi.fn(() => mockDisposable),
 			getConfiguration: vi.fn(() => ({ get: (_key: string, defaultValue: unknown) => defaultValue })),
+			onDidChangeConfiguration: vi.fn(() => mockDisposable),
+		},
+		lm: {
+			onDidChangeChatModels: vi.fn(() => mockDisposable),
+			selectChatModels: vi.fn(async () => []),
 		},
 		env: {
 			uriScheme: "vscode",
@@ -242,9 +247,8 @@ describe("Task persistence", () => {
 		) as ClineProvider & Record<string, any>
 
 		mockApiConfig = {
-			apiProvider: "anthropic",
-			apiModelId: "claude-3-5-sonnet-20241022",
-			apiKey: "test-api-key",
+			apiProvider: "vscode-lm",
+			vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
 		}
 
 		mockProvider.postMessageToWebview = vi.fn().mockResolvedValue(undefined)

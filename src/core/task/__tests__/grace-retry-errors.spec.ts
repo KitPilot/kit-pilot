@@ -95,6 +95,11 @@ vi.mock("vscode", () => {
 			},
 			onDidSaveTextDocument: vi.fn(() => mockDisposable),
 			getConfiguration: vi.fn(() => ({ get: (key: string, defaultValue: any) => defaultValue })),
+			onDidChangeConfiguration: vi.fn(() => mockDisposable),
+		},
+		lm: {
+			onDidChangeChatModels: vi.fn(() => mockDisposable),
+			selectChatModels: vi.fn(async () => []),
 		},
 		env: {
 			uriScheme: "vscode",
@@ -194,9 +199,8 @@ describe("Grace Retry Error Handling", () => {
 		) as any
 
 		mockApiConfig = {
-			apiProvider: "anthropic",
-			apiModelId: "claude-3-5-sonnet-20241022",
-			apiKey: "test-api-key",
+			apiProvider: "vscode-lm",
+			vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
 		}
 
 		mockProvider.postMessageToWebview = vi.fn().mockResolvedValue(undefined)
