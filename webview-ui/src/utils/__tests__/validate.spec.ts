@@ -73,24 +73,24 @@ describe("Model Validation Functions", () => {
 			expect(result).toBeUndefined()
 		})
 
-		it("returns error for invalid OpenRouter model", () => {
+		it("returns undefined for invalid OpenRouter model (retired provider, validation skipped)", () => {
 			const config: ProviderSettings = {
 				apiProvider: "openrouter",
 				openRouterModelId: "invalid-model",
 			}
 
 			const result = getModelValidationError(config, mockRouterModels, allowAllOrganization)
-			expect(result).toContain("settings:validation.modelAvailability")
+			expect(result).toBeUndefined()
 		})
 
-		it("returns error for model not allowed by organization", () => {
+		it("returns undefined for org-restricted model on a retired provider (validation skipped)", () => {
 			const config: ProviderSettings = {
 				apiProvider: "openrouter",
 				openRouterModelId: "another-valid-model",
 			}
 
 			const result = getModelValidationError(config, mockRouterModels, restrictiveOrganization)
-			expect(result).toContain("model")
+			expect(result).toBeUndefined()
 		})
 
 		it("returns undefined for OpenAI models when no router models provided", () => {
@@ -103,24 +103,24 @@ describe("Model Validation Functions", () => {
 			expect(result).toBeUndefined()
 		})
 
-		it("handles empty model IDs gracefully", () => {
+		it("handles empty model IDs gracefully (retired provider, validation skipped)", () => {
 			const config: ProviderSettings = {
 				apiProvider: "openrouter",
 				openRouterModelId: "",
 			}
 
 			const result = getModelValidationError(config, mockRouterModels, allowAllOrganization)
-			expect(result).toBe("settings:validation.modelId")
+			expect(result).toBeUndefined()
 		})
 
-		it("handles undefined model IDs gracefully", () => {
+		it("handles undefined model IDs gracefully (retired provider, validation skipped)", () => {
 			const config: ProviderSettings = {
 				apiProvider: "openrouter",
 				// openRouterModelId is undefined
 			}
 
 			const result = getModelValidationError(config, mockRouterModels, allowAllOrganization)
-			expect(result).toBe("settings:validation.modelId")
+			expect(result).toBeUndefined()
 		})
 	})
 

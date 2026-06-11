@@ -276,6 +276,10 @@ const mockPostMessage = (state: Partial<ExtensionState>) => {
 				allowedCommands: [],
 				alwaysAllowExecute: false,
 				cloudIsAuthenticated: false,
+				// The extension always hydrates a vscode-lm profile (the only
+				// provider in this build); without it ProfileValidator marks the
+				// profile disallowed and sending stays disabled.
+				apiConfiguration: { apiProvider: "vscode-lm" },
 				...state,
 			},
 		},

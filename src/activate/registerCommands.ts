@@ -129,6 +129,15 @@ const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOpt
 			filePath,
 		)
 	},
+	runDiagnostics: async () => {
+		try {
+			const { runDiagnostics } = await import("../services/diagnostics/command")
+			await runDiagnostics(provider)
+		} catch (error) {
+			outputChannel.appendLine(`Error running diagnostics: ${error}`)
+			vscode.window.showErrorMessage(`KitPilot diagnostics failed to run: ${error}`)
+		}
+	},
 	focusInput: async () => {
 		try {
 			await focusPanel(tabPanel, sidebarPanel)

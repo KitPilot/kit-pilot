@@ -1042,9 +1042,9 @@ describe("ChatTextArea", () => {
 	})
 
 	describe("selectApiConfig", () => {
-		// Helper function to get the API config dropdown
+		// Helper function to get the model selector (replaced the API config dropdown)
 		const getApiConfigDropdown = () => {
-			return screen.getByTestId("dropdown-trigger")
+			return screen.getByTestId("model-selector-trigger")
 		}
 		it("should be enabled independently of sendingDisabled", () => {
 			render(<ChatTextArea {...defaultProps} sendingDisabled={true} selectApiConfigDisabled={false} />)

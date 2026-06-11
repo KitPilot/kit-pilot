@@ -3,7 +3,7 @@
 	"displayName": "%extension.displayName%",
 	"description": "%extension.description%",
 	"publisher": "KitPilot",
-	"version": "0.1.19",
+	"version": "0.1.20",
 	"icon": "assets/icons/icon.png",
 	"galleryBanner": {
 		"color": "#617A91",
@@ -143,6 +143,11 @@
 			{
 				"command": "kit-pilot.importSettings",
 				"title": "%command.importSettings.title%",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "kit-pilot.runDiagnostics",
+				"title": "%command.runDiagnostics.title%",
 				"category": "%configuration.title%"
 			},
 			{

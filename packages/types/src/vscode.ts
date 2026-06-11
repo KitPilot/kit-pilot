@@ -40,6 +40,7 @@ export const commandIds = [
 
 	"setCustomStoragePath",
 	"importSettings",
+	"runDiagnostics",
 
 	"focusInput",
 	"acceptInput",
