@@ -25,22 +25,14 @@ vi.mock("@vscode/webview-ui-toolkit/react", () => ({
 
 describe("KitPilotTips Component", () => {
 	beforeEach(() => {
-		vi.useFakeTimers()
+		render(<KitPilotTips />)
 	})
 
-	afterEach(() => {
-		vi.runOnlyPendingTimers()
-		vi.useRealTimers()
+	test("renders the about box with a single docs link", () => {
+		expect(screen.getAllByRole("link")).toHaveLength(1)
 	})
 
-	describe("when cycle is false (default)", () => {
-		beforeEach(() => {
-			render(<KitPilotTips />)
-		})
-
-		test("renders only the top two tips", () => {
-			// Ensure only two tips are present plus the docs link in the Trans component (3 total links)
-			expect(screen.getAllByRole("link")).toHaveLength(3)
-		})
+	test("renders the description text", () => {
+		expect(screen.getByText("kitpilotTips.modelAgnostic.description")).toBeInTheDocument()
 	})
 })

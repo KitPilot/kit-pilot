@@ -12,7 +12,7 @@ vi.mock("@src/utils/vscode", () => ({
 
 vi.mock("@kitpilot/package", () => ({
 	Package: {
-		version: "3.53.0",
+		version: "0.1.20",
 	},
 }))
 
@@ -29,24 +29,12 @@ vi.mock("react-i18next", () => ({
 		if (i18nKey === "chat:announcement.finalRelease.intro") {
 			return (
 				<span>
-					This is the last KitPilot release.{" "}
-					{components?.announcementLink &&
-						React.cloneElement(components.announcementLink, {}, "As we announced a few weeks ago")}
-					, we{"'"}ve decided to shift our focus to{" "}
-					{components?.roomoteLink && React.cloneElement(components.roomoteLink, {}, "Roomote")}, our cloud
-					agent platform, which we believe to be the future of software development. Thank you so much for
-					your support throughout the past year or so.
-				</span>
-			)
-		}
-
-		if (i18nKey === "chat:announcement.finalRelease.alternatives") {
-			return (
-				<span>
-					If you want to use an extension, we recommend checking out{" "}
-					{components?.zooCodeLink && React.cloneElement(components.zooCodeLink, {}, "ZooCode")} and{" "}
-					{components?.clineLink && React.cloneElement(components.clineLink, {}, "Cline")} (where KitPilot
-					originally started).
+					KitPilot is a fork of{" "}
+					{components?.announcementLink && React.cloneElement(components.announcementLink, {}, "KitPilot")}{" "}
+					running on{" "}
+					{components?.roomoteLink &&
+						React.cloneElement(components.roomoteLink, {}, "the VS Code Language Model API")}
+					.
 				</span>
 			)
 		}
@@ -59,14 +47,11 @@ vi.mock("@src/i18n/TranslationContext", () => ({
 	useAppTranslation: () => ({
 		t: (key: string, options?: { version?: string }) => {
 			const translations: Record<string, string> = {
-				"chat:announcement.finalRelease.title": "The last KitPilot release",
+				"chat:announcement.finalRelease.title": `Welcome to KitPilot ${options?.version ?? ""}`.trim(),
 				"chat:announcement.finalRelease.continuity":
-					"This extension should continue to work indefinitely, but it won't receive bug fixes, new features, or model updates.",
+					"If your organization permits GitHub Copilot, you can use KitPilot.",
+				"chat:announcement.finalRelease.alternatives": "Full agentic workflows are supported.",
 				"chat:announcement.finalRelease.signoff": "Happy coding!",
-			}
-
-			if (key === "chat:announcement.finalRelease.title") {
-				return `${translations[key]}${options?.version ? "" : ""}`
 			}
 
 			return translations[key] ?? key
@@ -75,38 +60,37 @@ vi.mock("@src/i18n/TranslationContext", () => ({
 }))
 
 describe("Announcement", () => {
-	it("renders the final release announcement", () => {
+	it("renders the welcome announcement", () => {
 		render(<Announcement hideAnnouncement={vi.fn()} />)
 
-		expect(screen.getByText("The last KitPilot release")).toBeInTheDocument()
-		expect(screen.getByText(/This is the last KitPilot release/)).toBeInTheDocument()
+		expect(screen.getByText("Welcome to KitPilot 0.1.20")).toBeInTheDocument()
 		expect(
-			screen.getByText(
-				"This extension should continue to work indefinitely, but it won't receive bug fixes, new features, or model updates.",
-			),
+			screen.getByText("If your organization permits GitHub Copilot, you can use KitPilot."),
 		).toBeInTheDocument()
+		expect(screen.getByText("Full agentic workflows are supported.")).toBeInTheDocument()
 		expect(screen.getByText("Happy coding!")).toBeInTheDocument()
 	})
 
 	it("renders the external links", () => {
 		render(<Announcement hideAnnouncement={vi.fn()} />)
 
-		expect(screen.getByRole("link", { name: "As we announced a few weeks ago" })).toHaveAttribute(
+		expect(screen.getByRole("link", { name: "KitPilot" })).toHaveAttribute(
 			"href",
-			"https://x.com/mattrubens/status/2046636598859559114",
+			"https://github.com/KitPilot/kit-pilot",
 		)
-		expect(screen.getByRole("link", { name: "ZooCode" })).toHaveAttribute(
+		expect(screen.getByRole("link", { name: "the VS Code Language Model API" })).toHaveAttribute(
 			"href",
-			"https://github.com/Zoo-Code-Org/Zoo-Code/",
+			"https://code.visualstudio.com/api/extension-guides/language-model",
 		)
-		expect(screen.getByRole("link", { name: "Cline" })).toHaveAttribute("href", "https://cline.bot/")
 	})
 
-	it("does not render corporate handoff links", () => {
-		render(<Announcement hideAnnouncement={vi.fn()} />)
+	it("calls hideAnnouncement when the dialog is dismissed", () => {
+		const hideAnnouncement = vi.fn()
+		render(<Announcement hideAnnouncement={hideAnnouncement} />)
 
-		expect(screen.queryByRole("listitem")).not.toBeInTheDocument()
-		expect(screen.queryByText("chat:announcement.handoff.description")).not.toBeInTheDocument()
-		expect(screen.queryByRole("link", { name: "X" })).not.toBeInTheDocument()
+		// Radix dialogs close on Escape.
+		document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))
+
+		expect(hideAnnouncement).toHaveBeenCalled()
 	})
 })

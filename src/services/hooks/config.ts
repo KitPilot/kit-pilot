@@ -15,6 +15,7 @@ import * as path from "path"
 import { getGlobalKitPilotDirectory, getProjectKitPilotDirectoryForCwd, readFileIfExists } from "../kitpilot-config"
 import type { HookGroup, HooksConfigDict } from "./registry"
 import { SUPPORTED_EVENT_TYPES, type HookEventType } from "./types"
+import { validateHooksText, type HooksFileValidation } from "./validation"
 
 const HOOKS_FILE = "hooks.json"
 
@@ -24,6 +25,8 @@ export interface LoadedHooksConfig {
 	projectPath: string
 	globalExists: boolean
 	projectExists: boolean
+	globalValidation: HooksFileValidation
+	projectValidation: HooksFileValidation
 }
 
 export async function loadHooksConfig(cwd: string): Promise<LoadedHooksConfig> {
@@ -42,6 +45,8 @@ export async function loadHooksConfig(cwd: string): Promise<LoadedHooksConfig> {
 		projectPath,
 		globalExists: globalText !== null,
 		projectExists: projectText !== null,
+		globalValidation: validateHooksText(globalText),
+		projectValidation: validateHooksText(projectText),
 	}
 }
 
@@ -53,7 +58,8 @@ export function parseHooksJson(text: string | null): HooksConfigDict {
 			return parsed as HooksConfigDict
 		}
 	} catch {
-		// Silently fall back; the validator (slice 2) will surface parse errors.
+		// Silently fall back so a typo can never crash tool dispatch;
+		// `validateHooksText` surfaces the error to the user on load.
 	}
 	return {}
 }

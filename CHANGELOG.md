@@ -1,5 +1,17 @@
 # KitPilot Changelog
 
+## 0.1.20
+
+### Added
+
+- New **KitPilot: Run Diagnostics** command that checks your setup (Copilot connection, file search, hooks, memory) and tells you exactly what's wrong when chat seems stuck.
+- KitPilot now warns you when a hooks configuration file has a mistake in it, instead of silently skipping your hooks.
+- If you upgraded from Roo Code, KitPilot now offers to bring over your old settings and configuration files with one click.
+
+### Fixed
+
+- Fixed a broken GitHub link in the welcome announcement.
+
 ## 0.1.19
 
 ### Added

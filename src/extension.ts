@@ -32,6 +32,7 @@ import { openAiCodexOAuthManager } from "./integrations/openai-codex/oauth"
 import { McpServerManager } from "./services/mcp/McpServerManager"
 import { CodeIndexManager } from "./services/code-index/manager"
 import { migrateSettings } from "./utils/migrateSettings"
+import { maybePromptLegacyRooMigration } from "./utils/migrateLegacyRooConfig"
 import { autoImportSettings } from "./utils/autoImportSettings"
 import { API } from "./extension/api"
 
@@ -123,6 +124,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Migrate old settings to new
 	await migrateSettings(context, outputChannel)
+
+	// Offer to copy pre-rename Roo Code config (.roo/.rooignore/.roomodes) to
+	// the KitPilot paths. Fire-and-forget: the prompt must not block activation.
+	void maybePromptLegacyRooMigration(context, outputChannel)
 
 	// Initialize i18n for internationalization support.
 	initializeI18n(context.globalState.get("language") ?? formatLanguage(vscode.env.language))

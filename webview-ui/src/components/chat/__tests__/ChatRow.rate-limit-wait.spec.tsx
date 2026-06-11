@@ -96,7 +96,7 @@ describe("ChatRow - rate limit wait", () => {
 		expect(screen.getByText("Unknown API error. Please report this on GitHub.")).toBeInTheDocument()
 		expect(screen.getByRole("link", { name: /Docs/ })).toHaveAttribute(
 			"href",
-			"https://github.com/KitPilotInc/KitPilot/issues/new?template=bug_report.yml",
+			"https://github.com/KitPilot/kit-pilot/issues/new",
 		)
 	})
 })

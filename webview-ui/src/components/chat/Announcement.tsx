@@ -43,7 +43,7 @@ const Announcement = ({ hideAnnouncement }: AnnouncementProps) => {
 						<Trans
 							i18nKey="chat:announcement.finalRelease.intro"
 							components={{
-								announcementLink: <ExternalLink href="https://github.com/KitPilotInc/KitPilot" />,
+								announcementLink: <ExternalLink href="https://github.com/KitPilot/kit-pilot" />,
 								roomoteLink: (
 									<ExternalLink href="https://code.visualstudio.com/api/extension-guides/language-model" />
 								),
