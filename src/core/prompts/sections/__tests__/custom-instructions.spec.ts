@@ -93,7 +93,7 @@ describe("loadRuleFiles", () => {
 		readFileMock.mockResolvedValue("  content with spaces  ")
 		const result = await loadRuleFiles("/fake/path")
 		expect(readFileMock).toHaveBeenCalled()
-		expect(result).toBe("\n# Rules from .roorules:\ncontent with spaces\n")
+		expect(result).toBe("\n# Rules from .kitpilotrules:\ncontent with spaces\n")
 	})
 
 	it("should handle ENOENT error", async () => {
@@ -129,7 +129,7 @@ describe("loadRuleFiles", () => {
 		statMock.mockRejectedValueOnce({ code: "ENOENT" })
 		readFileMock.mockImplementation((filePath: PathLike) => {
 			if (filePath.toString().endsWith(".roorules")) {
-				return Promise.resolve("kitpilot rules content")
+				return Promise.resolve("roo rules content")
 			}
 			if (filePath.toString().endsWith(".clinerules")) {
 				return Promise.resolve("cline rules content")
@@ -175,8 +175,18 @@ describe("loadRuleFiles", () => {
 
 		// Simulate listing files
 		readdirMock.mockResolvedValueOnce([
-			{ name: "file1.txt", isFile: () => true, isSymbolicLink: () => false, parentPath: "/fake/path/.kitpilot/rules" },
-			{ name: "file2.txt", isFile: () => true, isSymbolicLink: () => false, parentPath: "/fake/path/.kitpilot/rules" },
+			{
+				name: "file1.txt",
+				isFile: () => true,
+				isSymbolicLink: () => false,
+				parentPath: "/fake/path/.kitpilot/rules",
+			},
+			{
+				name: "file2.txt",
+				isFile: () => true,
+				isSymbolicLink: () => false,
+				parentPath: "/fake/path/.kitpilot/rules",
+			},
 		] as any)
 
 		statMock.mockImplementation((path) => {
@@ -210,8 +220,10 @@ describe("loadRuleFiles", () => {
 
 		const result = await loadRuleFiles("/fake/path")
 		// Paths in output should be relative to cwd
-		const expectedRelativePath1 = process.platform === "win32" ? ".kitpilot\\rules\\file1.txt" : ".kitpilot/rules/file1.txt"
-		const expectedRelativePath2 = process.platform === "win32" ? ".kitpilot\\rules\\file2.txt" : ".kitpilot/rules/file2.txt"
+		const expectedRelativePath1 =
+			process.platform === "win32" ? ".kitpilot\\rules\\file1.txt" : ".kitpilot/rules/file1.txt"
+		const expectedRelativePath2 =
+			process.platform === "win32" ? ".kitpilot\\rules\\file2.txt" : ".kitpilot/rules/file2.txt"
 		expect(result).toContain(`# Rules from ${expectedRelativePath1}:`)
 		expect(result).toContain("content of file1")
 		expect(result).toContain(`# Rules from ${expectedRelativePath2}:`)
@@ -219,11 +231,16 @@ describe("loadRuleFiles", () => {
 
 		// We expect both checks because our new implementation checks the files again for validation
 		// These are the absolute paths used internally
-		const expectedRulesDir = process.platform === "win32" ? "\\fake\\path\\.kitpilot\\rules" : "/fake/path/.kitpilot/rules"
+		const expectedRulesDir =
+			process.platform === "win32" ? "\\fake\\path\\.kitpilot\\rules" : "/fake/path/.kitpilot/rules"
 		const expectedFile1Path =
-			process.platform === "win32" ? "\\fake\\path\\.kitpilot\\rules\\file1.txt" : "/fake/path/.kitpilot/rules/file1.txt"
+			process.platform === "win32"
+				? "\\fake\\path\\.kitpilot\\rules\\file1.txt"
+				: "/fake/path/.kitpilot/rules/file1.txt"
 		const expectedFile2Path =
-			process.platform === "win32" ? "\\fake\\path\\.kitpilot\\rules\\file2.txt" : "/fake/path/.kitpilot/rules/file2.txt"
+			process.platform === "win32"
+				? "\\fake\\path\\.kitpilot\\rules\\file2.txt"
+				: "/fake/path/.kitpilot/rules/file2.txt"
 
 		expect(statMock).toHaveBeenCalledWith(expectedRulesDir)
 		expect(statMock).toHaveBeenCalledWith(expectedFile1Path)
@@ -240,18 +257,48 @@ describe("loadRuleFiles", () => {
 
 		// Simulate listing files including cache files
 		readdirMock.mockResolvedValueOnce([
-			{ name: "rule1.txt", isFile: () => true, isSymbolicLink: () => false, parentPath: "/fake/path/.kitpilot/rules" },
-			{ name: ".DS_Store", isFile: () => true, isSymbolicLink: () => false, parentPath: "/fake/path/.kitpilot/rules" },
-			{ name: "Thumbs.db", isFile: () => true, isSymbolicLink: () => false, parentPath: "/fake/path/.kitpilot/rules" },
-			{ name: "rule2.md", isFile: () => true, isSymbolicLink: () => false, parentPath: "/fake/path/.kitpilot/rules" },
-			{ name: "cache.log", isFile: () => true, isSymbolicLink: () => false, parentPath: "/fake/path/.kitpilot/rules" },
+			{
+				name: "rule1.txt",
+				isFile: () => true,
+				isSymbolicLink: () => false,
+				parentPath: "/fake/path/.kitpilot/rules",
+			},
+			{
+				name: ".DS_Store",
+				isFile: () => true,
+				isSymbolicLink: () => false,
+				parentPath: "/fake/path/.kitpilot/rules",
+			},
+			{
+				name: "Thumbs.db",
+				isFile: () => true,
+				isSymbolicLink: () => false,
+				parentPath: "/fake/path/.kitpilot/rules",
+			},
+			{
+				name: "rule2.md",
+				isFile: () => true,
+				isSymbolicLink: () => false,
+				parentPath: "/fake/path/.kitpilot/rules",
+			},
+			{
+				name: "cache.log",
+				isFile: () => true,
+				isSymbolicLink: () => false,
+				parentPath: "/fake/path/.kitpilot/rules",
+			},
 			{
 				name: "backup.bak",
 				isFile: () => true,
 				isSymbolicLink: () => false,
 				parentPath: "/fake/path/.kitpilot/rules",
 			},
-			{ name: "temp.tmp", isFile: () => true, isSymbolicLink: () => false, parentPath: "/fake/path/.kitpilot/rules" },
+			{
+				name: "temp.tmp",
+				isFile: () => true,
+				isSymbolicLink: () => false,
+				parentPath: "/fake/path/.kitpilot/rules",
+			},
 			{
 				name: "script.pyc",
 				isFile: () => true,
@@ -344,7 +391,7 @@ describe("loadRuleFiles", () => {
 		// Simulate .roorules exists
 		readFileMock.mockImplementation((filePath: PathLike) => {
 			if (filePath.toString().endsWith(".roorules")) {
-				return Promise.resolve("kitpilot rules content")
+				return Promise.resolve("roo rules content")
 			}
 			return Promise.reject({ code: "ENOENT" })
 		})
@@ -365,7 +412,7 @@ describe("loadRuleFiles", () => {
 		// Simulate .roorules exists
 		readFileMock.mockImplementation((filePath: PathLike) => {
 			if (filePath.toString().endsWith(".roorules")) {
-				return Promise.resolve("kitpilot rules content")
+				return Promise.resolve("roo rules content")
 			}
 			return Promise.reject({ code: "ENOENT" })
 		})
@@ -446,9 +493,12 @@ describe("loadRuleFiles", () => {
 		const result = await loadRuleFiles("/fake/path")
 
 		// Check root file content - paths in output should be relative
-		const expectedRelativeRootPath = process.platform === "win32" ? ".kitpilot\\rules\\root.txt" : ".kitpilot/rules/root.txt"
+		const expectedRelativeRootPath =
+			process.platform === "win32" ? ".kitpilot\\rules\\root.txt" : ".kitpilot/rules/root.txt"
 		const expectedRelativeNested1Path =
-			process.platform === "win32" ? ".kitpilot\\rules\\subdir\\nested1.txt" : ".kitpilot/rules/subdir/nested1.txt"
+			process.platform === "win32"
+				? ".kitpilot\\rules\\subdir\\nested1.txt"
+				: ".kitpilot/rules/subdir/nested1.txt"
 		const expectedRelativeNested2Path =
 			process.platform === "win32"
 				? ".kitpilot\\rules\\subdir\\subdir2\\nested2.txt"
@@ -465,7 +515,9 @@ describe("loadRuleFiles", () => {
 
 		// Verify correct absolute paths were checked internally
 		const expectedRootPath2 =
-			process.platform === "win32" ? "\\fake\\path\\.kitpilot\\rules\\root.txt" : "/fake/path/.kitpilot/rules/root.txt"
+			process.platform === "win32"
+				? "\\fake\\path\\.kitpilot\\rules\\root.txt"
+				: "/fake/path/.kitpilot/rules/root.txt"
 		const expectedNested1Path2 =
 			process.platform === "win32"
 				? "\\fake\\path\\.kitpilot\\rules\\subdir\\nested1.txt"
@@ -510,7 +562,8 @@ describe("addCustomInstructions", () => {
 		expect(result).toContain("(es)") // Check for language code in parentheses
 		expect(result).toContain("Global Instructions:\nglobal instructions")
 		expect(result).toContain("Mode-specific Instructions:\nmode instructions")
-		expect(result).toContain("Rules from .roorules-test-mode:\nmode specific rules")
+		// Every read resolves, so the first-priority file (.kitpilotrules-test-mode) wins.
+		expect(result).toContain("Rules from .kitpilotrules-test-mode:\nmode specific rules")
 	})
 
 	it("should load AGENTS.md when settings.useAgentRules is true", async () => {
@@ -1053,9 +1106,13 @@ describe("addCustomInstructions", () => {
 
 		// Paths in output should be relative
 		const expectedRelativeRule1Path =
-			process.platform === "win32" ? ".kitpilot\\rules-test-mode\\rule1.txt" : ".kitpilot/rules-test-mode/rule1.txt"
+			process.platform === "win32"
+				? ".kitpilot\\rules-test-mode\\rule1.txt"
+				: ".kitpilot/rules-test-mode/rule1.txt"
 		const expectedRelativeRule2Path =
-			process.platform === "win32" ? ".kitpilot\\rules-test-mode\\rule2.txt" : ".kitpilot/rules-test-mode/rule2.txt"
+			process.platform === "win32"
+				? ".kitpilot\\rules-test-mode\\rule2.txt"
+				: ".kitpilot/rules-test-mode/rule2.txt"
 
 		expect(result).toContain(`# Rules from ${expectedRelativeRule1Path}:`)
 		expect(result).toContain("mode specific rule 1")
@@ -1064,7 +1121,9 @@ describe("addCustomInstructions", () => {
 
 		// Verify absolute paths were used internally
 		const expectedAbsTestModeDir =
-			process.platform === "win32" ? "\\fake\\path\\.kitpilot\\rules-test-mode" : "/fake/path/.kitpilot/rules-test-mode"
+			process.platform === "win32"
+				? "\\fake\\path\\.kitpilot\\rules-test-mode"
+				: "/fake/path/.kitpilot/rules-test-mode"
 		const expectedAbsRule1Path =
 			process.platform === "win32"
 				? "\\fake\\path\\.kitpilot\\rules-test-mode\\rule1.txt"
@@ -1183,7 +1242,9 @@ describe("addCustomInstructions", () => {
 
 		// Paths in output should be relative
 		const expectedRelativeRule1Path =
-			process.platform === "win32" ? ".kitpilot\\rules-test-mode\\rule1.txt" : ".kitpilot/rules-test-mode/rule1.txt"
+			process.platform === "win32"
+				? ".kitpilot\\rules-test-mode\\rule1.txt"
+				: ".kitpilot/rules-test-mode/rule1.txt"
 
 		expect(result).toContain(`# Rules from ${expectedRelativeRule1Path}:`)
 		expect(result).toContain("mode specific rule content")
@@ -1213,7 +1274,8 @@ describe("Directory existence checks", () => {
 		await loadRuleFiles("/fake/path")
 
 		// Verify stat was called to check directory existence
-		const expectedRulesDir = process.platform === "win32" ? "\\fake\\path\\.kitpilot\\rules" : "/fake/path/.kitpilot/rules"
+		const expectedRulesDir =
+			process.platform === "win32" ? "\\fake\\path\\.kitpilot\\rules" : "/fake/path/.kitpilot/rules"
 		expect(statMock).toHaveBeenCalledWith(expectedRulesDir)
 	})
 
@@ -1227,7 +1289,7 @@ describe("Directory existence checks", () => {
 		const result = await loadRuleFiles("/fake/path")
 
 		// Verify it fell back to reading rule files directly
-		expect(result).toBe("\n# Rules from .roorules:\nfallback content\n")
+		expect(result).toBe("\n# Rules from .kitpilotrules:\nfallback content\n")
 	})
 })
 
@@ -1268,7 +1330,11 @@ describe("Rules directory reading", () => {
 				},
 			] as any)
 			.mockResolvedValueOnce([
-				{ name: "subdir_link.txt", isFile: () => true, parentPath: "/fake/path/.kitpilot/rules/symlink-target-dir" },
+				{
+					name: "subdir_link.txt",
+					isFile: () => true,
+					parentPath: "/fake/path/.kitpilot/rules/symlink-target-dir",
+				},
 			] as any)
 
 		// Simulate readlink response
@@ -1337,7 +1403,9 @@ describe("Rules directory reading", () => {
 				? ".kitpilot\\rules\\symlink-target-dir\\subdir_link.txt"
 				: ".kitpilot/rules/symlink-target-dir/subdir_link.txt"
 		const expectedRelativeNestedPath =
-			process.platform === "win32" ? ".kitpilot\\nested-symlink-target.txt" : ".kitpilot/nested-symlink-target.txt"
+			process.platform === "win32"
+				? ".kitpilot\\nested-symlink-target.txt"
+				: ".kitpilot/nested-symlink-target.txt"
 
 		expect(result).toContain(`# Rules from ${expectedRelativeRegularPath}:`)
 		expect(result).toContain("regular file content")
@@ -1355,7 +1423,10 @@ describe("Rules directory reading", () => {
 		// Verify both files were read
 		expect(readFileMock).toHaveBeenCalledWith("/fake/path/.kitpilot/rules/regular.txt", "utf-8")
 		expect(readFileMock).toHaveBeenCalledWith("/fake/path/.kitpilot/symlink-target.txt", "utf-8")
-		expect(readFileMock).toHaveBeenCalledWith("/fake/path/.kitpilot/rules/symlink-target-dir/subdir_link.txt", "utf-8")
+		expect(readFileMock).toHaveBeenCalledWith(
+			"/fake/path/.kitpilot/rules/symlink-target-dir/subdir_link.txt",
+			"utf-8",
+		)
 		expect(readFileMock).toHaveBeenCalledWith("/fake/path/.kitpilot/nested-symlink-target.txt", "utf-8")
 	})
 	beforeEach(() => {
@@ -1470,7 +1541,8 @@ describe("Rules directory reading", () => {
 		// Verify the expected file paths are in the result (should be relative)
 		const expectedRelativeAlphaPath =
 			process.platform === "win32" ? ".kitpilot\\rules\\alpha.txt" : ".kitpilot/rules/alpha.txt"
-		const expectedRelativeBetaPath = process.platform === "win32" ? ".kitpilot\\rules\\Beta.txt" : ".kitpilot/rules/Beta.txt"
+		const expectedRelativeBetaPath =
+			process.platform === "win32" ? ".kitpilot\\rules\\Beta.txt" : ".kitpilot/rules/Beta.txt"
 		const expectedRelativeZebraPath =
 			process.platform === "win32" ? ".kitpilot\\rules\\zebra.txt" : ".kitpilot/rules/zebra.txt"
 
@@ -1585,7 +1657,7 @@ describe("Rules directory reading", () => {
 		readFileMock.mockResolvedValueOnce("fallback content")
 
 		const result = await loadRuleFiles("/fake/path")
-		expect(result).toBe("\n# Rules from .roorules:\nfallback content\n")
+		expect(result).toBe("\n# Rules from .kitpilotrules:\nfallback content\n")
 	})
 
 	it("should load AGENTS.local.md alongside AGENTS.md for personal overrides", async () => {

@@ -34,6 +34,7 @@ vi.mock("vscode", () => {
 		},
 		workspace: {
 			getConfiguration: vi.fn(() => ({ get: (_k: string, d: any) => d })),
+			onDidChangeConfiguration: vi.fn(() => ({ dispose: vi.fn() })),
 			workspaceFolders: [
 				{
 					uri: { fsPath: "/mock/workspace/path" },
@@ -51,6 +52,10 @@ vi.mock("vscode", () => {
 				stat: vi.fn().mockResolvedValue({ type: 1 }),
 			},
 			onDidSaveTextDocument: vi.fn(() => mockDisposable),
+		},
+		lm: {
+			onDidChangeChatModels: vi.fn(() => ({ dispose: vi.fn() })),
+			selectChatModels: vi.fn(async () => []),
 		},
 		env: {
 			uriScheme: "vscode",
@@ -83,9 +88,8 @@ vi.mock("delay", () => ({
 describe("Task - sticky provider profile init race", () => {
 	it("does not overwrite task apiConfigName if set during async initialization", async () => {
 		const apiConfig: ProviderSettings = {
-			apiProvider: "anthropic",
-			apiModelId: "claude-3-5-sonnet-20241022",
-			apiKey: "test-api-key",
+			apiProvider: "vscode-lm",
+			vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
 		} as any
 
 		let resolveGetState: ((v: any) => void) | undefined

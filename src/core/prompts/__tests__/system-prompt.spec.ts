@@ -127,6 +127,7 @@ vi.mock("vscode", () => ({
 	workspace: {
 		workspaceFolders: [{ uri: { fsPath: "/test/path" } }],
 		getWorkspaceFolder: vi.fn().mockReturnValue({ uri: { fsPath: "/test/path" } }),
+		getConfiguration: vi.fn(() => ({ get: (_key: string, defaultValue: unknown) => defaultValue })),
 	},
 	window: {
 		activeTextEditor: undefined,
@@ -290,6 +291,7 @@ describe("SYSTEM_PROMPT", () => {
 					fsPath: "/test/path",
 				},
 			}),
+			getConfiguration: vi.fn(() => ({ get: (_key: string, defaultValue: unknown) => defaultValue })),
 		}
 		vscode.window = {
 			activeTextEditor: undefined,
@@ -333,6 +335,7 @@ describe("SYSTEM_PROMPT", () => {
 					fsPath: "/test/path",
 				},
 			}),
+			getConfiguration: vi.fn(() => ({ get: (_key: string, defaultValue: unknown) => defaultValue })),
 		}
 		vscode.window = {
 			activeTextEditor: undefined,

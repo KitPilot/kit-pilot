@@ -17,8 +17,13 @@ vi.mock("vscode", () => ({
 		getConfiguration: vi.fn(() => ({
 			get: vi.fn(() => true),
 		})),
+		onDidChangeConfiguration: vi.fn(() => ({ dispose: vi.fn() })),
 		openTextDocument: vi.fn(),
 		applyEdit: vi.fn(),
+	},
+	lm: {
+		onDidChangeChatModels: vi.fn(() => ({ dispose: vi.fn() })),
+		selectChatModels: vi.fn(async () => []),
 	},
 	RelativePattern: vi.fn((base, pattern) => ({ base, pattern })),
 	window: {
@@ -148,8 +153,8 @@ describe("Task reasoning preservation", () => {
 		}
 
 		mockApiConfiguration = {
-			apiProvider: "anthropic",
-			apiKey: "test-key",
+			apiProvider: "vscode-lm",
+			vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
 		} as ProviderSettings
 	})
 

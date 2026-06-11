@@ -908,7 +908,7 @@ describe("summarizeConversation", () => {
 		const mockCallArgs = (maybeRemoveImageBlocks as Mock).mock.calls[0][0] as any[]
 		const finalMessage = mockCallArgs[mockCallArgs.length - 1]
 		expect(finalMessage.role).toBe("user")
-		expect(finalMessage.content).toContain("Your task is to create a detailed summary of the conversation")
+		expect(finalMessage.content).toContain("SYSTEM operation to summarize the conversation")
 	})
 
 	it("should include the original first user message in summarization input", async () => {

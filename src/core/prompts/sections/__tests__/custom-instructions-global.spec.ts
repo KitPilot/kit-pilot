@@ -179,8 +179,13 @@ describe("custom-instructions global .kitpilot support", () => {
 				.mockRejectedValueOnce(new Error("ENOENT")) // global rules dir doesn't exist
 				.mockRejectedValueOnce(new Error("ENOENT")) // project rules dir doesn't exist
 
-			// Mock legacy file reading
-			mockReadFile.mockResolvedValueOnce("legacy rule content")
+			// Mock legacy file reading — keyed by path since .kitpilotrules is
+			// tried before .roorules and order-based Once-chains would misfire.
+			mockReadFile.mockImplementation((p: string) =>
+				p.toString().endsWith(".roorules")
+					? Promise.resolve("legacy rule content")
+					: Promise.reject(Object.assign(new Error("ENOENT"), { code: "ENOENT" })),
+			)
 
 			const result = await loadRuleFiles(mockCwd)
 
@@ -194,12 +199,9 @@ describe("custom-instructions global .kitpilot support", () => {
 				.mockRejectedValueOnce(new Error("ENOENT")) // global rules dir doesn't exist
 				.mockRejectedValueOnce(new Error("ENOENT")) // project rules dir doesn't exist
 
-			// Mock legacy file reading - both fail (using safeReadFile which catches errors)
-			// The safeReadFile function catches ENOENT errors and returns empty string
-			// So we don't need to mock rejections, just empty responses
-			mockReadFile
-				.mockResolvedValueOnce("") // .roorules returns empty (simulating ENOENT caught by safeReadFile)
-				.mockResolvedValueOnce("") // .clinerules returns empty (simulating ENOENT caught by safeReadFile)
+			// No rules files exist anywhere: every read fails with ENOENT,
+			// which safeReadFile converts to an empty string.
+			mockReadFile.mockRejectedValue(Object.assign(new Error("ENOENT"), { code: "ENOENT" }))
 
 			const result = await loadRuleFiles(mockCwd)
 
@@ -264,12 +266,13 @@ describe("custom-instructions global .kitpilot support", () => {
 				.mockRejectedValueOnce(new Error("ENOENT")) // global rules dir doesn't exist
 				.mockRejectedValueOnce(new Error("ENOENT")) // project rules dir doesn't exist
 
-			// Mock legacy mode file reading
-			mockReadFile
-				.mockResolvedValueOnce("legacy mode rule content") // .roorules-code
-				.mockResolvedValueOnce("") // AGENTS.md file (empty)
-				.mockResolvedValueOnce("") // generic .roorules (empty)
-				.mockResolvedValueOnce("") // generic .clinerules (empty)
+			// Mock legacy mode file reading — keyed by path since
+			// .kitpilotrules-code is tried before .roorules-code.
+			mockReadFile.mockImplementation((p: string) =>
+				p.toString().endsWith(".roorules-code")
+					? Promise.resolve("legacy mode rule content")
+					: Promise.reject(Object.assign(new Error("ENOENT"), { code: "ENOENT" })),
+			)
 
 			const result = await addCustomInstructions("", "", mockCwd, mode)
 

@@ -2237,231 +2237,34 @@ describe("ClineProvider - Router Models", () => {
 		provider = new ClineProvider(mockContext, mockOutputChannel, "sidebar", new ContextProxy(mockContext))
 	})
 
-	test("handles requestRouterModels with successful responses", async () => {
+	// vscode-lm-only build: router/dynamic providers were removed, so the
+	// handler replies with an empty payload and never calls the model fetchers.
+	test("replies to requestRouterModels with an empty payload without fetching", async () => {
 		await provider.resolveWebviewView(mockWebviewView)
 		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as any).mock.calls[0][0]
 
-		// Mock getState to return API configuration
-		vi.spyOn(provider, "getState").mockResolvedValue({
-			apiConfiguration: {
-				openRouterApiKey: "openrouter-key",
-				requestyApiKey: "requesty-key",
-				litellmApiKey: "litellm-key",
-				litellmBaseUrl: "http://localhost:4000",
-			},
-		} as any)
-
-		const mockModels = {
-			"model-1": {
-				maxTokens: 4096,
-				contextWindow: 8192,
-				description: "Test model 1",
-				supportsPromptCache: false,
-			},
-			"model-2": {
-				maxTokens: 8192,
-				contextWindow: 16384,
-				description: "Test model 2",
-				supportsPromptCache: false,
-			},
-		}
-
 		const { getModels } = await import("../../../api/providers/fetchers/modelCache")
-		vi.mocked(getModels).mockResolvedValue(mockModels)
 
 		await messageHandler({ type: "requestRouterModels" })
 
-		// Verify getModels was called for each provider with correct options
-		expect(getModels).toHaveBeenCalledWith({ provider: "openrouter" })
-		expect(getModels).toHaveBeenCalledWith({ provider: "requesty", apiKey: "requesty-key" })
-		expect(getModels).toHaveBeenCalledWith({ provider: "unbound" })
-		expect(getModels).toHaveBeenCalledWith({ provider: "vercel-ai-gateway" })
-		expect(getModels).toHaveBeenCalledWith({
-			provider: "litellm",
-			apiKey: "litellm-key",
-			baseUrl: "http://localhost:4000",
-		})
-
-		// Verify response was sent
+		expect(getModels).not.toHaveBeenCalled()
 		expect(mockPostMessage).toHaveBeenCalledWith({
 			type: "routerModels",
-			routerModels: {
-				openrouter: mockModels,
-				requesty: mockModels,
-				unbound: mockModels,
-				litellm: mockModels,
-				ollama: {},
-				lmstudio: {},
-				"vercel-ai-gateway": mockModels,
-				poe: {},
-			},
+			routerModels: {},
 			values: undefined,
 		})
 	})
 
-	test("handles requestRouterModels with individual provider failures", async () => {
+	test("echoes the requested provider back in the routerModels reply", async () => {
 		await provider.resolveWebviewView(mockWebviewView)
 		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as any).mock.calls[0][0]
 
-		vi.spyOn(provider, "getState").mockResolvedValue({
-			apiConfiguration: {
-				openRouterApiKey: "openrouter-key",
-				requestyApiKey: "requesty-key",
-				litellmApiKey: "litellm-key",
-				litellmBaseUrl: "http://localhost:4000",
-			},
-		} as any)
+		await messageHandler({ type: "requestRouterModels", values: { provider: "litellm" } })
 
-		const mockModels = {
-			"model-1": { maxTokens: 4096, contextWindow: 8192, description: "Test model", supportsPromptCache: false },
-		}
-		const { getModels } = await import("../../../api/providers/fetchers/modelCache")
-
-		// Mock some providers to succeed and others to fail
-		vi.mocked(getModels)
-			.mockResolvedValueOnce(mockModels) // openrouter success
-			.mockRejectedValueOnce(new Error("Requesty API error")) // requesty fail
-			.mockResolvedValueOnce(mockModels) // unbound success
-			.mockResolvedValueOnce(mockModels) // vercel-ai-gateway success
-			.mockRejectedValueOnce(new Error("LiteLLM connection failed")) // litellm fail
-
-		await messageHandler({ type: "requestRouterModels" })
-
-		// Verify main response includes successful providers and empty objects for failed ones
 		expect(mockPostMessage).toHaveBeenCalledWith({
 			type: "routerModels",
-			routerModels: {
-				openrouter: mockModels,
-				requesty: {},
-				unbound: mockModels,
-				ollama: {},
-				lmstudio: {},
-				litellm: {},
-				"vercel-ai-gateway": mockModels,
-				poe: {},
-			},
-			values: undefined,
-		})
-
-		// Verify error messages were sent for failed providers
-		expect(mockPostMessage).toHaveBeenCalledWith({
-			type: "singleRouterModelFetchResponse",
-			success: false,
-			error: "Requesty API error",
-			values: { provider: "requesty" },
-		})
-
-		expect(mockPostMessage).toHaveBeenCalledWith({
-			type: "singleRouterModelFetchResponse",
-			success: false,
-			error: "LiteLLM connection failed",
+			routerModels: {},
 			values: { provider: "litellm" },
-		})
-	})
-
-	test("handles requestRouterModels with LiteLLM values from message", async () => {
-		await provider.resolveWebviewView(mockWebviewView)
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as any).mock.calls[0][0]
-
-		// Mock state without LiteLLM config
-		vi.spyOn(provider, "getState").mockResolvedValue({
-			apiConfiguration: {
-				openRouterApiKey: "openrouter-key",
-				requestyApiKey: "requesty-key",
-				// No litellm config
-			},
-		} as any)
-
-		const mockModels = {
-			"model-1": { maxTokens: 4096, contextWindow: 8192, description: "Test model", supportsPromptCache: false },
-		}
-		const { getModels } = await import("../../../api/providers/fetchers/modelCache")
-		vi.mocked(getModels).mockResolvedValue(mockModels)
-
-		await messageHandler({
-			type: "requestRouterModels",
-			values: {
-				litellmApiKey: "message-litellm-key",
-				litellmBaseUrl: "http://message-url:4000",
-			},
-		})
-
-		// Verify LiteLLM was called with values from message
-		expect(getModels).toHaveBeenCalledWith({
-			provider: "litellm",
-			apiKey: "message-litellm-key",
-			baseUrl: "http://message-url:4000",
-		})
-	})
-
-	test("skips LiteLLM when neither config nor message values are provided", async () => {
-		await provider.resolveWebviewView(mockWebviewView)
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as any).mock.calls[0][0]
-
-		vi.spyOn(provider, "getState").mockResolvedValue({
-			apiConfiguration: {
-				openRouterApiKey: "openrouter-key",
-				requestyApiKey: "requesty-key",
-				// No litellm config
-			},
-		} as any)
-
-		const mockModels = {
-			"model-1": { maxTokens: 4096, contextWindow: 8192, description: "Test model", supportsPromptCache: false },
-		}
-		const { getModels } = await import("../../../api/providers/fetchers/modelCache")
-		vi.mocked(getModels).mockResolvedValue(mockModels)
-
-		await messageHandler({ type: "requestRouterModels" })
-
-		// Verify LiteLLM was NOT called
-		expect(getModels).not.toHaveBeenCalledWith(
-			expect.objectContaining({
-				provider: "litellm",
-			}),
-		)
-
-		// Verify response includes empty object for LiteLLM
-		expect(mockPostMessage).toHaveBeenCalledWith({
-			type: "routerModels",
-			routerModels: {
-				openrouter: mockModels,
-				requesty: mockModels,
-				unbound: mockModels,
-				litellm: {},
-				ollama: {},
-				lmstudio: {},
-				"vercel-ai-gateway": mockModels,
-				poe: {},
-			},
-			values: undefined,
-		})
-	})
-
-	test("handles requestLmStudioModels with proper response", async () => {
-		await provider.resolveWebviewView(mockWebviewView)
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as any).mock.calls[0][0]
-
-		vi.spyOn(provider, "getState").mockResolvedValue({
-			apiConfiguration: {
-				lmStudioModelId: "model-1",
-				lmStudioBaseUrl: "http://localhost:1234",
-			},
-		} as any)
-
-		const mockModels = {
-			"model-1": { maxTokens: 4096, contextWindow: 8192, description: "Test model", supportsPromptCache: false },
-		}
-		const { getModels } = await import("../../../api/providers/fetchers/modelCache")
-		vi.mocked(getModels).mockResolvedValue(mockModels)
-
-		await messageHandler({
-			type: "requestLmStudioModels",
-		})
-
-		expect(getModels).toHaveBeenCalledWith({
-			provider: "lmstudio",
-			baseUrl: "http://localhost:1234",
 		})
 	})
 })
