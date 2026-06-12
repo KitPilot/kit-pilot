@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## 0.1.21
+
+### Fixed
+
+- Solved an issue where starting a new task could hang on "API request..." for over half a minute on machines where saving checkpoints is slow (for example, work computers with antivirus scanning). The checkpoint timeout setting is now respected, so a slow checkpoint can never hold up your task for longer than the configured limit.
+
 ## 0.1.20
 
 ### Added
