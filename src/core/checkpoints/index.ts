@@ -39,12 +39,16 @@ export async function getCheckpointService(task: Task, { interval = 250 }: { int
 	const checkpointTimeoutMs = task.checkpointTimeout * 1000
 
 	const log = (message: string) => {
-		console.log(message)
-
+		// provider.log already mirrors to the console; only fall back to
+		// console.log when there is no provider, so lines don't print twice.
 		try {
-			provider?.log(message)
+			if (provider) {
+				provider.log(message)
+			} else {
+				console.log(message)
+			}
 		} catch (err) {
-			// NO-OP
+			console.log(message)
 		}
 	}
 
@@ -111,11 +115,46 @@ export async function getCheckpointService(task: Task, { interval = 250 }: { int
 
 		const service = RepoPerTaskCheckpointService.create(options)
 		task.checkpointServiceInitializing = true
-		await checkGitInstallation(task, service, log, provider)
-		task.checkpointService = service
-		if (task.enableCheckpoints) {
-			sendCheckpointInitWarn(task)
+
+		// Bound the first caller with the same checkpointTimeout that bounds
+		// waiters. Previously only waiters were bounded while the first caller
+		// awaited initShadowGit unbounded — on machines where snapshotting the
+		// workspace is slow (e.g. corporate AV scanning every file) this held
+		// the task-start path for the full init time (observed: 36s) and the
+		// configured timeout never applied to the path doing the actual work.
+		const initPromise = checkGitInstallation(task, service, log, provider).then(() => {
+			// Publish the service for waiters as soon as init completes —
+			// even if this (first) caller already timed out and returned.
+			if (task.enableCheckpoints) {
+				task.checkpointService = service
+			}
+		})
+
+		let timeoutHandle: NodeJS.Timeout | undefined
+		const timedOut = await Promise.race([
+			initPromise.then(() => false),
+			new Promise<boolean>((resolve) => {
+				timeoutHandle = setTimeout(() => resolve(true), checkpointTimeoutMs)
+			}),
+		]).finally(() => clearTimeout(timeoutHandle))
+
+		if (timedOut) {
+			log(
+				`[Task#getCheckpointService] initialization exceeded ${task.checkpointTimeout}s timeout, disabling checkpoints for this task (init continues in background but will not be used)`,
+			)
+			sendCheckpointInitWarn(task, "INIT_TIMEOUT", task.checkpointTimeout)
+			task.enableCheckpoints = false
+			return undefined
 		}
+
+		if (!task.enableCheckpoints) {
+			// Init completed but disabled checkpoints along the way (e.g. git
+			// missing or initShadowGit failed).
+			return undefined
+		}
+
+		task.checkpointService = service
+		sendCheckpointInitWarn(task)
 		return service
 	} catch (err) {
 		if (err.name === "TimeoutError" && task.enableCheckpoints) {

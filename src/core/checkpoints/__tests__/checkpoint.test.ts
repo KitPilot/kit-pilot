@@ -581,4 +581,62 @@ describe("Checkpoint functionality", () => {
 			expect(errorMessage).toBe("Checkpoint initialization failed after 30 seconds")
 		})
 	})
+
+	describe("getCheckpointService first-caller timeout", () => {
+		beforeEach(() => {
+			// First-caller path: no existing service, not already initializing.
+			mockTask.checkpointService = undefined
+			mockTask.checkpointServiceInitializing = false
+			mockCheckpointService.isInitialized = false
+			// Explicit cwd so the workspace-path guard doesn't depend on the
+			// getWorkspacePath mock, which earlier tests override.
+			mockTask.cwd = "/test/workspace"
+		})
+
+		it("returns undefined within the timeout when initShadowGit is slow, and disables checkpoints", async () => {
+			mockTask.checkpointTimeout = 0.1 // 100ms
+			mockCheckpointService.initShadowGit = vi.fn(() => new Promise<void>((resolve) => setTimeout(resolve, 400)))
+
+			const start = Date.now()
+			const service = await getCheckpointService(mockTask)
+			const elapsed = Date.now() - start
+
+			expect(service).toBeUndefined()
+			// Bounded by the timeout, not by the slow init (was: unbounded).
+			expect(elapsed).toBeLessThan(350)
+			expect(mockTask.enableCheckpoints).toBe(false)
+			expect(mockProvider.postMessageToWebview).toHaveBeenCalledWith({
+				type: "checkpointInitWarning",
+				checkpointWarning: { type: "INIT_TIMEOUT", timeout: 0.1 },
+			})
+		})
+
+		it("does not adopt the service when init completes after the timeout", async () => {
+			mockTask.checkpointTimeout = 0.05
+			mockCheckpointService.initShadowGit = vi.fn(() => new Promise<void>((resolve) => setTimeout(resolve, 150)))
+
+			const service = await getCheckpointService(mockTask)
+			expect(service).toBeUndefined()
+
+			// Let the background init finish; checkpoints stay disabled.
+			await new Promise((resolve) => setTimeout(resolve, 250))
+			expect(mockTask.checkpointService).toBeUndefined()
+			expect(mockTask.enableCheckpoints).toBe(false)
+		})
+
+		it("returns the service when init completes within the timeout", async () => {
+			mockTask.checkpointTimeout = 1
+			mockCheckpointService.initShadowGit = vi.fn().mockResolvedValue(undefined)
+
+			const service = await getCheckpointService(mockTask)
+
+			expect(service).toBe(mockCheckpointService)
+			expect(mockTask.checkpointService).toBe(mockCheckpointService)
+			expect(mockTask.enableCheckpoints).toBe(true)
+			// Clears the warning banner (undefined payload), never INIT_TIMEOUT.
+			expect(mockProvider.postMessageToWebview).not.toHaveBeenCalledWith(
+				expect.objectContaining({ checkpointWarning: expect.objectContaining({ type: "INIT_TIMEOUT" }) }),
+			)
+		})
+	})
 })
