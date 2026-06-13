@@ -5,6 +5,7 @@
 ### Fixed
 
 - Solved an issue where starting a new task could hang on "API request..." for over half a minute on machines where saving checkpoints is slow (for example, work computers with antivirus scanning). The checkpoint timeout setting is now respected, so a slow checkpoint can never hold up your task for longer than the configured limit.
+- Fixed opening a task from the history list being unreliable — clicks that did nothing, needed a double-click, or occasionally required reloading the window. Opening a task right after KitPilot starts now works on the first click, rapid clicks no longer interfere with each other, and if a task genuinely can't be opened you now get an error message instead of silence.
 
 ## 0.1.20
 

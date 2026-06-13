@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "メッセージを削除できません：タイムスタンプがありません",
 			"cannot_delete_invalid_timestamp": "メッセージを削除できません：タイムスタンプが無効です",
 			"message_not_found": "タイムスタンプ {{messageTs}} のメッセージが見つかりません",
+			"failed_to_open_task": "タスクを開けませんでした: {{error}}",
 			"error_deleting_message": "メッセージ削除エラー：{{error}}",
 			"error_editing_message": "メッセージ編集エラー：{{error}}"
 		},

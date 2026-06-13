@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "Không thể xóa tin nhắn: thiếu dấu thời gian",
 			"cannot_delete_invalid_timestamp": "Không thể xóa tin nhắn: dấu thời gian không hợp lệ",
 			"message_not_found": "Không tìm thấy tin nhắn có dấu thời gian {{messageTs}}",
+			"failed_to_open_task": "Không thể mở tác vụ: {{error}}",
 			"error_deleting_message": "Lỗi xóa tin nhắn: {{error}}",
 			"error_editing_message": "Lỗi chỉnh sửa tin nhắn: {{error}}"
 		},

@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "Nie można usunąć wiadomości: brak znacznika czasu",
 			"cannot_delete_invalid_timestamp": "Nie można usunąć wiadomości: nieprawidłowy znacznik czasu",
 			"message_not_found": "Wiadomość ze znacznikiem czasu {{messageTs}} nie została znaleziona",
+			"failed_to_open_task": "Nie udało się otworzyć zadania: {{error}}",
 			"error_deleting_message": "Błąd usuwania wiadomości: {{error}}",
 			"error_editing_message": "Błąd edytowania wiadomości: {{error}}"
 		},

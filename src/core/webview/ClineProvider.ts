@@ -134,6 +134,12 @@ export class ClineProvider
 	private _disposed = false
 
 	private recentTasksCache?: string[]
+	// Serializes showTaskWithId so rapid/concurrent history clicks can't
+	// interleave their removeClineFromStack()/createTaskWithHistoryItem()
+	// calls and abort each other's half-initialized task (the rare "needs a
+	// window reload" wedge). Tracks the id being opened so a repeat click on
+	// the same task coalesces onto the in-flight switch instead of restarting.
+	private showTaskInFlight?: { id: string; promise: Promise<void> }
 	public readonly taskHistoryStore: TaskHistoryStore
 	private taskHistoryStoreInitialized = false
 	private globalStateWriteThroughTimer: ReturnType<typeof setTimeout> | null = null
@@ -1639,6 +1645,14 @@ export class ClineProvider
 		uiMessagesFilePath: string
 		apiConversationHistory: Anthropic.MessageParam[]
 	}> {
+		// Wait for the history store to finish loading its on-disk index before
+		// reading. Without this, a click on a recent task during the first
+		// seconds after a window load could miss the (not-yet-populated) cache
+		// AND the debounced globalState fallback (which lags behind the newest
+		// tasks), throwing a spurious "Task not found" — the cause of the
+		// "click does nothing, second click works" behavior.
+		await this.taskHistoryStore.initialized
+
 		const historyItem =
 			this.taskHistoryStore.get(id) ?? (this.getGlobalState("taskHistory") ?? []).find((item) => item.id === id)
 
@@ -1693,13 +1707,39 @@ export class ClineProvider
 	}
 
 	async showTaskWithId(id: string) {
-		if (id !== this.getCurrentTask()?.taskId) {
-			// Non-current task.
-			const { historyItem } = await this.getTaskWithId(id)
-			await this.createTaskWithHistoryItem(historyItem) // Clears existing task.
+		// If a switch to this same task is already running, ride it out rather
+		// than starting a second one (debounces double-clicks).
+		if (this.showTaskInFlight?.id === id) {
+			return this.showTaskInFlight.promise
 		}
 
-		await this.postMessageToWebview({ type: "action", action: "chatButtonClicked" })
+		// If a different switch is in flight, let it finish first so the two
+		// don't both call removeClineFromStack() and abort each other's task.
+		const previous = this.showTaskInFlight?.promise
+		const run = (async () => {
+			if (previous) {
+				await previous.catch(() => {})
+			}
+
+			if (id !== this.getCurrentTask()?.taskId) {
+				// Non-current task.
+				const { historyItem } = await this.getTaskWithId(id)
+				await this.createTaskWithHistoryItem(historyItem) // Clears existing task.
+			}
+
+			await this.postMessageToWebview({ type: "action", action: "chatButtonClicked" })
+		})()
+
+		this.showTaskInFlight = { id, promise: run }
+
+		try {
+			await run
+		} finally {
+			// Only clear if no newer switch has replaced ours.
+			if (this.showTaskInFlight?.promise === run) {
+				this.showTaskInFlight = undefined
+			}
+		}
 	}
 
 	async exportTaskWithId(id: string) {

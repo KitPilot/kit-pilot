@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "Impossible de supprimer le message : horodatage manquant",
 			"cannot_delete_invalid_timestamp": "Impossible de supprimer le message : horodatage invalide",
 			"message_not_found": "Message avec horodatage {{messageTs}} introuvable",
+			"failed_to_open_task": "Échec de l'ouverture de la tâche : {{error}}",
 			"error_deleting_message": "Erreur lors de la suppression du message : {{error}}",
 			"error_editing_message": "Erreur lors de la modification du message : {{error}}"
 		},

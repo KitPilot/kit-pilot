@@ -102,6 +102,7 @@
 			"cannot_delete_missing_timestamp": "No es pot eliminar el missatge: falta la marca de temps",
 			"cannot_delete_invalid_timestamp": "No es pot eliminar el missatge: marca de temps no vàlida",
 			"message_not_found": "Missatge amb marca de temps {{messageTs}} no trobat",
+			"failed_to_open_task": "No s'ha pogut obrir la tasca: {{error}}",
 			"error_deleting_message": "Error eliminant missatge: {{error}}",
 			"error_editing_message": "Error editant missatge: {{error}}"
 		},

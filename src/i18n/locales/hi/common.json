@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "संदेश हटाया नहीं जा सकता: टाइमस्टैम्प गुम है",
 			"cannot_delete_invalid_timestamp": "संदेश हटाया नहीं जा सकता: अमान्य टाइमस्टैम्प",
 			"message_not_found": "टाइमस्टैम्प {{messageTs}} वाला संदेश नहीं मिला",
+			"failed_to_open_task": "कार्य खोलने में विफल: {{error}}",
 			"error_deleting_message": "संदेश हटाने में त्रुटि: {{error}}",
 			"error_editing_message": "संदेश संपादित करने में त्रुटि: {{error}}"
 		},

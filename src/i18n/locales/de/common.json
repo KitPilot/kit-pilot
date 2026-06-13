@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "Nachricht kann nicht gelöscht werden: fehlender Zeitstempel",
 			"cannot_delete_invalid_timestamp": "Nachricht kann nicht gelöscht werden: ungültiger Zeitstempel",
 			"message_not_found": "Nachricht mit Zeitstempel {{messageTs}} nicht gefunden",
+			"failed_to_open_task": "Aufgabe konnte nicht geöffnet werden: {{error}}",
 			"error_deleting_message": "Fehler beim Löschen der Nachricht: {{error}}",
 			"error_editing_message": "Fehler beim Bearbeiten der Nachricht: {{error}}"
 		},
