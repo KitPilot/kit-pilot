@@ -83,6 +83,10 @@
 		"title": "Ferma",
 		"tooltip": "Ferma l'attività corrente"
 	},
+	"interruptAndSend": {
+		"title": "Interrompi e invia",
+		"stopping": "Interruzione del turno corrente…"
+	},
 	"cancel": {
 		"title": "Annulla",
 		"tooltip": "Annulla l'operazione corrente"

@@ -87,6 +87,10 @@
 		"title": "停止",
 		"tooltip": "停止当前任务"
 	},
+	"interruptAndSend": {
+		"title": "中断并发送",
+		"stopping": "正在停止当前回合…"
+	},
 	"enqueueMessage": "将消息加入队列（当前任务完成后发送）",
 	"scrollToBottom": "滚动到聊天底部",
 	"scrollToLatestCheckpoint": "滚动到上一个检查点",

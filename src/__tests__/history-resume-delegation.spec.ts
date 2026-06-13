@@ -202,6 +202,61 @@ describe("History resume delegation - parent metadata transitions", () => {
 		expect(apiCall.messages).toHaveLength(2) // 1 original + 1 injected
 	})
 
+	it("surfaces user redirects given to the subtask into both parent histories", async () => {
+		const provider = {
+			contextProxy: { globalStorageUri: { fsPath: "/storage" } },
+			getTaskWithId: vi.fn().mockResolvedValue({
+				historyItem: {
+					id: "p1",
+					status: "delegated",
+					awaitingChildId: "c1",
+					childIds: [],
+					ts: 100,
+					task: "Parent",
+					tokensIn: 0,
+					tokensOut: 0,
+					totalCost: 0,
+				},
+			}),
+			emit: vi.fn(),
+			getCurrentTask: vi.fn(() => ({ taskId: "c1" })),
+			removeClineFromStack: vi.fn().mockResolvedValue(undefined),
+			createTaskWithHistoryItem: vi.fn().mockResolvedValue({
+				taskId: "p1",
+				resumeAfterDelegation: vi.fn().mockResolvedValue(undefined),
+				overwriteClineMessages: vi.fn().mockResolvedValue(undefined),
+				overwriteApiConversationHistory: vi.fn().mockResolvedValue(undefined),
+			}),
+			updateTaskHistory: vi.fn().mockResolvedValue([]),
+			log: vi.fn(),
+		} as unknown as ClineProvider
+
+		// The child's own messages include a mid-run user redirect.
+		vi.mocked(readTaskMessages).mockResolvedValue([
+			{ type: "say", say: "user_feedback", text: "just remove the section altogether", ts: 60 },
+		] as any)
+		vi.mocked(readApiMessages).mockResolvedValue([])
+
+		await (ClineProvider.prototype as any).reopenParentFromDelegation.call(provider, {
+			parentTaskId: "p1",
+			childTaskId: "c1",
+			completionResultSummary: "Removed the License section.",
+		})
+
+		// UI subtask_result carries the child's result AND the redirect note.
+		const uiMessages = vi.mocked(saveTaskMessages).mock.calls.at(-1)![0].messages as any[]
+		const subtaskResult = uiMessages.find((m) => m.say === "subtask_result")
+		expect(subtaskResult.text).toContain("Removed the License section.")
+		expect(subtaskResult.text).toContain('"just remove the section altogether"')
+		expect(subtaskResult.text).toContain("do NOT treat a user-requested change as a subtask mistake")
+
+		// The same augmented text reaches the parent's API context.
+		const apiMessages = vi.mocked(saveApiMessages).mock.calls.at(-1)![0].messages as any[]
+		const apiText = JSON.stringify(apiMessages)
+		expect(apiText).toContain("just remove the section altogether")
+		expect(apiText).toContain("do NOT treat a user-requested change as a subtask mistake")
+	})
+
 	it("reopenParentFromDelegation injects tool_result when new_task tool_use exists in API history", async () => {
 		const provider = {
 			contextProxy: { globalStorageUri: { fsPath: "/storage" } },

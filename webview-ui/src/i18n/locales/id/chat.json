@@ -113,6 +113,10 @@
 		"title": "Stop",
 		"tooltip": "Hentikan tugas saat ini"
 	},
+	"interruptAndSend": {
+		"title": "Hentikan & kirim",
+		"stopping": "Menghentikan giliran saat ini…"
+	},
 	"cancel": {
 		"title": "Batal",
 		"tooltip": "Batalkan operasi saat ini"

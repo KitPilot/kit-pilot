@@ -1,7 +1,7 @@
 import React, { forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useEvent } from "react-use"
 import DynamicTextArea from "react-textarea-autosize"
-import { VolumeX, Image, WandSparkles, SendHorizontal, X, ListEnd, Square } from "lucide-react"
+import { VolumeX, Image, WandSparkles, SendHorizontal, X, ListEnd, Square, Loader2 } from "lucide-react"
 
 import type { ExtensionMessage } from "@kit-pilot/types"
 
@@ -55,6 +55,11 @@ interface ChatTextAreaProps {
 	isStreaming?: boolean
 	onStop?: () => void
 	onEnqueueMessage?: () => void
+	// Interrupt-and-send: true when a typed message would interrupt the current
+	// turn (top-level task, actively streaming); isInterrupting while the abort
+	// is in flight.
+	canInterrupt?: boolean
+	isInterrupting?: boolean
 }
 
 export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
@@ -78,6 +83,8 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			isStreaming = false,
 			onStop,
 			onEnqueueMessage,
+			canInterrupt = false,
+			isInterrupting = false,
 		},
 		ref,
 	) => {
@@ -1206,50 +1213,73 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 										</button>
 									</StandardTooltip>
 								)}
-								{/* Send/Stop button - morphs based on streaming state, always visible in edit mode */}
-								<StandardTooltip
-									content={
-										isEditMode
-											? t("chat:pressToSend", { keyCombination: sendKeyCombination })
-											: isStreaming
-												? t("chat:stop.title")
-												: t("chat:pressToSend", { keyCombination: sendKeyCombination })
-									}>
-									<button
-										aria-label={
-											isEditMode
-												? t("chat:pressToSend", { keyCombination: sendKeyCombination })
+								{/* Send / Interrupt&Send / Stop button — morphs by state. While
+								    actively streaming on a top-level task, a typed message
+								    interrupts the current turn (shown as "Interrupt & send"). */}
+								{(() => {
+									// A typed message will interrupt the running turn.
+									const showInterruptSend = canInterrupt && hasInputContent && !isInterrupting
+									const label = isEditMode
+										? t("chat:pressToSend", { keyCombination: sendKeyCombination })
+										: isInterrupting
+											? t("chat:interruptAndSend.stopping")
+											: showInterruptSend
+												? t("chat:interruptAndSend.title")
 												: isStreaming
 													? t("chat:stop.title")
 													: t("chat:pressToSend", { keyCombination: sendKeyCombination })
-										}
-										disabled={false}
-										onClick={isStreaming ? onStop : onSend}
-										className={cn(
-											"relative inline-flex items-center justify-center",
-											"bg-transparent border-none p-1.5",
-											"rounded-full min-w-[28px] min-h-[28px]",
-											"text-vscode-descriptionForeground hover:text-vscode-foreground",
-											"transition-all duration-200",
-											isEditMode || isStreaming || hasInputContent
-												? "opacity-100 hover:opacity-100 pointer-events-auto"
-												: "opacity-0 pointer-events-none",
-											(isEditMode || isStreaming || hasInputContent) &&
-												"hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)]",
-											"focus:outline-none focus-visible:ring-1 focus-visible:ring-vscode-focusBorder",
-											(isEditMode || isStreaming || hasInputContent) &&
-												"active:bg-[rgba(255,255,255,0.1)]",
-											(isEditMode || isStreaming || hasInputContent) && "cursor-pointer",
-											isStreaming &&
-												"bg-vscode-button-background hover:bg-vscode-button-background",
-										)}>
-										{isStreaming ? (
-											<Square className="size-4 stroke-none fill-vscode-button-foreground" />
-										) : (
-											<SendHorizontal className="size-4" />
-										)}
-									</button>
-								</StandardTooltip>
+									// Filled/prominent for both Stop and Interrupt&Send so the
+									// destructive nature is obvious before pressing Enter.
+									const prominent = isStreaming || showInterruptSend
+									return (
+										<StandardTooltip content={label}>
+											<button
+												aria-label={label}
+												disabled={isInterrupting}
+												onClick={
+													isInterrupting
+														? undefined
+														: showInterruptSend
+															? onSend
+															: isStreaming
+																? onStop
+																: onSend
+												}
+												className={cn(
+													"relative inline-flex items-center justify-center",
+													"bg-transparent border-none p-1.5",
+													"rounded-full min-w-[28px] min-h-[28px]",
+													"text-vscode-descriptionForeground hover:text-vscode-foreground",
+													"transition-all duration-200",
+													isEditMode || isStreaming || hasInputContent
+														? "opacity-100 hover:opacity-100 pointer-events-auto"
+														: "opacity-0 pointer-events-none",
+													(isEditMode || isStreaming || hasInputContent) &&
+														"hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)]",
+													"focus:outline-none focus-visible:ring-1 focus-visible:ring-vscode-focusBorder",
+													(isEditMode || isStreaming || hasInputContent) &&
+														!isInterrupting &&
+														"active:bg-[rgba(255,255,255,0.1)]",
+													(isEditMode || isStreaming || hasInputContent) &&
+														!isInterrupting &&
+														"cursor-pointer",
+													isInterrupting && "opacity-60 cursor-default",
+													prominent &&
+														"bg-vscode-button-background hover:bg-vscode-button-background",
+												)}>
+												{isInterrupting ? (
+													<Loader2 className="size-4 animate-spin" />
+												) : showInterruptSend ? (
+													<SendHorizontal className="size-4 text-vscode-button-foreground" />
+												) : isStreaming ? (
+													<Square className="size-4 stroke-none fill-vscode-button-foreground" />
+												) : (
+													<SendHorizontal className="size-4" />
+												)}
+											</button>
+										</StandardTooltip>
+									)
+								})()}
 							</div>
 
 							{!inputValue && (

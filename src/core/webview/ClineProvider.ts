@@ -85,6 +85,7 @@ import { webviewMessageHandler } from "./webviewMessageHandler"
 import type { ClineMessage, TodoItem } from "@kit-pilot/types"
 import { readApiMessages, saveApiMessages, saveTaskMessages, TaskHistoryStore } from "../task-persistence"
 import { readTaskMessages } from "../task-persistence/taskMessages"
+import { extractUserRedirects, augmentSummaryWithRedirects } from "./subtaskRedirects"
 import { getNonce } from "./getNonce"
 import { getUri } from "./getUri"
 import { REQUESTY_BASE_URL } from "../../shared/utils/requesty"
@@ -140,6 +141,9 @@ export class ClineProvider
 	// window reload" wedge). Tracks the id being opened so a repeat click on
 	// the same task coalesces onto the in-flight switch instead of restarting.
 	private showTaskInFlight?: { id: string; promise: Promise<void> }
+	// True while an interruptAndSubmit abort+rehydrate is in flight, so a second
+	// interrupt can't race the first through the fragile cancel pipeline.
+	private interrupting = false
 	public readonly taskHistoryStore: TaskHistoryStore
 	private taskHistoryStoreInitialized = false
 	private globalStateWriteThroughTimer: ReturnType<typeof setTimeout> | null = null
@@ -2754,6 +2758,52 @@ export class ClineProvider
 		await this.createTaskWithHistoryItem({ ...historyItem, rootTask, parentTask })
 	}
 
+	/**
+	 * Interrupt the active turn and continue with the user's new message
+	 * (Esc-and-type style). Aborts the in-flight request, rehydrates the task
+	 * from history via the existing cancelTask pipeline, then enqueues the
+	 * message on the rehydrated instance — the resume_task ask drains it, so the
+	 * task continues with the redirect instead of finishing the old turn first.
+	 *
+	 * Scoped to top-level tasks: if a subtask is active, the message falls back
+	 * to today's queue behavior (delivered to the subtask, surfaced to the
+	 * parent on completion) rather than tearing down the delegation. Re-entrant
+	 * calls also fall back to the queue so they can't race the abort pipeline.
+	 */
+	public async interruptAndSubmit(text: string, images?: string[]): Promise<void> {
+		const task = this.getCurrentTask()
+
+		if (!task || (!text?.trim() && !(images && images.length > 0))) {
+			return
+		}
+
+		// Subtask active, or an interrupt already running → don't interrupt;
+		// just queue (existing behavior).
+		if (task.parentTask || this.interrupting) {
+			task.messageQueueService.addMessage(text, images)
+			return
+		}
+
+		this.interrupting = true
+		try {
+			// Abort the current turn and rehydrate the task from history.
+			await this.cancelTask()
+			// Deliver the redirect to the resumed task; the resume_task ask
+			// drains the queue as a messageResponse and the task continues.
+			this.getCurrentTask()?.messageQueueService.addMessage(text, images)
+		} catch (err) {
+			this.log(
+				`[interruptAndSubmit] Failed to interrupt (non-fatal): ${
+					err instanceof Error ? err.message : String(err)
+				}`,
+			)
+			// Best effort: don't lose the message if the abort path errored.
+			this.getCurrentTask()?.messageQueueService.addMessage(text, images)
+		} finally {
+			this.interrupting = false
+		}
+	}
+
 	// Clear the current task without treating it as a subtask.
 	// This is used when the user cancels a task that is not a subtask.
 	public async clearTask(): Promise<void> {
@@ -2960,8 +3010,27 @@ export class ClineProvider
 		childTaskId: string
 		completionResultSummary: string
 	}): Promise<void> {
-		const { parentTaskId, childTaskId, completionResultSummary } = params
+		const { parentTaskId, childTaskId, completionResultSummary: rawCompletionResultSummary } = params
 		const globalStoragePath = this.contextProxy.globalStorageUri.fsPath
+
+		// If the user redirected the child mid-run (messages typed to the running
+		// subtask, recorded there as `user_feedback`), fold them into the result
+		// summary the parent receives so they reach BOTH the parent's LLM context
+		// (API tool_result) and its visible timeline (subtask_result say). Without
+		// this the parent only sees the child's final result and can silently undo
+		// a user-requested change. See subtaskRedirects.ts. Never fatal.
+		let userRedirects: string[] = []
+		try {
+			const childMessages = await readTaskMessages({ taskId: childTaskId, globalStoragePath })
+			userRedirects = extractUserRedirects(childMessages)
+		} catch (err) {
+			this.log(
+				`[reopenParentFromDelegation] Failed to read child ${childTaskId} messages for redirect surfacing (non-fatal): ${
+					err instanceof Error ? err.message : String(err)
+				}`,
+			)
+		}
+		const completionResultSummary = augmentSummaryWithRedirects(rawCompletionResultSummary, userRedirects)
 
 		// 1) Load parent from history and current persisted messages
 		const { historyItem } = await this.getTaskWithId(parentTaskId)

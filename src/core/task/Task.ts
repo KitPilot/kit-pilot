@@ -457,11 +457,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		const userPrompt = `Tool: ${toolName}\nError payload (most recent): ${errorPayload}\n\nWhy did this fail twice? What concrete alternative should the agent try next?`
 
 		try {
-			const stream = this.api.createMessage(
-				systemPrompt,
-				[{ role: "user", content: userPrompt }],
-				{ taskId: this.taskId },
-			)
+			const stream = this.api.createMessage(systemPrompt, [{ role: "user", content: userPrompt }], {
+				taskId: this.taskId,
+			})
 			let analysis = ""
 			for await (const chunk of stream) {
 				if (chunk.type === "text") {
@@ -1501,11 +1499,15 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const message = this.messageQueueService.dequeueMessage()
 
 			if (message) {
-				// Check if this is a tool approval ask that needs to be handled.
 				if (type === "tool" || type === "command" || type === "use_mcp_server") {
-					// For tool approvals, we need to approve first, then send
-					// the message if there's text/images.
-					this.handleWebviewAskResponse("yesButtonClicked", message.text, message.images)
+					// Explicit-approve-path: typing a message while a tool approval is
+					// pending means "stop and do this instead", not "approve + comment".
+					// Reject the pending tool and feed the user's message back as the
+					// reason (askApproval turns a non-approve response with text into
+					// toolDeniedWithFeedback). Approval happens ONLY via the Approve
+					// button. This prevents the agent from carrying out an action the
+					// user was actively trying to redirect away from.
+					this.handleWebviewAskResponse("noButtonClicked", message.text, message.images)
 				} else {
 					// For other ask types (like followup or command_output), fulfill the ask
 					// directly.
@@ -1527,10 +1529,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				if (shouldDrainQueuedMessageForAsk && !this.messageQueueService.isEmpty()) {
 					const message = this.messageQueueService.dequeueMessage()
 					if (message) {
-						// If this is a tool approval ask, we need to approve first (yesButtonClicked)
-						// and include any queued text/images.
+						// Explicit-approve-path: a message typed during a tool approval
+						// redirects (reject + feed the message back as the reason),
+						// rather than auto-approving the pending tool. See the matching
+						// branch above. Approval is only ever the Approve button.
 						if (type === "tool" || type === "command" || type === "use_mcp_server") {
-							this.handleWebviewAskResponse("yesButtonClicked", message.text, message.images)
+							this.handleWebviewAskResponse("noButtonClicked", message.text, message.images)
 						} else {
 							this.handleWebviewAskResponse("messageResponse", message.text, message.images)
 						}
@@ -2620,7 +2624,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const currentIncludeFileDetails = currentItem.includeFileDetails
 
 			if (this.abort) {
-				throw new Error(`[KitPilot#recursivelyMakeKitPilotRequests] task ${this.taskId}.${this.instanceId} aborted`)
+				throw new Error(
+					`[KitPilot#recursivelyMakeKitPilotRequests] task ${this.taskId}.${this.instanceId} aborted`,
+				)
 			}
 
 			if (this.consecutiveMistakeLimit > 0 && this.consecutiveMistakeCount >= this.consecutiveMistakeLimit) {
@@ -4665,7 +4671,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					// one-line placeholder. This preserves the fact that env context
 					// existed at that turn (useful for the model's sense of history)
 					// without re-sending the full content on every request.
-					const placeholder = "<environment_details>(prior turn snapshot — stripped to save tokens)</environment_details>"
+					const placeholder =
+						"<environment_details>(prior turn snapshot — stripped to save tokens)</environment_details>"
 					if (typeof content === "string") {
 						content = content
 							.replace(/<environment_details>[\s\S]*?<\/environment_details>/g, placeholder)

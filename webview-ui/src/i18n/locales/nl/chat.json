@@ -83,6 +83,10 @@
 		"title": "Stoppen",
 		"tooltip": "Stop de huidige taak"
 	},
+	"interruptAndSend": {
+		"title": "Onderbreken & verzenden",
+		"stopping": "Huidige beurt stoppen…"
+	},
 	"cancel": {
 		"title": "Annuleren",
 		"tooltip": "Annuleer de huidige bewerking"

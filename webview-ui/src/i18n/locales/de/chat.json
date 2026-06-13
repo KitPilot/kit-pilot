@@ -83,6 +83,10 @@
 		"title": "Stoppen",
 		"tooltip": "Aktuelle Aufgabe stoppen"
 	},
+	"interruptAndSend": {
+		"title": "Unterbrechen & senden",
+		"stopping": "Aktueller Vorgang wird gestoppt…"
+	},
 	"cancel": {
 		"title": "Abbrechen",
 		"tooltip": "Aktuelle Operation abbrechen"

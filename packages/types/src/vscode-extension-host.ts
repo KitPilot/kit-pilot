@@ -488,6 +488,7 @@ export interface WebviewMessage {
 		| "insertTextIntoTextarea"
 		| "imageGenerationSettings"
 		| "queueMessage"
+		| "interruptAndSubmit"
 		| "removeQueuedMessage"
 		| "editQueuedMessage"
 		| "dismissUpsell"
