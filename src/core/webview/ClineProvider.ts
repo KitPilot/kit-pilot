@@ -85,6 +85,7 @@ import { webviewMessageHandler } from "./webviewMessageHandler"
 import type { ClineMessage, TodoItem } from "@kit-pilot/types"
 import { readApiMessages, saveApiMessages, saveTaskMessages, TaskHistoryStore } from "../task-persistence"
 import { readTaskMessages } from "../task-persistence/taskMessages"
+import { extractUserRedirects, augmentSummaryWithRedirects } from "./subtaskRedirects"
 import { getNonce } from "./getNonce"
 import { getUri } from "./getUri"
 import { REQUESTY_BASE_URL } from "../../shared/utils/requesty"
@@ -2960,8 +2961,27 @@ export class ClineProvider
 		childTaskId: string
 		completionResultSummary: string
 	}): Promise<void> {
-		const { parentTaskId, childTaskId, completionResultSummary } = params
+		const { parentTaskId, childTaskId, completionResultSummary: rawCompletionResultSummary } = params
 		const globalStoragePath = this.contextProxy.globalStorageUri.fsPath
+
+		// If the user redirected the child mid-run (messages typed to the running
+		// subtask, recorded there as `user_feedback`), fold them into the result
+		// summary the parent receives so they reach BOTH the parent's LLM context
+		// (API tool_result) and its visible timeline (subtask_result say). Without
+		// this the parent only sees the child's final result and can silently undo
+		// a user-requested change. See subtaskRedirects.ts. Never fatal.
+		let userRedirects: string[] = []
+		try {
+			const childMessages = await readTaskMessages({ taskId: childTaskId, globalStoragePath })
+			userRedirects = extractUserRedirects(childMessages)
+		} catch (err) {
+			this.log(
+				`[reopenParentFromDelegation] Failed to read child ${childTaskId} messages for redirect surfacing (non-fatal): ${
+					err instanceof Error ? err.message : String(err)
+				}`,
+			)
+		}
+		const completionResultSummary = augmentSummaryWithRedirects(rawCompletionResultSummary, userRedirects)
 
 		// 1) Load parent from history and current persisted messages
 		const { historyItem } = await this.getTaskWithId(parentTaskId)
