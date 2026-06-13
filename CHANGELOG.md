@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## 0.1.22
+
+### Fixed
+
+- Fixed a bug where changing your mind mid-task could be silently undone. If you sent a new instruction while the agent was running a sub-task — for example "actually just delete that whole section" while it was editing a file — the agent could carry out your change and then quietly revert it, because the main task never learned what you'd asked. Your mid-task messages to a running sub-task are now passed back to the main task and shown in the timeline, so a change you requested is no longer treated as a mistake to undo.
+
 ## 0.1.21
 
 ### Fixed
