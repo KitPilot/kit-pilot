@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## 0.1.22
+
+### Added
+
+- You can now interrupt KitPilot mid-task by just typing. While the agent is actively working, sending a new message stops what it's doing and continues with your new instruction, instead of waiting in line behind the current work. The Send button clearly changes to **Interrupt & send** so you know what will happen before you hit Enter, and the input briefly shows "Stopping current turn…" while it switches over. You can still queue a message instead with the queue button. (This applies to your main task; messages sent while a sub-task is running, or when you already have messages queued, still queue as before.)
+
 ## 0.1.21
 
 ### Fixed

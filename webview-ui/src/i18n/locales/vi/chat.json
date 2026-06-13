@@ -83,6 +83,10 @@
 		"title": "Dừng",
 		"tooltip": "Dừng nhiệm vụ hiện tại"
 	},
+	"interruptAndSend": {
+		"title": "Ngắt & gửi",
+		"stopping": "Đang dừng lượt hiện tại…"
+	},
 	"cancel": {
 		"title": "Hủy",
 		"tooltip": "Hủy thao tác hiện tại"

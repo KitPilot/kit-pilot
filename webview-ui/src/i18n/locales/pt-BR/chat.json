@@ -83,6 +83,10 @@
 		"title": "Parar",
 		"tooltip": "Parar a tarefa atual"
 	},
+	"interruptAndSend": {
+		"title": "Interromper e enviar",
+		"stopping": "Parando o turno atual…"
+	},
 	"cancel": {
 		"title": "Cancelar",
 		"tooltip": "Cancelar a operação atual"

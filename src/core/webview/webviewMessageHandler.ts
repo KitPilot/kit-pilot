@@ -2684,6 +2684,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			provider.getCurrentTask()?.messageQueueService.addMessage(resolved.text, resolved.images)
 			break
 		}
+		case "interruptAndSubmit": {
+			const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
+			await provider.interruptAndSubmit(resolved.text ?? "", resolved.images)
+			break
+		}
 		case "removeQueuedMessage": {
 			provider.getCurrentTask()?.messageQueueService.removeMessage(message.text ?? "")
 			break

@@ -83,6 +83,10 @@
 		"title": "Atura",
 		"tooltip": "Atura la tasca actual"
 	},
+	"interruptAndSend": {
+		"title": "Interromp i envia",
+		"stopping": "Aturant el torn actual…"
+	},
 	"cancel": {
 		"title": "Cancel·lar",
 		"tooltip": "Cancel·la l'operació actual"

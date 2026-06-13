@@ -573,6 +573,21 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		// setSecondaryButtonText(undefined)
 	}, [])
 
+	// True briefly while an interrupt-and-send is aborting + rehydrating the
+	// task, so the input shows "Stopping current turn…" and can't be spammed.
+	const [isInterrupting, setIsInterrupting] = useState(false)
+
+	// A typed message mid-stream interrupts the current turn (Esc-and-type), but
+	// only when: it's a top-level task (never a subtask — that would tear down
+	// the delegation), it's actively streaming, not a command_output ask, and
+	// there are no already-queued messages (interrupting would discard them, so
+	// respect a deliberate queue and keep queuing instead).
+	const canInterrupt =
+		isStreaming &&
+		messageQueue.length === 0 &&
+		!currentTaskItem?.parentTaskId &&
+		clineAskRef.current !== "command_output"
+
 	/**
 	 * Handles sending messages to the extension
 	 * @param text - The message text to send
@@ -587,6 +602,21 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				// WarningRow instead of sending anything to the backend.
 				if (apiConfiguration?.apiProvider && isRetiredProvider(apiConfiguration.apiProvider)) {
 					setShowRetiredProviderWarning(true)
+					return
+				}
+
+				// Interrupt-and-send: while the agent is actively working on a
+				// top-level task, a new message stops the current turn and
+				// continues with this instruction instead of queuing behind it.
+				if (canInterrupt && !isInterrupting) {
+					try {
+						vscode.postMessage({ type: "interruptAndSubmit", text, images })
+						setInputValue("")
+						setSelectedImages([])
+						setIsInterrupting(true)
+					} catch (error) {
+						console.error(`Failed to interrupt: ${error instanceof Error ? error.message : String(error)}`)
+					}
 					return
 				}
 
@@ -661,8 +691,28 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			isStreaming,
 			messageQueue.length,
 			apiConfiguration?.apiProvider,
+			canInterrupt,
+			isInterrupting,
 		], // messagesRef and clineAskRef are stable
 	)
+
+	// Clear the "stopping…" lock once the interrupted task visibly resumes
+	// (a fresh turn starts streaming again), with a fallback so it never sticks
+	// if the resume is silent.
+	useEffect(() => {
+		if (!isInterrupting) {
+			return
+		}
+		// Once the in-flight turn has stopped streaming, the abort has taken
+		// effect and the rehydrated task will pick up the message — release the
+		// lock. A fallback timer guarantees it never sticks.
+		if (!isStreaming) {
+			setIsInterrupting(false)
+			return
+		}
+		const fallback = setTimeout(() => setIsInterrupting(false), 6000)
+		return () => clearTimeout(fallback)
+	}, [isInterrupting, isStreaming])
 
 	const handleSetChatBoxMessage = useCallback(
 		(text: string, images: string[]) => {
@@ -1791,6 +1841,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				isStreaming={isStreaming}
 				onStop={handleStopTask}
 				onEnqueueMessage={handleEnqueueCurrentMessage}
+				canInterrupt={canInterrupt}
+				isInterrupting={isInterrupting}
 			/>
 
 			{isProfileDisabled && (

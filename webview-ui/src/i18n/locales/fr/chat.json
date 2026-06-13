@@ -83,6 +83,10 @@
 		"title": "Arrêter",
 		"tooltip": "Arrêter la tâche en cours"
 	},
+	"interruptAndSend": {
+		"title": "Interrompre et envoyer",
+		"stopping": "Arrêt du tour en cours…"
+	},
 	"cancel": {
 		"title": "Annuler",
 		"tooltip": "Annuler l'opération actuelle"

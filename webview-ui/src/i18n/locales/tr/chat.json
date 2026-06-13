@@ -83,6 +83,10 @@
 		"title": "Durdur",
 		"tooltip": "Mevcut görevi durdur"
 	},
+	"interruptAndSend": {
+		"title": "Kes ve gönder",
+		"stopping": "Geçerli tur durduruluyor…"
+	},
 	"cancel": {
 		"title": "İptal",
 		"tooltip": "Mevcut işlemi iptal et"
