@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## 0.1.22
+
+### Changed
+
+- Typing a message while KitPilot is waiting for you to approve an action now **redirects** the agent instead of approving. Previously, sending a message at an approval prompt approved the pending action and tacked your message on as a note — so "actually, do it differently" could run the very thing you were trying to change. Now, typing a message cancels the pending action and sends the agent your new instruction. To approve, use the **Approve** button.
+
 ## 0.1.21
 
 ### Fixed
