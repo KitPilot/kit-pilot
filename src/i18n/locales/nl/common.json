@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "Kan bericht niet verwijderen: tijdstempel ontbreekt",
 			"cannot_delete_invalid_timestamp": "Kan bericht niet verwijderen: ongeldig tijdstempel",
 			"message_not_found": "Bericht met tijdstempel {{messageTs}} niet gevonden",
+			"failed_to_open_task": "Kan taak niet openen: {{error}}",
 			"error_deleting_message": "Fout bij verwijderen van bericht: {{error}}",
 			"error_editing_message": "Fout bij bewerken van bericht: {{error}}"
 		},

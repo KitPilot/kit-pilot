@@ -104,6 +104,7 @@
 			"cannot_delete_missing_timestamp": "无法删除消息：缺少时间戳",
 			"cannot_delete_invalid_timestamp": "无法删除消息：时间戳无效",
 			"message_not_found": "未找到时间戳为 {{messageTs}} 的消息",
+			"failed_to_open_task": "无法打开任务：{{error}}",
 			"error_deleting_message": "删除消息时出错：{{error}}",
 			"error_editing_message": "编辑消息时出错：{{error}}"
 		},

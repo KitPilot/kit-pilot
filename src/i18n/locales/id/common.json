@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "Tidak dapat menghapus pesan: timestamp tidak ada",
 			"cannot_delete_invalid_timestamp": "Tidak dapat menghapus pesan: timestamp tidak valid",
 			"message_not_found": "Pesan dengan timestamp {{messageTs}} tidak ditemukan",
+			"failed_to_open_task": "Gagal membuka tugas: {{error}}",
 			"error_deleting_message": "Error menghapus pesan: {{error}}",
 			"error_editing_message": "Error mengedit pesan: {{error}}"
 		},

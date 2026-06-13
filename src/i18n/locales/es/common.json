@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "No se puede eliminar el mensaje: falta marca de tiempo",
 			"cannot_delete_invalid_timestamp": "No se puede eliminar el mensaje: marca de tiempo no válida",
 			"message_not_found": "Mensaje con marca de tiempo {{messageTs}} no encontrado",
+			"failed_to_open_task": "No se pudo abrir la tarea: {{error}}",
 			"error_deleting_message": "Error eliminando mensaje: {{error}}",
 			"error_editing_message": "Error editando mensaje: {{error}}"
 		},

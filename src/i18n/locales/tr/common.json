@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "Mesaj silinemiyor: zaman damgası eksik",
 			"cannot_delete_invalid_timestamp": "Mesaj silinemiyor: geçersiz zaman damgası",
 			"message_not_found": "{{messageTs}} zaman damgalı mesaj bulunamadı",
+			"failed_to_open_task": "Görev açılamadı: {{error}}",
 			"error_deleting_message": "Mesaj silme hatası: {{error}}",
 			"error_editing_message": "Mesaj düzenleme hatası: {{error}}"
 		},

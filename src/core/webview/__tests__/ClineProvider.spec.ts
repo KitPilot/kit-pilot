@@ -3268,5 +3268,80 @@ describe("ClineProvider - Comprehensive Edit/Delete Edge Cases", () => {
 			// Restore the spy
 			vi.mocked(fsUtils.fileExistsAtPath).mockRestore()
 		})
+
+		it("waits for the history store before reading (no spurious 'Task not found' on early click)", async () => {
+			const historyItem = { id: "early-click-task", task: "test task", ts: Date.now() }
+
+			// Store cache is empty until `initialized` resolves; once resolved
+			// the item is available. Reading before the wait would miss it.
+			let resolveInit: () => void
+			const initialized = new Promise<void>((resolve) => {
+				resolveInit = resolve
+			})
+			Object.defineProperty(provider.taskHistoryStore, "initialized", {
+				value: initialized,
+				configurable: true,
+			})
+			const getSpy = vi
+				.spyOn(provider.taskHistoryStore, "get")
+				.mockImplementation((id) => (id === historyItem.id ? (historyItem as any) : undefined))
+
+			const resultPromise = (provider as any).getTaskWithId("early-click-task")
+			// Resolve init on the next tick, simulating the store finishing load.
+			resolveInit!()
+			const result = await resultPromise
+
+			expect(getSpy).toHaveBeenCalledWith("early-click-task")
+			expect(result.historyItem).toEqual(historyItem)
+		})
+	})
+
+	describe("showTaskWithId concurrency and errors", () => {
+		it("coalesces a repeat click on the same task onto the in-flight switch", async () => {
+			const createSpy = vi.spyOn(provider, "createTaskWithHistoryItem").mockResolvedValue({} as any)
+			vi.spyOn(provider as any, "getTaskWithId").mockResolvedValue({
+				historyItem: { id: "task-a", task: "t", ts: 1 },
+			})
+			vi.spyOn(provider, "getCurrentTask").mockReturnValue(undefined as any)
+
+			await Promise.all([provider.showTaskWithId("task-a"), provider.showTaskWithId("task-a")])
+
+			// Both clicks share one switch — the task is created exactly once.
+			expect(createSpy).toHaveBeenCalledTimes(1)
+		})
+
+		it("serializes switches to different tasks so they cannot interleave", async () => {
+			const order: string[] = []
+			vi.spyOn(provider, "getCurrentTask").mockReturnValue(undefined as any)
+			vi.spyOn(provider as any, "getTaskWithId").mockImplementation(async (id: any) => ({
+				historyItem: { id, task: "t", ts: 1 },
+			}))
+			vi.spyOn(provider, "createTaskWithHistoryItem").mockImplementation(async (item: any) => {
+				order.push(`start:${item.id}`)
+				await new Promise((r) => setTimeout(r, 20))
+				order.push(`end:${item.id}`)
+				return {} as any
+			})
+
+			await Promise.all([provider.showTaskWithId("task-a"), provider.showTaskWithId("task-b")])
+
+			// task-a fully completes before task-b begins (no interleaving).
+			expect(order).toEqual(["start:task-a", "end:task-a", "start:task-b", "end:task-b"])
+		})
+
+		it("propagates errors so the caller can surface them (no silent swallow)", async () => {
+			vi.spyOn(provider, "getCurrentTask").mockReturnValue(undefined as any)
+			vi.spyOn(provider as any, "getTaskWithId").mockRejectedValue(new Error("Task not found"))
+
+			await expect(provider.showTaskWithId("missing")).rejects.toThrow("Task not found")
+
+			// A subsequent click is not blocked by the failed in-flight entry.
+			vi.spyOn(provider as any, "getTaskWithId").mockResolvedValue({
+				historyItem: { id: "ok", task: "t", ts: 1 },
+			})
+			const createSpy = vi.spyOn(provider, "createTaskWithHistoryItem").mockResolvedValue({} as any)
+			await provider.showTaskWithId("ok")
+			expect(createSpy).toHaveBeenCalledTimes(1)
+		})
 	})
 })

@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "Невозможно удалить сообщение: отсутствует временная метка",
 			"cannot_delete_invalid_timestamp": "Невозможно удалить сообщение: недействительная временная метка",
 			"message_not_found": "Сообщение с временной меткой {{messageTs}} не найдено",
+			"failed_to_open_task": "Не удалось открыть задачу: {{error}}",
 			"error_deleting_message": "Ошибка удаления сообщения: {{error}}",
 			"error_editing_message": "Ошибка редактирования сообщения: {{error}}"
 		},

@@ -99,6 +99,7 @@
 			"cannot_delete_missing_timestamp": "메시지를 삭제할 수 없습니다: 타임스탬프가 없습니다",
 			"cannot_delete_invalid_timestamp": "메시지를 삭제할 수 없습니다: 타임스탬프가 유효하지 않습니다",
 			"message_not_found": "타임스탬프 {{messageTs}}인 메시지를 찾을 수 없습니다",
+			"failed_to_open_task": "작업을 열지 못했습니다: {{error}}",
 			"error_deleting_message": "메시지 삭제 오류: {{error}}",
 			"error_editing_message": "메시지 편집 오류: {{error}}"
 		},

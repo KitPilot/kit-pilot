@@ -772,7 +772,21 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			}
 			break
 		case "showTaskWithId":
-			provider.showTaskWithId(message.text!)
+			// Await + surface failures. Previously this was fire-and-forget, so
+			// a failed switch (e.g. a transient "Task not found") became an
+			// unhandled rejection and the click silently did nothing.
+			await provider.showTaskWithId(message.text!).catch(async (error) => {
+				provider.log(
+					`[showTaskWithId] failed to open task ${message.text}: ${
+						error instanceof Error ? error.message : String(error)
+					}`,
+				)
+				await vscode.window.showErrorMessage(
+					t("common:errors.message.failed_to_open_task", {
+						error: error instanceof Error ? error.message : String(error),
+					}),
+				)
+			})
 			break
 		case "condenseTaskContextRequest":
 			provider.condenseTaskContext(message.text!)

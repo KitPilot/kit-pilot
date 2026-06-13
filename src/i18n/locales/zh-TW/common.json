@@ -98,6 +98,7 @@
 			"cannot_delete_missing_timestamp": "無法刪除訊息：缺少時間戳",
 			"cannot_delete_invalid_timestamp": "無法刪除訊息：時間戳無效",
 			"message_not_found": "未找到時間戳為 {{messageTs}} 的訊息",
+			"failed_to_open_task": "無法開啟工作：{{error}}",
 			"error_deleting_message": "刪除訊息時出錯：{{error}}",
 			"error_editing_message": "編輯訊息時出錯：{{error}}"
 		},

@@ -103,6 +103,7 @@
 			"cannot_delete_missing_timestamp": "Não é possível excluir mensagem: timestamp ausente",
 			"cannot_delete_invalid_timestamp": "Não é possível excluir mensagem: timestamp inválido",
 			"message_not_found": "Mensagem com timestamp {{messageTs}} não encontrada",
+			"failed_to_open_task": "Falha ao abrir a tarefa: {{error}}",
 			"error_deleting_message": "Erro ao excluir mensagem: {{error}}",
 			"error_editing_message": "Erro ao editar mensagem: {{error}}"
 		},
