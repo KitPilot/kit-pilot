@@ -36,6 +36,37 @@ describe("Task.ask queued message drain", () => {
 		expect(result.text).toBe("picked answer")
 	})
 
+	it("redirects (rejects) a queued message sent during a tool approval ask", async () => {
+		const task = Object.create(Task.prototype) as Task
+		;(task as any).abort = false
+		;(task as any).clineMessages = []
+		;(task as any).askResponse = undefined
+		;(task as any).askResponseText = undefined
+		;(task as any).askResponseImages = undefined
+		;(task as any).lastMessageTs = undefined
+
+		const { MessageQueueService } = await import("../../message-queue/MessageQueueService")
+		;(task as any).messageQueueService = new MessageQueueService()
+		;(task as any).addToClineMessages = vi.fn(async () => {})
+		;(task as any).saveClineMessages = vi.fn(async () => {})
+		;(task as any).updateClineMessage = vi.fn(async () => {})
+		;(task as any).cancelAutoApprovalTimeout = vi.fn(() => {})
+		;(task as any).checkpointSave = vi.fn(async () => {})
+		;(task as any).emit = vi.fn()
+		;(task as any).providerRef = { deref: () => undefined }
+
+		const askPromise = task.ask("tool", JSON.stringify({ tool: "editedExistingFile" }), false)
+
+		// User types a redirect while the edit is awaiting approval.
+		;(task as any).messageQueueService.addMessage("just remove the section instead")
+
+		const result = await askPromise
+		// Explicit-approve-path: the typed message rejects the pending tool and
+		// becomes the redirect reason — it does NOT auto-approve the edit.
+		expect(result.response).toBe("noButtonClicked")
+		expect(result.text).toBe("just remove the section instead")
+	})
+
 	it("does not consume queued messages for command_output asks", async () => {
 		const task = Object.create(Task.prototype) as Task
 		;(task as any).abort = false

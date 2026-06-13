@@ -2,6 +2,16 @@
 
 ## 0.1.22
 
+This release is all about steering — changing your mind while KitPilot is working now does what you'd expect, at every point.
+
+### Added
+
+- You can now interrupt KitPilot mid-task by just typing. While the agent is actively working, sending a new message stops what it's doing and continues with your new instruction, instead of waiting in line behind the current work. The Send button clearly changes to **Interrupt & send** so you know what will happen before you hit Enter, and the input briefly shows "Stopping current turn…" while it switches over. You can still queue a message instead with the queue button. (This applies to your main task; messages sent while a sub-task is running, or when you already have messages queued, still queue as before.)
+
+### Changed
+
+- Typing a message while KitPilot is waiting for you to approve an action now **redirects** the agent instead of approving. Previously, sending a message at an approval prompt approved the pending action and tacked your message on as a note — so "actually, do it differently" could run the very thing you were trying to change. Now, typing a message cancels the pending action and sends the agent your new instruction. To approve, use the **Approve** button.
+
 ### Fixed
 
 - Fixed a bug where changing your mind mid-task could be silently undone. If you sent a new instruction while the agent was running a sub-task — for example "actually just delete that whole section" while it was editing a file — the agent could carry out your change and then quietly revert it, because the main task never learned what you'd asked. Your mid-task messages to a running sub-task are now passed back to the main task and shown in the timeline, so a change you requested is no longer treated as a mistake to undo.
