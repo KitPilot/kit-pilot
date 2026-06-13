@@ -83,6 +83,10 @@
 		"title": "停止",
 		"tooltip": "現在のタスクを停止"
 	},
+	"interruptAndSend": {
+		"title": "中断して送信",
+		"stopping": "現在のターンを停止しています…"
+	},
 	"cancel": {
 		"title": "キャンセル",
 		"tooltip": "現在の操作をキャンセル"

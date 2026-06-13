@@ -83,6 +83,10 @@
 		"title": "Detener",
 		"tooltip": "Detener la tarea actual"
 	},
+	"interruptAndSend": {
+		"title": "Interrumpir y enviar",
+		"stopping": "Deteniendo el turno actual…"
+	},
 	"cancel": {
 		"title": "Cancelar",
 		"tooltip": "Cancelar la operación actual"

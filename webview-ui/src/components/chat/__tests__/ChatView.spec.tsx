@@ -849,7 +849,7 @@ describe("ChatView - Message Queueing Tests", () => {
 		expect(input.getAttribute("data-sending-disabled")).toBe("false")
 	})
 
-	it("queues messages when API request is in progress (spinner visible)", async () => {
+	it("interrupts the current turn when a message is sent mid-stream on a top-level task", async () => {
 		const { getByTestId } = renderChatView()
 
 		// First hydrate state with initial task
@@ -906,22 +906,74 @@ describe("ChatView - Message Queueing Tests", () => {
 			fireEvent.keyDown(input, { key: "Enter", code: "Enter" })
 		})
 
-		// Verify that the message was queued, not sent as askResponse
+		// Top-level task streaming with an empty queue: a typed message
+		// interrupts the current turn and continues with the new instruction.
 		await waitFor(() => {
 			expect(vscode.postMessage).toHaveBeenCalledWith({
-				type: "queueMessage",
+				type: "interruptAndSubmit",
 				text: "follow-up question during spinner",
 				images: [],
 			})
 		})
 
-		// Verify it was NOT sent as a direct askResponse (which would get lost)
+		// Not queued, and not a direct askResponse (which would get lost).
+		expect(vscode.postMessage).not.toHaveBeenCalledWith(expect.objectContaining({ type: "queueMessage" }))
 		expect(vscode.postMessage).not.toHaveBeenCalledWith(
 			expect.objectContaining({
 				type: "askResponse",
 				askResponse: "messageResponse",
 			}),
 		)
+	})
+
+	it("queues (does not interrupt) a mid-stream message while a subtask is running", async () => {
+		const { getByTestId } = renderChatView()
+
+		const subtaskItem = {
+			id: "child-1",
+			number: 2,
+			parentTaskId: "parent-1",
+			ts: Date.now() - 2000,
+			task: "Subtask",
+			tokensIn: 0,
+			tokensOut: 0,
+			totalCost: 0,
+		}
+
+		mockPostMessage({
+			currentTaskItem: subtaskItem as any,
+			clineMessages: [
+				{ type: "say", say: "task", ts: Date.now() - 2000, text: "Subtask" },
+				{
+					type: "say",
+					say: "api_req_started",
+					ts: Date.now(),
+					text: JSON.stringify({ apiProtocol: "anthropic" }),
+				},
+			],
+		})
+
+		await waitFor(() => {
+			expect(getByTestId("chat-textarea")).toBeInTheDocument()
+		})
+
+		vi.mocked(vscode.postMessage).mockClear()
+
+		const input = getByTestId("chat-textarea").querySelector("input")! as HTMLInputElement
+		await act(async () => {
+			fireEvent.change(input, { target: { value: "note for the subtask" } })
+			fireEvent.keyDown(input, { key: "Enter", code: "Enter" })
+		})
+
+		// Subtask is active → keep today's queue behavior, never interrupt.
+		await waitFor(() => {
+			expect(vscode.postMessage).toHaveBeenCalledWith({
+				type: "queueMessage",
+				text: "note for the subtask",
+				images: [],
+			})
+		})
+		expect(vscode.postMessage).not.toHaveBeenCalledWith(expect.objectContaining({ type: "interruptAndSubmit" }))
 	})
 
 	it("sends messages normally when API request is complete (cost present)", async () => {

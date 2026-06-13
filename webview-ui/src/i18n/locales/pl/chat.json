@@ -83,6 +83,10 @@
 		"title": "Zatrzymaj",
 		"tooltip": "Zatrzymaj bieżące zadanie"
 	},
+	"interruptAndSend": {
+		"title": "Przerwij i wyślij",
+		"stopping": "Zatrzymywanie bieżącej tury…"
+	},
 	"cancel": {
 		"title": "Anuluj",
 		"tooltip": "Anuluj bieżącą operację"
