@@ -61,7 +61,7 @@ const getOpenAiModels = async (
 	_apiKey?: string,
 	_headers?: Record<string, string>,
 ): Promise<string[]> => []
-import { getVsCodeLmModels } from "../../api/providers/vscode-lm"
+import { getVsCodeLmModels, buildVsCodeLmModelInfo } from "../../api/providers/vscode-lm"
 import { openMention } from "../mentions"
 import { resolveImageMentions } from "../mentions/resolveImageMentions"
 import { KitPilotIgnoreController } from "../ignore/KitPilotIgnoreController"
@@ -965,11 +965,22 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			}
 
 			break
-		case "requestVsCodeLmModels":
-			const vsCodeLmModels = await getVsCodeLmModels()
+		case "requestVsCodeLmModels": {
+			const models = await getVsCodeLmModels()
+			// Ship each model's ModelInfo (built the same way the provider's
+			// getModel() does) so the webview renders true context windows /
+			// vision support instead of reconstructing from the static registry.
+			const vsCodeLmModels = models.map((model) => ({
+				vendor: model.vendor,
+				family: model.family,
+				version: model.version,
+				id: model.id,
+				info: buildVsCodeLmModelInfo(model).info,
+			}))
 			// TODO: Cache like we do for OpenRouter, etc?
 			provider.postMessageToWebview({ type: "vsCodeLmModels", vsCodeLmModels })
 			break
+		}
 		case "openImage":
 			openImage(message.text!, { values: message.values })
 			break
