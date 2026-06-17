@@ -6,6 +6,7 @@ import { v7 as uuidv7 } from "uuid"
 import EventEmitter from "events"
 
 import { AskIgnoredError } from "./AskIgnoredError"
+import { ToolFailureTracker } from "./ToolFailureTracker"
 
 import { Anthropic } from "@anthropic-ai/sdk"
 import OpenAI from "openai"
@@ -349,13 +350,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// Deep error recovery: track consecutive failures per tool name so we can
 	// fire a secondary analytical LLM call when the model gets stuck on the
 	// same tool. Counters reset on any successful invocation of that tool.
-	consecutiveToolFailures: Map<string, number> = new Map()
-	// Records the most recent error payload per tool name so we can pass it
-	// to the secondary analysis call without re-deriving it from history.
-	lastToolErrorByName: Map<string, string> = new Map()
-	// Analysis text produced by the secondary call, queued for prepending
-	// to the next user turn as a <failure_analysis> block. Cleared once used.
-	pendingFailureAnalysis: string | null = null
+	readonly toolFailureTracker = new ToolFailureTracker()
 	consecutiveNoToolUseCount: number = 0
 	consecutiveNoAssistantMessagesCount: number = 0
 	toolUsage: ToolUsage = {}
@@ -409,72 +404,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * caches the error string for the secondary analysis call.
 	 */
 	public recordToolOutcome(toolName: string, isError: boolean, errorPayload?: string): void {
-		if (isError) {
-			const prev = this.consecutiveToolFailures.get(toolName) ?? 0
-			this.consecutiveToolFailures.set(toolName, prev + 1)
-			if (errorPayload) {
-				this.lastToolErrorByName.set(toolName, errorPayload)
-			}
-		} else {
-			this.consecutiveToolFailures.delete(toolName)
-			this.lastToolErrorByName.delete(toolName)
-		}
-	}
-
-	/**
-	 * Returns the first tool name that has just hit (or exceeded) the
-	 * stuck-loop threshold. Returning a tool name signals that the deep
-	 * analysis call should fire. We use exactly == 2 so the call fires once
-	 * per stuck episode rather than on every subsequent failure.
-	 */
-	public toolNeedingDeepAnalysis(): string | null {
-		for (const [tool, count] of this.consecutiveToolFailures.entries()) {
-			if (count === 2) return tool
-		}
-		return null
-	}
-
-	/**
-	 * Secondary LLM call. Asks the model — with a focused, isolated system
-	 * prompt — to analyze why a tool failed twice in a row and what to try
-	 * differently. Returns a short analysis string that gets prepended to
-	 * the next user turn as a <failure_analysis> block.
-	 *
-	 * Failures (network, etc.) are silently caught and return null — better
-	 * to skip the analysis than to stall the main loop.
-	 */
-	public async analyzeToolFailure(toolName: string): Promise<string | null> {
-		const errorPayload = this.lastToolErrorByName.get(toolName)
-		if (!errorPayload) return null
-
-		const systemPrompt =
-			"You are an error analysis assistant for an agentic coding tool. " +
-			"The agent just ran a tool and it failed twice in a row. " +
-			"In 3-5 short sentences, explain why it likely failed and what concrete alternative the agent should try. " +
-			"Reference the exact error text. Do not propose anything that requires asking the user. " +
-			"Output only the analysis text — no XML wrappers, no preamble, no bullet lists unless essential."
-
-		const userPrompt = `Tool: ${toolName}\nError payload (most recent): ${errorPayload}\n\nWhy did this fail twice? What concrete alternative should the agent try next?`
-
-		try {
-			const stream = this.api.createMessage(systemPrompt, [{ role: "user", content: userPrompt }], {
-				taskId: this.taskId,
-			})
-			let analysis = ""
-			for await (const chunk of stream) {
-				if (chunk.type === "text") {
-					analysis += chunk.text
-				}
-			}
-			analysis = analysis.trim()
-			return analysis || null
-		} catch (error) {
-			console.warn(
-				`[Task#analyzeToolFailure] secondary analysis call failed:`,
-				error instanceof Error ? error.message : error,
-			)
-			return null
-		}
+		this.toolFailureTracker.record(toolName, isError, errorPayload)
 	}
 
 	public pushToolResultToUserContent(toolResult: Anthropic.ToolResultBlockParam): boolean {
@@ -2681,9 +2611,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				.getConfiguration(Package.name)
 				.get<boolean>("deepErrorAnalysis", false)
 			if (deepAnalysisEnabled) {
-				const stuckTool = this.toolNeedingDeepAnalysis()
+				const stuckTool = this.toolFailureTracker.toolNeedingDeepAnalysis()
 				if (stuckTool) {
-					const analysis = await this.analyzeToolFailure(stuckTool)
+					const analysis = await this.toolFailureTracker.analyzeToolFailure(stuckTool, this.api, this.taskId)
 					if (analysis) {
 						currentUserContent = [
 							{
