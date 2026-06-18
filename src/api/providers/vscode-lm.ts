@@ -29,6 +29,43 @@ import { BaseProvider } from "./base-provider"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
 
 /**
+ * Build the canonical { id, info } pair for a VS Code LM model from the live
+ * handle reported by `vscode.lm` (or any selector carrying the same fields).
+ *
+ * This is the single source of truth for vscode-lm ModelInfo: the provider's
+ * `getModel()` uses it for actual requests, and the webview consumes the same
+ * values (shipped over the `vsCodeLmModels` message) so the model card never
+ * drifts from what the extension enforces. Keeping the static `vscodeLlmModels`
+ * registry as the webview's source caused that drift (e.g. the 0.1.7 grey-icon
+ * bug) because Copilot's reported `family` strings don't match registry keys.
+ */
+export function buildVsCodeLmModelInfo(model: {
+	id?: string
+	vendor?: string
+	family?: string
+	version?: string
+	maxInputTokens?: number
+}): { id: string; info: ModelInfo } {
+	const modelParts = [model.vendor, model.family, model.version].filter(Boolean)
+	const modelId = model.id || modelParts.join(SELECTOR_SEPARATOR)
+
+	const info: ModelInfo = {
+		maxTokens: -1, // Unlimited tokens by default
+		contextWindow:
+			typeof model.maxInputTokens === "number"
+				? Math.max(0, model.maxInputTokens)
+				: openAiModelInfoSaneDefaults.contextWindow,
+		supportsImages: modelSupportsVision(model.family, model.id),
+		supportsPromptCache: true,
+		inputPrice: 0,
+		outputPrice: 0,
+		description: `VSCode Language Model: ${modelId}`,
+	}
+
+	return { id: modelId, info }
+}
+
+/**
  * Rough per-image token estimate, tiered by decoded byte size. The VS Code LM
  * API's `countTokens` only handles strings, so we bypass it for images and add
  * a flat estimate. Real per-image cost varies by model (OpenAI ~85 low / 1100
@@ -600,28 +637,12 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 				}
 			}
 
-			// Construct model ID using available information
-			const modelParts = [this.client.vendor, this.client.family, this.client.version].filter(Boolean)
-
-			const modelId = this.client.id || modelParts.join(SELECTOR_SEPARATOR)
-
-			// Build model info with conservative defaults for missing values
-			const supportsImages = modelSupportsVision(this.client.family, this.client.id)
+			// Build the { id, info } pair from the live client. Shared with the
+			// webview via buildVsCodeLmModelInfo so the UI can't drift from this.
+			const { id: modelId, info: modelInfo } = buildVsCodeLmModelInfo(this.client)
 			console.debug(
-				`KitPilot <Language Model API>: model=${modelId} vendor=${this.client.vendor} family=${this.client.family} supportsImages=${supportsImages}`,
+				`KitPilot <Language Model API>: model=${modelId} vendor=${this.client.vendor} family=${this.client.family} supportsImages=${modelInfo.supportsImages}`,
 			)
-			const modelInfo: ModelInfo = {
-				maxTokens: -1, // Unlimited tokens by default
-				contextWindow:
-					typeof this.client.maxInputTokens === "number"
-						? Math.max(0, this.client.maxInputTokens)
-						: openAiModelInfoSaneDefaults.contextWindow,
-				supportsImages,
-				supportsPromptCache: true,
-				inputPrice: 0,
-				outputPrice: 0,
-				description: `VSCode Language Model: ${modelId}`,
-			}
 
 			return { id: modelId, info: modelInfo }
 		}

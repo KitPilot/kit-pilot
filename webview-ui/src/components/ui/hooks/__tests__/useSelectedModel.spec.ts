@@ -10,12 +10,15 @@ import { ProviderSettings, vscodeLlmDefaultModelId, vscodeLlmModels } from "@kit
 import { useSelectedModel } from "../useSelectedModel"
 import { useRouterModels } from "../useRouterModels"
 import { useOpenRouterModelProviders } from "../useOpenRouterModelProviders"
+import { useVsCodeLmModels } from "../useVsCodeLmModels"
 
 vi.mock("../useRouterModels")
 vi.mock("../useOpenRouterModelProviders")
+vi.mock("../useVsCodeLmModels")
 
 const mockUseRouterModels = useRouterModels as Mock<typeof useRouterModels>
 const mockUseOpenRouterModelProviders = useOpenRouterModelProviders as Mock<typeof useOpenRouterModelProviders>
+const mockUseVsCodeLmModels = useVsCodeLmModels as Mock<typeof useVsCodeLmModels>
 
 const createWrapper = () => {
 	const queryClient = new QueryClient({
@@ -43,6 +46,14 @@ describe("useSelectedModel", () => {
 		} as any)
 
 		mockUseOpenRouterModelProviders.mockReturnValue({
+			data: undefined,
+			isLoading: false,
+			isError: false,
+		} as any)
+
+		// Default to no runtime data so tests exercise the static-registry
+		// fallback; individual tests override this to assert runtime precedence.
+		mockUseVsCodeLmModels.mockReturnValue({
 			data: undefined,
 			isLoading: false,
 			isError: false,
@@ -135,6 +146,70 @@ describe("useSelectedModel", () => {
 
 				expect(result.current.info?.supportsImages).toBe(true)
 			}
+		})
+
+		// The fix: when the extension reports live ModelInfo, it is the source of
+		// truth and overrides the static registry. This is what keeps the model
+		// card from drifting from the context window the extension actually
+		// enforces (the bug-class behind the 0.1.7 grey-icon issue).
+		it("should prefer runtime model info over the static registry", () => {
+			mockUseVsCodeLmModels.mockReturnValue({
+				data: {
+					"gpt-4o": {
+						maxTokens: -1,
+						contextWindow: 999_999,
+						supportsImages: true,
+						supportsPromptCache: true,
+						inputPrice: 0,
+						outputPrice: 0,
+					},
+				},
+				isLoading: false,
+				isError: false,
+			} as any)
+
+			const apiConfiguration: ProviderSettings = {
+				apiProvider: "vscode-lm",
+				vsCodeLmModelSelector: { vendor: "copilot", family: "gpt-4o" },
+			}
+
+			const wrapper = createWrapper()
+			const { result } = renderHook(() => useSelectedModel(apiConfiguration), { wrapper })
+
+			// Runtime context window wins over vscodeLlmModels["gpt-4o"].
+			expect(result.current.info?.contextWindow).toBe(999_999)
+			expect(result.current.info?.contextWindow).not.toBe(vscodeLlmModels["gpt-4o"].contextWindow)
+		})
+
+		// Runtime info resolves the family-key mismatch at its root: the extension
+		// keys by Copilot's real family string, so a family absent from the static
+		// registry still gets a true context window instead of sane defaults.
+		it("should use runtime info for a family missing from the static registry", () => {
+			mockUseVsCodeLmModels.mockReturnValue({
+				data: {
+					"claude-sonnet-4": {
+						maxTokens: -1,
+						contextWindow: 200_000,
+						supportsImages: true,
+						supportsPromptCache: true,
+						inputPrice: 0,
+						outputPrice: 0,
+					},
+				},
+				isLoading: false,
+				isError: false,
+			} as any)
+
+			const apiConfiguration: ProviderSettings = {
+				apiProvider: "vscode-lm",
+				vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet-4" },
+			}
+
+			const wrapper = createWrapper()
+			const { result } = renderHook(() => useSelectedModel(apiConfiguration), { wrapper })
+
+			expect(result.current.info?.contextWindow).toBe(200_000)
+			expect(result.current.info?.supportsImages).toBe(true)
 		})
 
 		it("should not report supportsImages for text-only families", () => {

@@ -11,7 +11,7 @@ import type { OrganizationAllowList } from "./organization.js"
 import type { SerializedCustomToolDefinition } from "./custom-tool.js"
 import type { GitCommit } from "./git.js"
 import type { McpServer } from "./mcp.js"
-import type { ModelRecord, RouterModels } from "./model.js"
+import type { ModelInfo, ModelRecord, RouterModels } from "./model.js"
 // vscode-lm-only build: OpenAI Codex rate limit info is no longer used at
 // runtime. Kept as an opaque alias so message shapes still type-check for
 // any stale persisted state.
@@ -129,7 +129,7 @@ export interface ExtensionMessage {
 	openAiModels?: string[]
 	ollamaModels?: ModelRecord
 	lmStudioModels?: ModelRecord
-	vsCodeLmModels?: { vendor?: string; family?: string; version?: string; id?: string }[]
+	vsCodeLmModels?: { vendor?: string; family?: string; version?: string; id?: string; info?: ModelInfo }[]
 	mcpServers?: McpServer[]
 	commits?: GitCommit[]
 	listApiConfig?: ProviderSettingsEntry[]

@@ -38,6 +38,7 @@ import { useRouterModels } from "./useRouterModels"
 import { useOpenRouterModelProviders } from "./useOpenRouterModelProviders"
 import { useLmStudioModels } from "./useLmStudioModels"
 import { useOllamaModels } from "./useOllamaModels"
+import { useVsCodeLmModels } from "./useVsCodeLmModels"
 
 /**
  * Helper to get a validated model ID for dynamic providers.
@@ -60,8 +61,7 @@ export const useSelectedModel = (apiConfiguration?: ProviderSettings) => {
 	const dynamicProvider = activeProvider && isDynamicProvider(activeProvider) ? activeProvider : undefined
 	const openRouterModelId =
 		(activeProvider as string) === "openrouter" ? apiConfiguration?.openRouterModelId : undefined
-	const lmStudioModelId =
-		(activeProvider as string) === "lmstudio" ? apiConfiguration?.lmStudioModelId : undefined
+	const lmStudioModelId = (activeProvider as string) === "lmstudio" ? apiConfiguration?.lmStudioModelId : undefined
 	const ollamaModelId = (activeProvider as string) === "ollama" ? apiConfiguration?.ollamaModelId : undefined
 
 	// Only fetch router models for dynamic providers
@@ -74,6 +74,12 @@ export const useSelectedModel = (apiConfiguration?: ProviderSettings) => {
 	const openRouterModelProviders = useOpenRouterModelProviders(openRouterModelId)
 	const lmStudioModels = useLmStudioModels(lmStudioModelId)
 	const ollamaModels = useOllamaModels(ollamaModelId)
+
+	// Runtime ModelInfo for vscode-lm, built extension-side from live handles.
+	// Best-effort: if it hasn't loaded the vscode-lm case falls back to the
+	// static registry, so this is intentionally not part of `isReady` below.
+	const isVsCodeLm = (activeProvider as string) === "vscode-lm"
+	const vsCodeLmModels = useVsCodeLmModels(isVsCodeLm)
 
 	// Compute readiness only for the data actually needed for the selected provider
 	const needRouterModels = shouldFetchRouterModels
@@ -104,6 +110,7 @@ export const useSelectedModel = (apiConfiguration?: ProviderSettings) => {
 					openRouterModelProviders: (openRouterModelProviders.data || {}) as Record<string, ModelInfo>,
 					lmStudioModels: (lmStudioModels.data || undefined) as ModelRecord | undefined,
 					ollamaModels: (ollamaModels.data || undefined) as ModelRecord | undefined,
+					vsCodeLmModels: (vsCodeLmModels.data || undefined) as ModelRecord | undefined,
 				})
 			: { id: getProviderDefaultModelId(activeProvider ?? "vscode-lm"), info: undefined }
 
@@ -131,6 +138,7 @@ function getSelectedModel({
 	openRouterModelProviders,
 	lmStudioModels,
 	ollamaModels,
+	vsCodeLmModels,
 }: {
 	provider: ProviderName
 	apiConfiguration: ProviderSettings
@@ -138,6 +146,7 @@ function getSelectedModel({
 	openRouterModelProviders: Record<string, ModelInfo>
 	lmStudioModels: ModelRecord | undefined
 	ollamaModels: ModelRecord | undefined
+	vsCodeLmModels: ModelRecord | undefined
 }): { id: string; info: ModelInfo | undefined } {
 	// the `undefined` case are used to show the invalid selection to prevent
 	// users from seeing the default model if their selection is invalid
@@ -308,12 +317,19 @@ function getSelectedModel({
 				? `${apiConfiguration.vsCodeLmModelSelector.vendor}/${apiConfiguration.vsCodeLmModelSelector.family}`
 				: vscodeLlmDefaultModelId
 			const modelFamily = apiConfiguration?.vsCodeLmModelSelector?.family ?? vscodeLlmDefaultModelId
+			// Prefer the runtime ModelInfo built extension-side from the live
+			// `vscode.lm` handle — it carries Copilot's true context window and
+			// vision support. The static `vscodeLlmModels` registry is only a
+			// fallback for the window before the runtime list arrives (and for
+			// tests): Copilot reports family strings (e.g. "claude-sonnet-4") that
+			// don't match the registry keys (e.g. "claude-4-sonnet"), so a registry
+			// miss fell back to defaults with supportsImages: false, wrongly
+			// disabling the chat image button.
+			const runtimeInfo = vsCodeLmModels?.[modelFamily]
+			if (runtimeInfo) {
+				return { id, info: runtimeInfo }
+			}
 			const info = vscodeLlmModels[modelFamily as keyof typeof vscodeLlmModels]
-			// Derive `supportsImages` from the same substring rules the backend
-			// vscode-lm provider uses, not the static registry. Copilot reports
-			// family strings (e.g. "claude-sonnet-4") that don't match the registry
-			// keys (e.g. "claude-4-sonnet"); a registry miss fell back to defaults
-			// with supportsImages: false, wrongly disabling the chat image button.
 			return {
 				id,
 				info: {
