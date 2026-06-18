@@ -1,5 +1,13 @@
 # KitPilot Changelog
 
+## 0.1.24
+
+This release makes the cost and token numbers accurate instead of estimated.
+
+### Changed
+
+- KitPilot now uses the real token counts GitHub Copilot reports for each request, instead of estimating them by counting characters. Your per-request token and cost figures — and the spending limit introduced in 0.1.23 — are now based on Copilot's actual numbers, including how many input tokens were served from cache. (Previously these were an approximation; they could drift from what Copilot actually billed.)
+
 ## 0.1.23
 
 This release makes spending visible now that GitHub Copilot has switched to usage-based billing, and fixes model details showing incorrectly for some Copilot models.
