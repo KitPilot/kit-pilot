@@ -435,13 +435,9 @@ describe("VsCodeLmHandler", () => {
 					],
 				},
 			]
-			mockLanguageModelChat.sendRequest.mockRejectedValueOnce(
-				new Error("Unsupported content type: image/png"),
-			)
+			mockLanguageModelChat.sendRequest.mockRejectedValueOnce(new Error("Unsupported content type: image/png"))
 
-			await expect(handler.createMessage("system", messages).next()).rejects.toThrow(
-				"Unsupported content type",
-			)
+			await expect(handler.createMessage("system", messages).next()).rejects.toThrow("Unsupported content type")
 			expect(showWarning).toHaveBeenCalledTimes(1)
 			expect(showWarning.mock.calls[0][0]).toMatch(/rejected an image/i)
 		})
@@ -551,6 +547,32 @@ describe("VsCodeLmHandler", () => {
 
 			const model = handler.getModel()
 			expect(model.info.supportsImages).toBe(true)
+		})
+
+		it("should set real per-token prices for a known model family (Copilot credit billing)", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValue([
+				{ ...mockLanguageModelChat, id: "claude-sonnet-4", family: "claude-sonnet-4" },
+			])
+			handler["client"] = null
+			await handler.initializeClient()
+
+			const model = handler.getModel()
+			expect(model.info.inputPrice).toBe(3)
+			expect(model.info.outputPrice).toBe(15)
+			expect(model.info.cacheReadsPrice).toBe(0.3)
+		})
+
+		it("should fall back to zero price for an unrecognized model family", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValue([
+				{ ...mockLanguageModelChat, id: "mystery-model", family: "mystery-model" },
+			])
+			handler["client"] = null
+			await handler.initializeClient()
+
+			const model = handler.getModel()
+			expect(model.info.inputPrice).toBe(0)
+			expect(model.info.outputPrice).toBe(0)
+			expect(model.info.cacheReadsPrice).toBeUndefined()
 		})
 
 		it("should keep supportsImages=false for denylisted text-only variants like o3-mini", async () => {

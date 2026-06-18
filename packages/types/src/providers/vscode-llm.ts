@@ -46,6 +46,63 @@ export function modelSupportsVision(family?: string, id?: string): boolean {
 	return VISION_MODEL_ALLOWLIST.some((p) => haystack.includes(p))
 }
 
+export interface VsCodeLmModelRate {
+	/** USD per 1M input tokens. */
+	inputPrice: number
+	/** USD per 1M output tokens. */
+	outputPrice: number
+	/** USD per 1M cached input tokens (~10% of input under Copilot's rates). */
+	cacheReadsPrice: number
+}
+
+// Per-model token rates for GitHub Copilot's usage/credit billing, which replaced
+// per-request billing on 2026-06-01 (1 AI credit = $0.01). Values are USD per 1M
+// tokens, matching ModelInfo's inputPrice/outputPrice convention. Before this,
+// vscode-lm reported $0 prices (correct under per-request billing), which left the
+// cost display and the `allowedMaxCost` budget cap dead. These give a real cost
+// ESTIMATE so both work again.
+//
+// Matched by substring against Copilot's reported `family`/`id` (the same robust
+// approach as VISION_MODEL_ALLOWLIST, since reported family strings don't match
+// the static registry keys). Ordered MOST-SPECIFIC FIRST — first match wins.
+// Unknown models return undefined → no cost shown (same as before), never a wrong
+// non-zero number. Rates drift; re-verify at
+// https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing
+// (last checked 2026-06-18).
+const VSCODE_LM_MODEL_RATES: ReadonlyArray<readonly [pattern: string, rate: VsCodeLmModelRate]> = [
+	["claude-fable-5", { inputPrice: 10, outputPrice: 50, cacheReadsPrice: 1.0 }],
+	["claude-opus", { inputPrice: 5, outputPrice: 25, cacheReadsPrice: 0.5 }],
+	["claude-sonnet", { inputPrice: 3, outputPrice: 15, cacheReadsPrice: 0.3 }],
+	["claude-haiku", { inputPrice: 1, outputPrice: 5, cacheReadsPrice: 0.1 }],
+	["gpt-5.5", { inputPrice: 5, outputPrice: 30, cacheReadsPrice: 0.5 }],
+	["gpt-5.4-codex", { inputPrice: 1.75, outputPrice: 14, cacheReadsPrice: 0.175 }],
+	["gpt-5.4-nano", { inputPrice: 0.2, outputPrice: 1.25, cacheReadsPrice: 0.02 }],
+	["gpt-5.4-mini", { inputPrice: 0.75, outputPrice: 4.5, cacheReadsPrice: 0.075 }],
+	["gpt-5.4", { inputPrice: 2.5, outputPrice: 15, cacheReadsPrice: 0.25 }],
+	["gpt-5-mini", { inputPrice: 0.25, outputPrice: 2, cacheReadsPrice: 0.025 }],
+	["gemini-3.5-flash", { inputPrice: 1.5, outputPrice: 9, cacheReadsPrice: 0.15 }],
+	["gemini-3.1-pro", { inputPrice: 2, outputPrice: 12, cacheReadsPrice: 0.2 }],
+	["gemini-3-flash", { inputPrice: 0.5, outputPrice: 3, cacheReadsPrice: 0.05 }],
+	["gemini-2.5-pro", { inputPrice: 1.25, outputPrice: 10, cacheReadsPrice: 0.125 }],
+	["raptor", { inputPrice: 0.25, outputPrice: 2, cacheReadsPrice: 0.025 }],
+	["mai-code", { inputPrice: 0.75, outputPrice: 4.5, cacheReadsPrice: 0.075 }],
+] as const
+
+/**
+ * Best-effort USD-per-1M-token rates for a Copilot model, matched by substring
+ * against its reported `family`/`id`. Returns undefined for unrecognized models
+ * (caller should treat that as "cost unknown", i.e. 0, not an error).
+ */
+export function getVsCodeLmModelRates(family?: string, id?: string): VsCodeLmModelRate | undefined {
+	const haystack = `${family ?? ""} ${id ?? ""}`.toLowerCase()
+	for (const [pattern, rate] of VSCODE_LM_MODEL_RATES) {
+		if (haystack.includes(pattern)) {
+			return rate
+		}
+	}
+	return undefined
+}
+
 // https://docs.cline.bot/provider-config/vscode-language-model-api
 export const vscodeLlmModels = {
 	"gpt-3.5-turbo": {
