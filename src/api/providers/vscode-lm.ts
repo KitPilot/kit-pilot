@@ -627,10 +627,9 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 						const decoded = JSON.parse(decodeDataPart(chunk.data))
 						// Logged (warn level so it shows without enabling Verbose) so
 						// the exact payload shape can be confirmed from a live session.
-						console.warn("KitPilot <Language Model API>: data part", {
-							mimeType: chunk.mimeType,
-							decoded,
-						})
+						console.warn(
+							`KitPilot <Language Model API>: data part mimeType=${chunk.mimeType} decoded=${JSON.stringify(decoded)}`,
+						)
 						const usage = parseVsCodeLmUsage(decoded)
 						if (usage) {
 							reportedUsage = usage
@@ -643,7 +642,9 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 						)
 					}
 				} else {
-					console.warn("KitPilot <Language Model API>: unrecognized stream chunk:", describeChunk(chunk))
+					console.warn(
+						`KitPilot <Language Model API>: unrecognized stream chunk: ${JSON.stringify(describeChunk(chunk))}`,
+					)
 				}
 			}
 
