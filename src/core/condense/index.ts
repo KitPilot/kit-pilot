@@ -325,7 +325,9 @@ export async function summarizeConversation(options: SummarizeConversationOption
 	let outputTokens = 0
 
 	try {
-		const stream = apiHandler.createMessage(promptToUse, requestMessages, metadata)
+		// Tag for usage instrumentation (TODO #10) — this call is always condense.
+		const condenseMetadata = { ...metadata, purpose: "condense" } as ApiHandlerCreateMessageMetadata
+		const stream = apiHandler.createMessage(promptToUse, requestMessages, condenseMetadata)
 
 		for await (const chunk of stream) {
 			if (chunk.type === "text") {
