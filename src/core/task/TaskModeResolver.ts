@@ -100,6 +100,11 @@ export class TaskModeResolver {
 		return this._mode || defaultModeSlug
 	}
 
+	/** Update the mode (user switched modes mid-task, after persisting the change). */
+	setMode(mode: string): void {
+		this._mode = mode
+	}
+
 	/** Await API config name initialization. */
 	async waitForApiConfig(): Promise<void> {
 		return this.apiConfigReady

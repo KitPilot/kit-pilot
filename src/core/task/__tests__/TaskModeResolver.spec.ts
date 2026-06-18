@@ -76,6 +76,21 @@ describe("TaskModeResolver", () => {
 		})
 	})
 
+	describe("setMode", () => {
+		it("updates the mode for a live (already-initialized) task", async () => {
+			const resolver = new TaskModeResolver({
+				historyItem: { mode: "code" },
+				provider: makeProvider({}),
+			})
+
+			resolver.setMode("architect")
+
+			expect(resolver.mode).toBe("architect")
+			expect(resolver.modeOrDefault).toBe("architect")
+			expect(await resolver.getMode()).toBe("architect")
+		})
+	})
+
 	describe("set-during-init race", () => {
 		it("does not clobber an api config name set before async init resolves", async () => {
 			const resolver = new TaskModeResolver({

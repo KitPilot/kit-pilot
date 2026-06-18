@@ -583,7 +583,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * the mode is available before returning.
 	 *
 	 * ## Async behavior
-	 * - Internally waits for `taskModeReady` promise to resolve
+	 * - Internally waits for the mode resolver's readiness promise
 	 * - Returns the initialized mode or `defaultModeSlug` as fallback
 	 * - Safe to call multiple times - subsequent calls return immediately if already initialized
 	 *
@@ -658,7 +658,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * the value is available before returning.
 	 *
 	 * ## Async behavior
-	 * - Internally waits for `taskApiConfigReady` promise to resolve
+	 * - Internally waits for the mode resolver's API-config readiness promise
 	 * - Returns the initialized API config name or undefined as fallback
 	 * - Safe to call multiple times - subsequent calls return immediately if already initialized
 	 *
@@ -699,6 +699,17 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 */
 	public setTaskApiConfigName(apiConfigName: string | undefined): void {
 		this.modeResolver.setApiConfigName(apiConfigName)
+	}
+
+	/**
+	 * Update the task's mode. Called when the user switches modes while a task
+	 * is active (after the change has been persisted), so the live task reflects
+	 * the new mode without waiting for a reload from history.
+	 *
+	 * @internal
+	 */
+	public setTaskMode(mode: string): void {
+		this.modeResolver.setMode(mode)
 	}
 
 	static create(options: TaskOptions): [Task, Promise<void>] {
