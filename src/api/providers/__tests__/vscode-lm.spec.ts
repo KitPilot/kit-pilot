@@ -220,7 +220,7 @@ describe("VsCodeLmHandler", () => {
 					yield new vscode.LanguageModelTextPart("hi")
 					yield new vscode.LanguageModelDataPart(
 						new TextEncoder().encode(JSON.stringify(usagePayload)),
-						"application/json",
+						"usage",
 					)
 					return
 				})(),
@@ -253,7 +253,7 @@ describe("VsCodeLmHandler", () => {
 		it("recognizes a cross-realm-style data part (plain object, no instanceof match)", async () => {
 			const payload = { prompt_tokens: 11, completion_tokens: 22 }
 			const foreignDataPart = {
-				mimeType: "application/json",
+				mimeType: "usage",
 				data: new TextEncoder().encode(JSON.stringify(payload)),
 			}
 

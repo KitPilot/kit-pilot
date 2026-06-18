@@ -22,6 +22,24 @@ describe("parseVsCodeLmUsage", () => {
 		})
 	})
 
+	it("parses the real payload captured from a live Copilot stream (no total_nano_aiu)", () => {
+		// Verbatim from a live `mimeType: "usage"` data part (2026-06-18).
+		const decoded = {
+			completion_tokens: 14,
+			prompt_tokens: 8621,
+			total_tokens: 8635,
+			prompt_tokens_details: { cached_tokens: 7777 },
+		}
+
+		expect(parseVsCodeLmUsage(decoded)).toEqual({
+			inputTokens: 8621,
+			outputTokens: 14,
+			cacheReadTokens: 7777,
+			// no cacheWriteTokens (cache_creation_input_tokens absent), no totalCost
+			// (total_nano_aiu absent) — cost falls back to tokens × rate table.
+		})
+	})
+
 	it("derives exact cost from total_nano_aiu (1 AIU = $0.01)", () => {
 		// 4.5e11 nano-AIU → 450 AIU → $4.50
 		const usage = parseVsCodeLmUsage({ prompt_tokens: 10, completion_tokens: 5, total_nano_aiu: 450_000_000_000 })

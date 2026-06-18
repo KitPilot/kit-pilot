@@ -616,34 +616,29 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 						// Continue processing other chunks even if one fails
 						continue
 					}
-				} else if (isLanguageModelDataPart(chunk)) {
-					// Copilot streams real token usage as a data part. The exact
-					// mimeType is proprietary, so we don't filter on it — decode
-					// any data part and let parseVsCodeLmUsage decide if it's a
-					// usage payload. Duck-typed (not `instanceof`) because the
-					// class only exists in @types/vscode >=1.120 while our engines
-					// floor is ^1.107.0, where the reference could throw.
+				} else if (isLanguageModelDataPart(chunk) && /usage/i.test(chunk.mimeType ?? "")) {
+					// Copilot reports real token usage as a data part with
+					// mimeType "usage" (confirmed from a live stream). Duck-typed
+					// (not `instanceof`) because the class only exists in
+					// @types/vscode >=1.120 while our engines floor is ^1.107.0,
+					// and the chunk is cross-realm so `data instanceof Uint8Array`
+					// is false even for a genuine Uint8Array.
 					try {
-						const decoded = JSON.parse(decodeDataPart(chunk.data))
-						// Logged (warn level so it shows without enabling Verbose) so
-						// the exact payload shape can be confirmed from a live session.
-						console.warn(
-							`KitPilot <Language Model API>: data part mimeType=${chunk.mimeType} decoded=${JSON.stringify(decoded)}`,
-						)
-						const usage = parseVsCodeLmUsage(decoded)
+						const usage = parseVsCodeLmUsage(JSON.parse(decodeDataPart(chunk.data)))
 						if (usage) {
 							reportedUsage = usage
 						}
 					} catch (error) {
-						console.warn(
-							"KitPilot <Language Model API>: failed to decode data part",
-							chunk.mimeType,
+						console.debug(
+							"KitPilot <Language Model API>: failed to decode usage data part",
 							error instanceof Error ? error.message : error,
 						)
 					}
 				} else {
-					console.warn(
-						`KitPilot <Language Model API>: unrecognized stream chunk: ${JSON.stringify(describeChunk(chunk))}`,
+					// Other parts (e.g. reasoning/thinking parts, non-usage data
+					// parts) aren't consumed here. Debug-logged for diagnosis.
+					console.debug(
+						`KitPilot <Language Model API>: ignoring stream chunk: ${JSON.stringify(describeChunk(chunk))}`,
 					)
 				}
 			}
