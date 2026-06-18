@@ -1279,7 +1279,7 @@ export class ClineProvider
 				}
 
 				// Only update the task's mode after successful persistence.
-				;(task as any)._taskMode = newMode
+				task.setTaskMode(newMode)
 			} catch (error) {
 				// If persistence fails, log the error but don't update the in-memory state.
 				this.log(
