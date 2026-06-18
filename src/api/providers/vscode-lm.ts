@@ -30,18 +30,52 @@ import { parseVsCodeLmUsage, type VsCodeLmReportedUsage } from "./vscode-lm-usag
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
 
 /**
- * Duck-typed check for a `vscode.LanguageModelDataPart` (carries `data:
- * Uint8Array` + `mimeType`). Avoids `instanceof vscode.LanguageModelDataPart`:
- * that class only exists in @types/vscode >=1.120, but `engines.vscode` floors
- * at ^1.107.0, so the reference could be undefined and throw on older hosts.
+ * Realm-safe duck-typed check for a `vscode.LanguageModelDataPart` (carries
+ * `data` bytes + a `mimeType`). Deliberately avoids both `instanceof
+ * vscode.LanguageModelDataPart` (the class only exists in @types/vscode >=1.120,
+ * but `engines.vscode` floors at ^1.107.0) AND `data instanceof Uint8Array`
+ * (the chunk is created in VS Code's realm, so a cross-realm `instanceof`
+ * returns false even for a genuine Uint8Array). We key off a string `mimeType`
+ * plus a non-string `data` value instead.
  */
-function isLanguageModelDataPart(chunk: unknown): chunk is { data: Uint8Array; mimeType?: string } {
-	return (
-		typeof chunk === "object" &&
-		chunk !== null &&
-		"data" in chunk &&
-		(chunk as { data?: unknown }).data instanceof Uint8Array
-	)
+function isLanguageModelDataPart(
+	chunk: unknown,
+): chunk is { data: ArrayBufferLike | ArrayBufferView; mimeType?: string } {
+	if (typeof chunk !== "object" || chunk === null) {
+		return false
+	}
+	const c = chunk as { mimeType?: unknown; data?: unknown }
+	return typeof c.mimeType === "string" && c.data != null && typeof c.data !== "string"
+}
+
+/** Decode a data part's bytes to a string, tolerating Uint8Array / typed array / ArrayBuffer (incl. cross-realm). */
+function decodeDataPart(data: ArrayBufferLike | ArrayBufferView): string {
+	const bytes = ArrayBuffer.isView(data)
+		? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+		: new Uint8Array(data as ArrayBuffer)
+	return new TextDecoder().decode(bytes)
+}
+
+/** Compact, log-friendly description of an unrecognized stream chunk (for diagnostics). */
+function describeChunk(chunk: unknown): Record<string, unknown> {
+	if (typeof chunk !== "object" || chunk === null) {
+		return { kind: typeof chunk, value: String(chunk) }
+	}
+	const obj = chunk as Record<string, unknown>
+	const types: Record<string, string> = {}
+	for (const key of Object.keys(obj)) {
+		const v = obj[key]
+		types[key] = ArrayBuffer.isView(v)
+			? `TypedArray(${(v as ArrayBufferView).byteLength}B)`
+			: v instanceof ArrayBuffer
+				? `ArrayBuffer(${v.byteLength}B)`
+				: Array.isArray(v)
+					? `Array(${v.length})`
+					: typeof v === "string"
+						? `string:${(v as string).slice(0, 60)}`
+						: typeof v
+	}
+	return { ctor: (obj.constructor as { name?: string } | undefined)?.name, keys: Object.keys(obj), types }
 }
 
 /**
@@ -590,10 +624,10 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 					// class only exists in @types/vscode >=1.120 while our engines
 					// floor is ^1.107.0, where the reference could throw.
 					try {
-						const decoded = JSON.parse(new TextDecoder().decode(chunk.data))
-						// Logged so the exact payload shape can be confirmed/captured
-						// from a live Copilot session.
-						console.debug("KitPilot <Language Model API>: data part", {
+						const decoded = JSON.parse(decodeDataPart(chunk.data))
+						// Logged (warn level so it shows without enabling Verbose) so
+						// the exact payload shape can be confirmed from a live session.
+						console.warn("KitPilot <Language Model API>: data part", {
 							mimeType: chunk.mimeType,
 							decoded,
 						})
@@ -609,7 +643,7 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 						)
 					}
 				} else {
-					console.warn("KitPilot <Language Model API>: Unknown chunk type received:", chunk)
+					console.warn("KitPilot <Language Model API>: unrecognized stream chunk:", describeChunk(chunk))
 				}
 			}
 

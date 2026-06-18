@@ -247,6 +247,41 @@ describe("VsCodeLmHandler", () => {
 			})
 		})
 
+		// Regression: in the real extension host the data part is created in VS
+		// Code's realm, so `data instanceof Uint8Array` is false. Simulate that
+		// with a plain object (no class identity) — detection must be duck-typed.
+		it("recognizes a cross-realm-style data part (plain object, no instanceof match)", async () => {
+			const payload = { prompt_tokens: 11, completion_tokens: 22 }
+			const foreignDataPart = {
+				mimeType: "application/json",
+				data: new TextEncoder().encode(JSON.stringify(payload)),
+			}
+
+			mockLanguageModelChat.sendRequest.mockResolvedValueOnce({
+				stream: (async function* () {
+					yield new vscode.LanguageModelTextPart("hi")
+					yield foreignDataPart // not a vscode.LanguageModelDataPart instance
+					return
+				})(),
+				text: (async function* () {
+					yield "hi"
+					return
+				})(),
+			})
+
+			const stream = handler.createMessage("system", [{ role: "user" as const, content: "Hello" }])
+			const chunks = []
+			for await (const chunk of stream) {
+				chunks.push(chunk)
+			}
+
+			expect(chunks.find((c) => c.type === "usage")).toMatchObject({
+				type: "usage",
+				inputTokens: 11,
+				outputTokens: 22,
+			})
+		})
+
 		it("should emit tool_call chunks when tools are provided", async () => {
 			const systemPrompt = "You are a helpful assistant"
 			const messages: Anthropic.Messages.MessageParam[] = [
