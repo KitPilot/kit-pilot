@@ -207,6 +207,81 @@ describe("VsCodeLmHandler", () => {
 			})
 		})
 
+		it("uses real token counts + cost from a Copilot usage data part instead of the estimate", async () => {
+			const usagePayload = {
+				prompt_tokens: 4321,
+				completion_tokens: 765,
+				prompt_tokens_details: { cached_tokens: 4000, cache_creation_input_tokens: 120 },
+				total_nano_aiu: 200_000_000_000, // 200 credits → $2.00
+			}
+
+			mockLanguageModelChat.sendRequest.mockResolvedValueOnce({
+				stream: (async function* () {
+					yield new vscode.LanguageModelTextPart("hi")
+					yield new vscode.LanguageModelDataPart(
+						new TextEncoder().encode(JSON.stringify(usagePayload)),
+						"usage",
+					)
+					return
+				})(),
+				text: (async function* () {
+					yield "hi"
+					return
+				})(),
+			})
+
+			const stream = handler.createMessage("system", [{ role: "user" as const, content: "Hello" }])
+			const chunks = []
+			for await (const chunk of stream) {
+				chunks.push(chunk)
+			}
+
+			const usage = chunks.find((c) => c.type === "usage")
+			expect(usage).toMatchObject({
+				type: "usage",
+				inputTokens: 4321,
+				outputTokens: 765,
+				cacheReadTokens: 4000,
+				cacheWriteTokens: 120,
+				totalCost: 2,
+			})
+		})
+
+		// Regression: in the real extension host the data part is created in VS
+		// Code's realm, so `data instanceof Uint8Array` is false. Simulate that
+		// with a plain object (no class identity) — detection must be duck-typed.
+		it("recognizes a cross-realm-style data part (plain object, no instanceof match)", async () => {
+			const payload = { prompt_tokens: 11, completion_tokens: 22 }
+			const foreignDataPart = {
+				mimeType: "usage",
+				data: new TextEncoder().encode(JSON.stringify(payload)),
+			}
+
+			mockLanguageModelChat.sendRequest.mockResolvedValueOnce({
+				stream: (async function* () {
+					yield new vscode.LanguageModelTextPart("hi")
+					yield foreignDataPart // not a vscode.LanguageModelDataPart instance
+					return
+				})(),
+				text: (async function* () {
+					yield "hi"
+					return
+				})(),
+			})
+
+			const stream = handler.createMessage("system", [{ role: "user" as const, content: "Hello" }])
+			const chunks = []
+			for await (const chunk of stream) {
+				chunks.push(chunk)
+			}
+
+			expect(chunks.find((c) => c.type === "usage")).toMatchObject({
+				type: "usage",
+				inputTokens: 11,
+				outputTokens: 22,
+			})
+		})
+
 		it("should emit tool_call chunks when tools are provided", async () => {
 			const systemPrompt = "You are a helpful assistant"
 			const messages: Anthropic.Messages.MessageParam[] = [

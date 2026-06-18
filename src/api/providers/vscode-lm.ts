@@ -26,7 +26,57 @@ import { ApiStream } from "../transform/stream"
 import { convertToVsCodeLmMessages, extractTextCountFromMessage } from "../transform/vscode-lm-format"
 
 import { BaseProvider } from "./base-provider"
+import { parseVsCodeLmUsage, type VsCodeLmReportedUsage } from "./vscode-lm-usage"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
+
+/**
+ * Realm-safe duck-typed check for a `vscode.LanguageModelDataPart` (carries
+ * `data` bytes + a `mimeType`). Deliberately avoids both `instanceof
+ * vscode.LanguageModelDataPart` (the class only exists in @types/vscode >=1.120,
+ * but `engines.vscode` floors at ^1.107.0) AND `data instanceof Uint8Array`
+ * (the chunk is created in VS Code's realm, so a cross-realm `instanceof`
+ * returns false even for a genuine Uint8Array). We key off a string `mimeType`
+ * plus a non-string `data` value instead.
+ */
+function isLanguageModelDataPart(
+	chunk: unknown,
+): chunk is { data: ArrayBufferLike | ArrayBufferView; mimeType?: string } {
+	if (typeof chunk !== "object" || chunk === null) {
+		return false
+	}
+	const c = chunk as { mimeType?: unknown; data?: unknown }
+	return typeof c.mimeType === "string" && c.data != null && typeof c.data !== "string"
+}
+
+/** Decode a data part's bytes to a string, tolerating Uint8Array / typed array / ArrayBuffer (incl. cross-realm). */
+function decodeDataPart(data: ArrayBufferLike | ArrayBufferView): string {
+	const bytes = ArrayBuffer.isView(data)
+		? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+		: new Uint8Array(data as ArrayBuffer)
+	return new TextDecoder().decode(bytes)
+}
+
+/** Compact, log-friendly description of an unrecognized stream chunk (for diagnostics). */
+function describeChunk(chunk: unknown): Record<string, unknown> {
+	if (typeof chunk !== "object" || chunk === null) {
+		return { kind: typeof chunk, value: String(chunk) }
+	}
+	const obj = chunk as Record<string, unknown>
+	const types: Record<string, string> = {}
+	for (const key of Object.keys(obj)) {
+		const v = obj[key]
+		types[key] = ArrayBuffer.isView(v)
+			? `TypedArray(${(v as ArrayBufferView).byteLength}B)`
+			: v instanceof ArrayBuffer
+				? `ArrayBuffer(${v.byteLength}B)`
+				: Array.isArray(v)
+					? `Array(${v.length})`
+					: typeof v === "string"
+						? `string:${(v as string).slice(0, 60)}`
+						: typeof v
+	}
+	return { ctor: (obj.constructor as { name?: string } | undefined)?.name, keys: Object.keys(obj), types }
+}
 
 /**
  * Build the canonical { id, info } pair for a VS Code LM model from the live
@@ -493,6 +543,10 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 		// Accumulate the text and count at the end of the stream to reduce token counting overhead.
 		let accumulatedText: string = ""
 
+		// Real usage reported by Copilot via a LanguageModelDataPart (token billing).
+		// When present it supersedes the character-count estimate below.
+		let reportedUsage: VsCodeLmReportedUsage | undefined
+
 		try {
 			// Create the response stream with required options
 			const requestOptions: vscode.LanguageModelChatRequestOptions = {
@@ -562,19 +616,50 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 						// Continue processing other chunks even if one fails
 						continue
 					}
+				} else if (isLanguageModelDataPart(chunk) && /usage/i.test(chunk.mimeType ?? "")) {
+					// Copilot reports real token usage as a data part with
+					// mimeType "usage" (confirmed from a live stream). Duck-typed
+					// (not `instanceof`) because the class only exists in
+					// @types/vscode >=1.120 while our engines floor is ^1.107.0,
+					// and the chunk is cross-realm so `data instanceof Uint8Array`
+					// is false even for a genuine Uint8Array.
+					try {
+						const usage = parseVsCodeLmUsage(JSON.parse(decodeDataPart(chunk.data)))
+						if (usage) {
+							reportedUsage = usage
+						}
+					} catch (error) {
+						console.debug(
+							"KitPilot <Language Model API>: failed to decode usage data part",
+							error instanceof Error ? error.message : error,
+						)
+					}
 				} else {
-					console.warn("KitPilot <Language Model API>: Unknown chunk type received:", chunk)
+					// Other parts (e.g. reasoning/thinking parts, non-usage data
+					// parts) aren't consumed here. Debug-logged for diagnosis.
+					console.debug(
+						`KitPilot <Language Model API>: ignoring stream chunk: ${JSON.stringify(describeChunk(chunk))}`,
+					)
 				}
 			}
 
-			// Count tokens in the accumulated text after stream completion
-			const totalOutputTokens: number = await this.internalCountTokens(accumulatedText)
+			// Prefer Copilot's reported token counts; fall back to a
+			// character-count estimate when no usage data part arrived.
+			const totalOutputTokens: number =
+				reportedUsage?.outputTokens ?? (await this.internalCountTokens(accumulatedText))
 
 			// Report final usage after stream completion
 			yield {
 				type: "usage",
-				inputTokens: totalInputTokens,
+				inputTokens: reportedUsage?.inputTokens ?? totalInputTokens,
 				outputTokens: totalOutputTokens,
+				...(reportedUsage?.cacheReadTokens !== undefined
+					? { cacheReadTokens: reportedUsage.cacheReadTokens }
+					: {}),
+				...(reportedUsage?.cacheWriteTokens !== undefined
+					? { cacheWriteTokens: reportedUsage.cacheWriteTokens }
+					: {}),
+				...(reportedUsage?.totalCost !== undefined ? { totalCost: reportedUsage.totalCost } : {}),
 			}
 		} catch (error: unknown) {
 			this.ensureCleanState()
