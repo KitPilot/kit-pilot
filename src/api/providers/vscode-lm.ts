@@ -26,7 +26,23 @@ import { ApiStream } from "../transform/stream"
 import { convertToVsCodeLmMessages, extractTextCountFromMessage } from "../transform/vscode-lm-format"
 
 import { BaseProvider } from "./base-provider"
+import { parseVsCodeLmUsage, type VsCodeLmReportedUsage } from "./vscode-lm-usage"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
+
+/**
+ * Duck-typed check for a `vscode.LanguageModelDataPart` (carries `data:
+ * Uint8Array` + `mimeType`). Avoids `instanceof vscode.LanguageModelDataPart`:
+ * that class only exists in @types/vscode >=1.120, but `engines.vscode` floors
+ * at ^1.107.0, so the reference could be undefined and throw on older hosts.
+ */
+function isLanguageModelDataPart(chunk: unknown): chunk is { data: Uint8Array; mimeType?: string } {
+	return (
+		typeof chunk === "object" &&
+		chunk !== null &&
+		"data" in chunk &&
+		(chunk as { data?: unknown }).data instanceof Uint8Array
+	)
+}
 
 /**
  * Build the canonical { id, info } pair for a VS Code LM model from the live
@@ -493,6 +509,10 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 		// Accumulate the text and count at the end of the stream to reduce token counting overhead.
 		let accumulatedText: string = ""
 
+		// Real usage reported by Copilot via a LanguageModelDataPart (token billing).
+		// When present it supersedes the character-count estimate below.
+		let reportedUsage: VsCodeLmReportedUsage | undefined
+
 		try {
 			// Create the response stream with required options
 			const requestOptions: vscode.LanguageModelChatRequestOptions = {
@@ -562,19 +582,54 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 						// Continue processing other chunks even if one fails
 						continue
 					}
+				} else if (isLanguageModelDataPart(chunk)) {
+					// Copilot streams real token usage as a data part. The exact
+					// mimeType is proprietary, so we don't filter on it — decode
+					// any data part and let parseVsCodeLmUsage decide if it's a
+					// usage payload. Duck-typed (not `instanceof`) because the
+					// class only exists in @types/vscode >=1.120 while our engines
+					// floor is ^1.107.0, where the reference could throw.
+					try {
+						const decoded = JSON.parse(new TextDecoder().decode(chunk.data))
+						// Logged so the exact payload shape can be confirmed/captured
+						// from a live Copilot session.
+						console.debug("KitPilot <Language Model API>: data part", {
+							mimeType: chunk.mimeType,
+							decoded,
+						})
+						const usage = parseVsCodeLmUsage(decoded)
+						if (usage) {
+							reportedUsage = usage
+						}
+					} catch (error) {
+						console.warn(
+							"KitPilot <Language Model API>: failed to decode data part",
+							chunk.mimeType,
+							error instanceof Error ? error.message : error,
+						)
+					}
 				} else {
 					console.warn("KitPilot <Language Model API>: Unknown chunk type received:", chunk)
 				}
 			}
 
-			// Count tokens in the accumulated text after stream completion
-			const totalOutputTokens: number = await this.internalCountTokens(accumulatedText)
+			// Prefer Copilot's reported token counts; fall back to a
+			// character-count estimate when no usage data part arrived.
+			const totalOutputTokens: number =
+				reportedUsage?.outputTokens ?? (await this.internalCountTokens(accumulatedText))
 
 			// Report final usage after stream completion
 			yield {
 				type: "usage",
-				inputTokens: totalInputTokens,
+				inputTokens: reportedUsage?.inputTokens ?? totalInputTokens,
 				outputTokens: totalOutputTokens,
+				...(reportedUsage?.cacheReadTokens !== undefined
+					? { cacheReadTokens: reportedUsage.cacheReadTokens }
+					: {}),
+				...(reportedUsage?.cacheWriteTokens !== undefined
+					? { cacheWriteTokens: reportedUsage.cacheWriteTokens }
+					: {}),
+				...(reportedUsage?.totalCost !== undefined ? { totalCost: reportedUsage.totalCost } : {}),
 			}
 		} catch (error: unknown) {
 			this.ensureCleanState()

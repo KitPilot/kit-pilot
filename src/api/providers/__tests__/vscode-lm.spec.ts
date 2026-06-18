@@ -207,6 +207,46 @@ describe("VsCodeLmHandler", () => {
 			})
 		})
 
+		it("uses real token counts + cost from a Copilot usage data part instead of the estimate", async () => {
+			const usagePayload = {
+				prompt_tokens: 4321,
+				completion_tokens: 765,
+				prompt_tokens_details: { cached_tokens: 4000, cache_creation_input_tokens: 120 },
+				total_nano_aiu: 200_000_000_000, // 200 credits → $2.00
+			}
+
+			mockLanguageModelChat.sendRequest.mockResolvedValueOnce({
+				stream: (async function* () {
+					yield new vscode.LanguageModelTextPart("hi")
+					yield new vscode.LanguageModelDataPart(
+						new TextEncoder().encode(JSON.stringify(usagePayload)),
+						"application/json",
+					)
+					return
+				})(),
+				text: (async function* () {
+					yield "hi"
+					return
+				})(),
+			})
+
+			const stream = handler.createMessage("system", [{ role: "user" as const, content: "Hello" }])
+			const chunks = []
+			for await (const chunk of stream) {
+				chunks.push(chunk)
+			}
+
+			const usage = chunks.find((c) => c.type === "usage")
+			expect(usage).toMatchObject({
+				type: "usage",
+				inputTokens: 4321,
+				outputTokens: 765,
+				cacheReadTokens: 4000,
+				cacheWriteTokens: 120,
+				totalCost: 2,
+			})
+		})
+
 		it("should emit tool_call chunks when tools are provided", async () => {
 			const systemPrompt = "You are a helpful assistant"
 			const messages: Anthropic.Messages.MessageParam[] = [
