@@ -1,5 +1,18 @@
 # KitPilot Changelog
 
+## 0.1.23
+
+This release makes spending visible now that GitHub Copilot has switched to usage-based billing, and fixes model details showing incorrectly for some Copilot models.
+
+### Added
+
+- KitPilot now shows a cost estimate for your requests. GitHub Copilot moved to usage-based (token) billing on June 1, 2026, and KitPilot used to show every request as $0. It now estimates each request's cost from Copilot's per-model token rates, so you can see what a task is costing. (Estimates are based on token counts and published rates — treat them as a close guide, not your exact invoice.)
+- The spending limit now actually works with Copilot. If you set a maximum cost in the auto-approval settings, KitPilot will pause and ask before going over it. Previously this limit did nothing, because every request registered as zero cost.
+
+### Fixed
+
+- Fixed model details — such as the context-window size and whether images are supported — showing incorrectly for some Copilot models, including newer Claude and Gemini ones. The image-attachment button is no longer wrongly disabled for models that do support images, and the model card no longer reports a misleading context size.
+
 ## 0.1.22
 
 This release is all about steering — changing your mind while KitPilot is working now does what you'd expect, at every point.
