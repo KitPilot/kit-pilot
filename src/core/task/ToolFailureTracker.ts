@@ -72,6 +72,7 @@ export class ToolFailureTracker {
 		try {
 			const stream = api.createMessage(systemPrompt, [{ role: "user", content: userPrompt }], {
 				taskId,
+				purpose: "error-analysis",
 			})
 			let analysis = ""
 			for await (const chunk of stream) {

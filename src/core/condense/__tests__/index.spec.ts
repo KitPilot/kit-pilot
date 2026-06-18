@@ -896,7 +896,9 @@ describe("summarizeConversation", () => {
 		expect(mockApiHandler.createMessage).toHaveBeenCalledWith(
 			expect.stringContaining("You are a helpful AI assistant tasked with summarizing conversations."),
 			expect.any(Array),
-			undefined, // metadata is undefined when not passed to summarizeConversation
+			// Condense tags its call with purpose "condense" for usage instrumentation (TODO #10),
+			// even when no other metadata was passed to summarizeConversation.
+			expect.objectContaining({ purpose: "condense" }),
 		)
 		// Verify the CRITICAL instructions are included in the prompt
 		const actualPrompt = (mockApiHandler.createMessage as Mock).mock.calls[0][0]

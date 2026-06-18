@@ -4,6 +4,7 @@ import OpenAI from "openai"
 import { isRetiredProvider, type ProviderSettings, type ModelInfo } from "@kit-pilot/types"
 
 import { ApiStream } from "./transform/stream"
+import type { UsagePurpose } from "./usageMetrics"
 
 import { VsCodeLmHandler } from "./providers"
 
@@ -18,6 +19,14 @@ export interface ApiHandlerCreateMessageMetadata {
 	 * - Requesty: Sent as trace_id
 	 */
 	taskId: string
+	/**
+	 * What this LLM call is for, used only for cost/token instrumentation
+	 * (see usageMetrics). Defaults to "main" (the agent's coding loop) when
+	 * unset; auxiliary calls tag themselves ("condense", "error-analysis", …)
+	 * so we can measure the auxiliary-vs-main token share before deciding
+	 * whether auxiliary-call model routing (TODO #3) is worth building.
+	 */
+	purpose?: UsagePurpose
 	/**
 	 * Current mode slug for provider-specific tracking:
 	 * - Requesty: Sent in extra metadata

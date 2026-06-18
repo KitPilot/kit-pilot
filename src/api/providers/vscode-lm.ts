@@ -27,6 +27,7 @@ import { convertToVsCodeLmMessages, extractTextCountFromMessage } from "../trans
 
 import { BaseProvider } from "./base-provider"
 import { parseVsCodeLmUsage, type VsCodeLmReportedUsage } from "./vscode-lm-usage"
+import { recordUsage } from "../usageMetrics"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
 
 /**
@@ -648,10 +649,21 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 			const totalOutputTokens: number =
 				reportedUsage?.outputTokens ?? (await this.internalCountTokens(accumulatedText))
 
+			const finalInputTokens = reportedUsage?.inputTokens ?? totalInputTokens
+
+			// Instrument auxiliary-vs-main token share (TODO #10) — every call
+			// flows through here, so this is the single chokepoint.
+			recordUsage(metadata?.purpose ?? "main", {
+				inputTokens: finalInputTokens,
+				outputTokens: totalOutputTokens,
+				cacheReadTokens: reportedUsage?.cacheReadTokens,
+				totalCost: reportedUsage?.totalCost,
+			})
+
 			// Report final usage after stream completion
 			yield {
 				type: "usage",
-				inputTokens: reportedUsage?.inputTokens ?? totalInputTokens,
+				inputTokens: finalInputTokens,
 				outputTokens: totalOutputTokens,
 				...(reportedUsage?.cacheReadTokens !== undefined
 					? { cacheReadTokens: reportedUsage.cacheReadTokens }
