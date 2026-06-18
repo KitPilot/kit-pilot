@@ -2,7 +2,7 @@ import { Anthropic } from "@anthropic-ai/sdk"
 import * as vscode from "vscode"
 import OpenAI from "openai"
 
-import { type ModelInfo, modelSupportsVision } from "@kit-pilot/types"
+import { type ModelInfo, modelSupportsVision, getVsCodeLmModelRates } from "@kit-pilot/types"
 
 // vscode-lm-only build: this fallback ModelInfo used to live in
 // @kit-pilot/types as `openAiModelInfoSaneDefaults` (from the OpenAI provider
@@ -49,6 +49,11 @@ export function buildVsCodeLmModelInfo(model: {
 	const modelParts = [model.vendor, model.family, model.version].filter(Boolean)
 	const modelId = model.id || modelParts.join(SELECTOR_SEPARATOR)
 
+	// Real USD-per-1M-token rates under Copilot's usage/credit billing (post
+	// 2026-06-01) so cost tracking + the `allowedMaxCost` budget cap work.
+	// Unknown models fall back to 0 (cost unknown) — same as the old behavior.
+	const rates = getVsCodeLmModelRates(model.family, model.id)
+
 	const info: ModelInfo = {
 		maxTokens: -1, // Unlimited tokens by default
 		contextWindow:
@@ -57,8 +62,9 @@ export function buildVsCodeLmModelInfo(model: {
 				: openAiModelInfoSaneDefaults.contextWindow,
 		supportsImages: modelSupportsVision(model.family, model.id),
 		supportsPromptCache: true,
-		inputPrice: 0,
-		outputPrice: 0,
+		inputPrice: rates?.inputPrice ?? 0,
+		outputPrice: rates?.outputPrice ?? 0,
+		cacheReadsPrice: rates?.cacheReadsPrice,
 		description: `VSCode Language Model: ${modelId}`,
 	}
 
