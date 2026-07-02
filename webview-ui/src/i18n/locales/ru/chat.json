@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "Публичная ссылка скопирована в буфер обмена",
 		"openApiHistory": "Открыть историю API",
 		"openUiHistory": "Открыть историю UI",
-		"backToParentTask": "Родительская задача"
+		"backToParentTask": "Родительская задача",
+		"cacheHitRate": "попаданий",
+		"cacheHitRateTooltip": "Доля входных токенов, обслуженных из кэша промптов — кэшированный ввод примерно в 10 раз дешевле"
 	},
 	"unpin": "Открепить",
 	"pin": "Закрепить",
@@ -359,7 +361,8 @@
 	"costs": {
 		"totalWithSubtasks": "Общая стоимость (включая подзадачи): ${{cost}}",
 		"total": "Общая стоимость: ${{cost}}",
-		"includesSubtasks": "Включает стоимость подзадач"
+		"includesSubtasks": "Включает стоимость подзадач",
+		"budgetWindow": "Расходы с последнего сброса лимита: ${{spent}} из ${{cap}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -492,5 +495,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Открыть настройки",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "Эта задача израсходовала ${{spent}} из бюджета автоодобрения ${{cap}} ({{percent}}%). При достижении лимита KitPilot приостановится для подтверждения.",
+		"overCapMessage": "Эта задача израсходовала ${{spent}}, превысив бюджет автоодобрения ${{cap}}. KitPilot приостановится для подтверждения перед следующим запросом.",
+		"dismiss": "Скрыть"
 	}
 }

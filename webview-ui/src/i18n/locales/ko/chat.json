@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "공개 링크가 클립보드에 복사되었습니다",
 		"openApiHistory": "API 기록 열기",
 		"openUiHistory": "UI 기록 열기",
-		"backToParentTask": "상위 작업"
+		"backToParentTask": "상위 작업",
+		"cacheHitRate": "히트",
+		"cacheHitRateTooltip": "프롬프트 캐시에서 제공된 입력 토큰의 비율 — 캐시된 입력은 약 10배 저렴합니다"
 	},
 	"unpin": "고정 해제하기",
 	"pin": "고정하기",
@@ -358,7 +360,8 @@
 	"costs": {
 		"totalWithSubtasks": "총 비용 (하위 작업 포함): ${{cost}}",
 		"total": "총 비용: ${{cost}}",
-		"includesSubtasks": "하위 작업 비용 포함"
+		"includesSubtasks": "하위 작업 비용 포함",
+		"budgetWindow": "마지막 한도 재설정 이후 지출: ${{cap}} 중 ${{spent}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -491,5 +494,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "설정 열기",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "이 작업은 자동 승인 예산 ${{cap}} 중 ${{spent}}({{percent}}%)를 사용했습니다. 한도에 도달하면 KitPilot이 승인을 위해 일시 중지됩니다.",
+		"overCapMessage": "이 작업은 ${{spent}}를 지출하여 자동 승인 예산 ${{cap}}를 초과했습니다. 다음 요청 전에 KitPilot이 승인을 위해 일시 중지됩니다.",
+		"dismiss": "닫기"
 	}
 }

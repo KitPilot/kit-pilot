@@ -273,7 +273,11 @@
 		"selectOptionsFirst": "Seleccioneu almenys una opció a continuació per activar l'aprovació automàtica",
 		"apiCostLimit": {
 			"title": "Cost Màxim",
-			"unlimited": "Il·limitat"
+			"unlimited": "Il·limitat",
+			"warningPercent": {
+				"title": "Avisa a",
+				"description": "Mostra un avís al xat quan la despesa arribi a aquest percentatge del cost màxim (per defecte 80%)."
+			}
 		},
 		"maxLimits": {
 			"description": "Fes sol·licituds automàticament fins a aquests límits abans de demanar aprovació per continuar."

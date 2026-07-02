@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "Openbare link gekopieerd naar klembord",
 		"openApiHistory": "API-geschiedenis openen",
 		"openUiHistory": "UI-geschiedenis openen",
-		"backToParentTask": "Bovenliggende taak"
+		"backToParentTask": "Bovenliggende taak",
+		"cacheHitRate": "hits",
+		"cacheHitRateTooltip": "Aandeel invoertokens geleverd vanuit de promptcache — gecachte invoer is ongeveer 10x goedkoper"
 	},
 	"unpin": "Losmaken",
 	"pin": "Vastmaken",
@@ -358,7 +360,8 @@
 	"costs": {
 		"totalWithSubtasks": "Totale kosten (inclusief subtaken): ${{cost}}",
 		"total": "Totale kosten: ${{cost}}",
-		"includesSubtasks": "Inclusief kosten van subtaken"
+		"includesSubtasks": "Inclusief kosten van subtaken",
+		"budgetWindow": "Uitgaven sinds laatste limietreset: ${{spent}} van ${{cap}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -491,5 +494,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Instellingen openen",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "Deze taak heeft ${{spent}} van het automatische goedkeuringsbudget van ${{cap}} gebruikt ({{percent}}%). KitPilot pauzeert voor goedkeuring bij de limiet.",
+		"overCapMessage": "Deze taak heeft ${{spent}} uitgegeven, boven het automatische goedkeuringsbudget van ${{cap}}. KitPilot pauzeert voor goedkeuring vóór het volgende verzoek.",
+		"dismiss": "Sluiten"
 	}
 }

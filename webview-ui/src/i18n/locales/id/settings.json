@@ -273,7 +273,11 @@
 		"selectOptionsFirst": "Pilih setidaknya satu opsi di bawah ini untuk mengaktifkan persetujuan otomatis",
 		"apiCostLimit": {
 			"title": "Biaya Maksimal",
-			"unlimited": "Tidak Terbatas"
+			"unlimited": "Tidak Terbatas",
+			"warningPercent": {
+				"title": "Peringatkan pada",
+				"description": "Tampilkan peringatan di chat saat pengeluaran mencapai persentase ini dari biaya maksimum (default 80%)."
+			}
 		},
 		"maxLimits": {
 			"description": "Secara otomatis membuat permintaan hingga batas ini sebelum meminta persetujuan untuk melanjutkan."

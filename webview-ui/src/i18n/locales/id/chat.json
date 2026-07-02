@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "Tautan publik disalin ke clipboard",
 		"openApiHistory": "Buka Riwayat API",
 		"openUiHistory": "Buka Riwayat UI",
-		"backToParentTask": "Tugas Induk"
+		"backToParentTask": "Tugas Induk",
+		"cacheHitRate": "hit",
+		"cacheHitRateTooltip": "Porsi token input yang dilayani dari cache prompt — input yang di-cache sekitar 10x lebih murah"
 	},
 	"history": {
 		"title": "Riwayat"
@@ -395,7 +397,8 @@
 	"costs": {
 		"totalWithSubtasks": "Total Biaya (termasuk subtugas): ${{cost}}",
 		"total": "Total Biaya: ${{cost}}",
-		"includesSubtasks": "Termasuk biaya subtugas"
+		"includesSubtasks": "Termasuk biaya subtugas",
+		"budgetWindow": "Pengeluaran sejak reset batas terakhir: ${{spent}} dari ${{cap}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -497,5 +500,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Buka Pengaturan",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "Tugas ini telah menggunakan ${{spent}} dari anggaran persetujuan otomatis ${{cap}} ({{percent}}%). KitPilot akan berhenti untuk persetujuan saat mencapai batas.",
+		"overCapMessage": "Tugas ini telah menghabiskan ${{spent}}, melebihi anggaran persetujuan otomatis ${{cap}}. KitPilot akan berhenti untuk persetujuan sebelum permintaan berikutnya.",
+		"dismiss": "Tutup"
 	}
 }

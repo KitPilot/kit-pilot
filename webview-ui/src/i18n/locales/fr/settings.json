@@ -273,7 +273,11 @@
 		},
 		"apiCostLimit": {
 			"unlimited": "Illimité",
-			"title": "Coût maximum"
+			"title": "Coût maximum",
+			"warningPercent": {
+				"title": "Avertir à",
+				"description": "Affiche un avertissement dans le chat lorsque les dépenses atteignent ce pourcentage du coût maximal (80% par défaut)."
+			}
 		},
 		"maxLimits": {
 			"description": "Effectuer automatiquement des requêtes jusqu'à ces limites avant de demander une autorisation pour continuer."

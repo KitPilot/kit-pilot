@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "Public link copied to clipboard",
 		"openApiHistory": "Open API History",
 		"openUiHistory": "Open UI History",
-		"backToParentTask": "Parent task"
+		"backToParentTask": "Parent task",
+		"cacheHitRate": "hit",
+		"cacheHitRateTooltip": "Share of input tokens served from the prompt cache — cached input is roughly 10x cheaper"
 	},
 	"unpin": "Unpin",
 	"pin": "Pin",
@@ -388,7 +390,8 @@
 	"costs": {
 		"totalWithSubtasks": "Total Cost (including subtasks): ${{cost}}",
 		"total": "Total Cost: ${{cost}}",
-		"includesSubtasks": "Includes subtask costs"
+		"includesSubtasks": "Includes subtask costs",
+		"budgetWindow": "Spend since last limit reset: ${{spent}} of ${{cap}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -487,5 +490,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Open Settings",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "This task has used ${{spent}} of its ${{cap}} auto-approval budget ({{percent}}%). KitPilot will pause for approval at the limit.",
+		"overCapMessage": "This task has spent ${{spent}}, over its ${{cap}} auto-approval budget. KitPilot will pause for approval before the next request.",
+		"dismiss": "Dismiss"
 	}
 }

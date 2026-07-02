@@ -280,7 +280,11 @@
 		},
 		"apiCostLimit": {
 			"title": "費用上限",
-			"unlimited": "無限制"
+			"unlimited": "無限制",
+			"warningPercent": {
+				"title": "警告門檻",
+				"description": "當支出達到最大成本的此百分比時在聊天中顯示警告(預設 80%)。"
+			}
 		},
 		"maxLimits": {
 			"description": "在達到這些限制之前自動發送請求，超過後將詢問核准以繼續。"

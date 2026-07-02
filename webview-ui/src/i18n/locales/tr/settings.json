@@ -273,7 +273,11 @@
 		"selectOptionsFirst": "Otomatik onayı etkinleştirmek için aşağıdan en az bir seçenek seçin",
 		"apiCostLimit": {
 			"unlimited": "Sınırsız",
-			"title": "Maksimum Maliyet"
+			"title": "Maksimum Maliyet",
+			"warningPercent": {
+				"title": "Uyarı eşiği",
+				"description": "Harcama, maksimum maliyetin bu yüzdesine ulaştığında sohbette bir uyarı göster (varsayılan %80)."
+			}
 		},
 		"maxLimits": {
 			"description": "Bu sınırlara ulaşana kadar otomatik olarak istekleri yap, sonrasında devam etmek için onay iste."

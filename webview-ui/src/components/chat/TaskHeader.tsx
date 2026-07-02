@@ -17,6 +17,7 @@ import { vscode } from "@src/utils/vscode"
 import Thumbnails from "../common/Thumbnails"
 
 import { TaskActions } from "./TaskActions"
+import { BudgetProgress, budgetFillColor, DEFAULT_BUDGET_WARNING_PERCENT } from "./BudgetProgress"
 import { ContextWindowProgress } from "./ContextWindowProgress"
 import { Mention } from "./Mention"
 import { TodoListDisplay } from "./TodoListDisplay"
@@ -30,6 +31,8 @@ export interface TaskHeaderProps {
 	cacheReads?: number
 	totalCost: number
 	aggregatedCost?: number
+	/** Cost (USD) of the current auto-approval budget window (resets after each limit approval). */
+	budgetWindowCost?: number
 	hasSubtasks?: boolean
 	parentTaskId?: string
 	costBreakdown?: string
@@ -47,6 +50,7 @@ const TaskHeader = ({
 	cacheReads,
 	totalCost,
 	aggregatedCost,
+	budgetWindowCost,
 	hasSubtasks,
 	parentTaskId,
 	costBreakdown,
@@ -56,7 +60,7 @@ const TaskHeader = ({
 	todos,
 }: TaskHeaderProps) => {
 	const { t } = useTranslation()
-	const { apiConfiguration, currentTaskItem } = useExtensionState()
+	const { apiConfiguration, currentTaskItem, allowedMaxCost, allowedMaxCostWarningPercent } = useExtensionState()
 	const { id: modelId, info: model } = useSelectedModel(apiConfiguration)
 	const [isTaskExpanded, setIsTaskExpanded] = useState(false)
 
@@ -88,6 +92,18 @@ const TaskHeader = ({
 	)
 
 	const hasTodos = todos && Array.isArray(todos) && todos.length > 0
+
+	// Budget meter: shown when a cost cap is configured. Uses the budget-window
+	// cost (what the auto-approval limit actually measures), not the aggregated
+	// task total — the aggregated figure stays in the tooltip.
+	const hasCap = typeof allowedMaxCost === "number" && allowedMaxCost > 0
+	const windowCost = budgetWindowCost ?? totalCost
+	const warnPercent = allowedMaxCostWarningPercent ?? DEFAULT_BUDGET_WARNING_PERCENT
+	const budgetPctUsed = hasCap ? (windowCost / allowedMaxCost) * 100 : 0
+
+	// Share of input tokens served from the prompt cache (tokensIn includes
+	// cached tokens; clamp for legacy tasks where it may not).
+	const cacheHitRate = tokensIn > 0 ? Math.min(100, Math.round((100 * (cacheReads ?? 0)) / tokensIn)) : 0
 
 	// Determine if this is a subtask (has a parent)
 	const isSubtask = !!parentTaskId
@@ -237,39 +253,59 @@ const TaskHeader = ({
 									})()}
 								</span>
 							</StandardTooltip>
-							{!!totalCost && (
+							{(!!totalCost || hasCap) && (
 								<>
 									<span>·</span>
 									<StandardTooltip
 										content={
-											hasSubtasks ? (
-												<div>
+											<div>
+												{hasCap && (
 													<div>
-														{t("chat:costs.totalWithSubtasks", {
-															cost: (aggregatedCost ?? totalCost).toFixed(2),
+														{t("chat:costs.budgetWindow", {
+															spent: windowCost.toFixed(2),
+															cap: allowedMaxCost.toFixed(2),
 														})}
 													</div>
-													{costBreakdown && (
-														<div className="text-xs mt-1">{costBreakdown}</div>
-													)}
-												</div>
-											) : (
-												<div>{t("chat:costs.total", { cost: totalCost.toFixed(2) })}</div>
-											)
+												)}
+												{hasSubtasks ? (
+													<>
+														<div>
+															{t("chat:costs.totalWithSubtasks", {
+																cost: (aggregatedCost ?? totalCost).toFixed(2),
+															})}
+														</div>
+														{costBreakdown && (
+															<div className="text-xs mt-1">{costBreakdown}</div>
+														)}
+													</>
+												) : (
+													!hasCap && (
+														<div>
+															{t("chat:costs.total", { cost: totalCost.toFixed(2) })}
+														</div>
+													)
+												)}
+											</div>
 										}
 										side="top"
 										sideOffset={8}>
 										<>
-											<span>
-												${(aggregatedCost ?? totalCost).toFixed(2)}
-												{hasSubtasks && (
-													<span
-														className="text-xs ml-1"
-														title={t("chat:costs.includesSubtasks")}>
-														*
-													</span>
-												)}
-											</span>
+											{hasCap ? (
+												<span style={{ color: budgetFillColor(budgetPctUsed, warnPercent) }}>
+													${windowCost.toFixed(2)} / ${allowedMaxCost.toFixed(2)}
+												</span>
+											) : (
+												<span>
+													${(aggregatedCost ?? totalCost).toFixed(2)}
+													{hasSubtasks && (
+														<span
+															className="text-xs ml-1"
+															title={t("chat:costs.includesSubtasks")}>
+															*
+														</span>
+													)}
+												</span>
+											)}
 										</>
 									</StandardTooltip>
 								</>
@@ -359,12 +395,56 @@ const TaskHeader = ({
 															<span>{formatLargeNumber(cacheReads)}</span>
 														</>
 													)}
+													{typeof cacheReads === "number" && cacheReads > 0 && (
+														<StandardTooltip
+															content={t("chat:task.cacheHitRateTooltip")}
+															side="top"
+															sideOffset={8}>
+															<span data-testid="cache-hit-rate">
+																· {cacheHitRate}% {t("chat:task.cacheHitRate")}
+															</span>
+														</StandardTooltip>
+													)}
 												</div>
 											</td>
 										</tr>
 									)}
 
-									{!!totalCost && (
+									{hasCap && (
+										<tr>
+											<th className="font-medium text-left align-top w-1 whitespace-nowrap pr-3 h-[24px]">
+												{t("chat:task.apiCost")}
+											</th>
+											<td className="font-light align-top">
+												<div className="max-w-md -mt-1.5">
+													<BudgetProgress
+														spent={windowCost}
+														cap={allowedMaxCost}
+														warnPercent={warnPercent}
+														extraTooltip={
+															hasSubtasks ? (
+																<>
+																	<div>
+																		{t("chat:costs.totalWithSubtasks", {
+																			cost: (aggregatedCost ?? totalCost).toFixed(
+																				2,
+																			),
+																		})}
+																	</div>
+																	{costBreakdown && (
+																		<div className="text-xs mt-1">
+																			{costBreakdown}
+																		</div>
+																	)}
+																</>
+															) : undefined
+														}
+													/>
+												</div>
+											</td>
+										</tr>
+									)}
+									{!!totalCost && !hasCap && (
 										<tr>
 											<th className="font-medium text-left align-top w-1 whitespace-nowrap pr-3 h-[24px]">
 												{t("chat:task.apiCost")}

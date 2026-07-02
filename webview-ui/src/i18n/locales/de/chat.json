@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "Öffentlicher Link in die Zwischenablage kopiert",
 		"openApiHistory": "API-Verlauf öffnen",
 		"openUiHistory": "UI-Verlauf öffnen",
-		"backToParentTask": "Übergeordnete Aufgabe"
+		"backToParentTask": "Übergeordnete Aufgabe",
+		"cacheHitRate": "Treffer",
+		"cacheHitRateTooltip": "Anteil der Eingabe-Tokens aus dem Prompt-Cache — gecachte Eingaben sind etwa 10x günstiger"
 	},
 	"unpin": "Lösen von oben",
 	"pin": "Anheften",
@@ -358,7 +360,8 @@
 	"costs": {
 		"totalWithSubtasks": "Gesamtkosten (inkl. Unteraufgaben): ${{cost}}",
 		"total": "Gesamtkosten: ${{cost}}",
-		"includesSubtasks": "Enthält Kosten für Unteraufgaben"
+		"includesSubtasks": "Enthält Kosten für Unteraufgaben",
+		"budgetWindow": "Ausgaben seit dem letzten Limit-Reset: ${{spent}} von ${{cap}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -491,5 +494,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Einstellungen öffnen",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "Diese Aufgabe hat ${{spent}} ihres Auto-Genehmigungsbudgets von ${{cap}} verbraucht ({{percent}}%). KitPilot pausiert am Limit für eine Genehmigung.",
+		"overCapMessage": "Diese Aufgabe hat ${{spent}} ausgegeben und liegt über ihrem Auto-Genehmigungsbudget von ${{cap}}. KitPilot pausiert vor der nächsten Anfrage für eine Genehmigung.",
+		"dismiss": "Ausblenden"
 	}
 }

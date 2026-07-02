@@ -33,6 +33,7 @@ type AutoApproveSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	allowedCommands?: string[]
 	allowedMaxRequests?: number | undefined
 	allowedMaxCost?: number | undefined
+	allowedMaxCostWarningPercent?: number | undefined
 	deniedCommands?: string[]
 	setCachedStateField: SetCachedStateField<
 		| "alwaysAllowReadOnly"
@@ -49,6 +50,7 @@ type AutoApproveSettingsProps = HTMLAttributes<HTMLDivElement> & {
 		| "allowedCommands"
 		| "allowedMaxRequests"
 		| "allowedMaxCost"
+		| "allowedMaxCostWarningPercent"
 		| "deniedCommands"
 	>
 }
@@ -68,6 +70,7 @@ export const AutoApproveSettings = ({
 	allowedCommands,
 	allowedMaxRequests,
 	allowedMaxCost,
+	allowedMaxCostWarningPercent,
 	deniedCommands,
 	setCachedStateField,
 	...props
@@ -163,8 +166,12 @@ export const AutoApproveSettings = ({
 					<MaxLimitInputs
 						allowedMaxRequests={allowedMaxRequests}
 						allowedMaxCost={allowedMaxCost}
+						allowedMaxCostWarningPercent={allowedMaxCostWarningPercent}
 						onMaxRequestsChange={(value) => setCachedStateField("allowedMaxRequests", value)}
 						onMaxCostChange={(value) => setCachedStateField("allowedMaxCost", value)}
+						onMaxCostWarningPercentChange={(value) =>
+							setCachedStateField("allowedMaxCostWarningPercent", value)
+						}
 					/>
 				</div>
 

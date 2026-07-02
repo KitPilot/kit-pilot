@@ -273,7 +273,11 @@
 		"selectOptionsFirst": "Wähle mindestens eine Option unten aus, um die automatische Genehmigung zu aktivieren",
 		"apiCostLimit": {
 			"title": "Maximale Kosten",
-			"unlimited": "Unbegrenzt"
+			"unlimited": "Unbegrenzt",
+			"warningPercent": {
+				"title": "Warnen bei",
+				"description": "Zeigt eine Warnung im Chat, wenn die Ausgaben diesen Prozentsatz der Maximalkosten erreichen (Standard 80%)."
+			}
 		},
 		"maxLimits": {
 			"description": "Anfragen bis zu diesen Grenzwerten automatisch stellen, bevor um Genehmigung zur Fortsetzung gebeten wird."

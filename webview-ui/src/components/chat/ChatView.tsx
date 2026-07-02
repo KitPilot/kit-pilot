@@ -18,6 +18,8 @@ import { SuggestionItem } from "@kit-pilot/types"
 import { combineApiRequests } from "@kitpilot/combineApiRequests"
 import { combineCommandSequences } from "@kitpilot/combineCommandSequences"
 import { getApiMetrics } from "@kitpilot/getApiMetrics"
+
+import { getBudgetWindowMetrics } from "@src/utils/budgetWindow"
 import { getAllModes } from "@kitpilot/modes"
 import { ProfileValidator } from "@kitpilot/ProfileValidator"
 import { getLatestTodo } from "@kitpilot/todo"
@@ -38,6 +40,7 @@ import { ChatTextArea } from "./ChatTextArea"
 import { KitPilotMascot } from "./KitPilotMascot"
 import TaskHeader from "./TaskHeader"
 import ProfileViolationWarning from "./ProfileViolationWarning"
+import { BudgetWarningBanner } from "./BudgetWarningBanner"
 import { CheckpointWarning } from "./CheckpointWarning"
 import { QueuedMessages } from "./QueuedMessages"
 import { WorktreeSelector } from "./WorktreeSelector"
@@ -126,6 +129,10 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	// Has to be after api_req_finished are all reduced into api_req_started messages.
 	const apiMetrics = useMemo(() => getApiMetrics(modifiedMessages), [modifiedMessages])
+
+	// Cost of the current auto-approval budget window (resets after each
+	// approved limit ask) — what the budget meter and warn banner track.
+	const budgetWindow = useMemo(() => getBudgetWindowMetrics(modifiedMessages), [modifiedMessages])
 
 	const [inputValue, setInputValue] = useState("")
 	const inputValueRef = useRef(inputValue)
@@ -1628,6 +1635,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						cacheWrites={apiMetrics.totalCacheWrites}
 						cacheReads={apiMetrics.totalCacheReads}
 						totalCost={apiMetrics.totalCost}
+						budgetWindowCost={budgetWindow.metrics.totalCost}
 						aggregatedCost={
 							currentTaskItem?.id && aggregatedCostsMap.has(currentTaskItem.id)
 								? aggregatedCostsMap.get(currentTaskItem.id)!.totalCost
@@ -1660,6 +1668,12 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							<CheckpointWarning warning={checkpointWarning} />
 						</div>
 					)}
+
+					<BudgetWarningBanner
+						taskId={currentTaskItem?.id}
+						windowCost={budgetWindow.metrics.totalCost}
+						windowStartTs={budgetWindow.windowStartTs}
+					/>
 				</>
 			) : (
 				<div className="flex flex-col h-full justify-center p-6 min-h-0 overflow-y-auto gap-4 relative">

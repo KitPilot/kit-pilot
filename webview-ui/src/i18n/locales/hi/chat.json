@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "सार्वजनिक लिंक क्लिपबोर्ड में कॉपी किया गया",
 		"openApiHistory": "API इतिहास खोलें",
 		"openUiHistory": "UI इतिहास खोलें",
-		"backToParentTask": "मूल कार्य"
+		"backToParentTask": "मूल कार्य",
+		"cacheHitRate": "हिट",
+		"cacheHitRateTooltip": "प्रॉम्प्ट कैश से परोसे गए इनपुट टोकन का हिस्सा — कैश किया गया इनपुट लगभग 10 गुना सस्ता है"
 	},
 	"unpin": "पिन करें",
 	"pin": "अवपिन करें",
@@ -358,7 +360,8 @@
 	"costs": {
 		"totalWithSubtasks": "कुल लागत (उप-कार्यों सहित): ${{cost}}",
 		"total": "कुल लागत: ${{cost}}",
-		"includesSubtasks": "उप-कार्यों की लागत शामिल है"
+		"includesSubtasks": "उप-कार्यों की लागत शामिल है",
+		"budgetWindow": "पिछली सीमा रीसेट के बाद खर्च: ${{cap}} में से ${{spent}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -491,5 +494,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "सेटिंग्स खोलें",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "इस कार्य ने अपने ${{cap}} स्वतः-अनुमोदन बजट में से ${{spent}} ({{percent}}%) उपयोग कर लिया है। सीमा पर KitPilot अनुमोदन के लिए रुक जाएगा।",
+		"overCapMessage": "इस कार्य ने ${{spent}} खर्च किए हैं, जो इसके ${{cap}} स्वतः-अनुमोदन बजट से अधिक है। अगले अनुरोध से पहले KitPilot अनुमोदन के लिए रुक जाएगा।",
+		"dismiss": "हटाएँ"
 	}
 }
