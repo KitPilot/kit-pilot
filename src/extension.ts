@@ -45,6 +45,7 @@ import {
 } from "./activate"
 import { initializeI18n } from "./i18n"
 import { initializeModelCacheRefresh } from "./api/providers/fetchers/modelCache"
+import { flushUsageMetrics, initUsageMetricsPersistence } from "./api/usageMetrics"
 
 /**
  * Built using https://github.com/microsoft/vscode-webview-ui-toolkit
@@ -124,6 +125,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Migrate old settings to new
 	await migrateSettings(context, outputChannel)
+
+	// Resume the cross-session usage-metrics window (~/.kitpilot/usage-metrics.json).
+	// Fire-and-forget: persisted totals merge additively, so racing an early
+	// LLM call is safe, and metrics must never block activation.
+	void initUsageMetricsPersistence()
 
 	// Offer to copy pre-rename Roo Code config (.roo/.rooignore/.roomodes) to
 	// the KitPilot paths. Fire-and-forget: the prompt must not block activation.
@@ -304,4 +310,5 @@ export async function deactivate() {
 
 	await McpServerManager.cleanup(extensionContext)
 	TerminalRegistry.cleanup()
+	await flushUsageMetrics()
 }

@@ -22,6 +22,7 @@ import { getBinPath } from "../ripgrep"
 import { getGlobalKitPilotDirectory, getProjectKitPilotDirectoryForCwd, readFileIfExists } from "../kitpilot-config"
 import { validateHooksText } from "../hooks/validation"
 import { getMemoryDir } from "../../core/tools/memoryStore"
+import { getUsageBreakdown, getUsageMetricsFilePath, getUsageMetricsSince } from "../../api/usageMetrics"
 
 export type DiagnosticStatus = "pass" | "warn" | "fail" | "info"
 
@@ -305,6 +306,51 @@ export async function checkMemory(memoryDir: string = getMemoryDir()): Promise<D
 		label,
 		status: "pass",
 		summary: `${memoryFiles.length} memor${memoryFiles.length === 1 ? "y" : "ies"} stored${hasIndex ? ", index present" : ""} (${memoryDir}).`,
+	}
+}
+
+/**
+ * Report how tokens split between the main coding loop and auxiliary calls
+ * (condense, error analysis, …). This section is the intended way to read the
+ * measurement — the raw numbers otherwise only exist in debug logs and the
+ * persisted JSON file.
+ */
+export function checkUsageShare(
+	breakdown: ReturnType<typeof getUsageBreakdown> = getUsageBreakdown(),
+	sinceIso: string = getUsageMetricsSince(),
+	filePath: string = getUsageMetricsFilePath(),
+): DiagnosticResult {
+	const label = "Token usage by purpose"
+
+	const purposes = Object.entries(breakdown).sort((a, b) => b[1].tokenSharePct - a[1].tokenSharePct)
+	if (purposes.length === 0) {
+		return {
+			id: "usage-share",
+			label,
+			status: "info",
+			summary: "No token usage recorded yet in this measurement window.",
+			details: [`Totals accumulate across sessions in ${filePath}.`],
+		}
+	}
+
+	const details = purposes.map(([purpose, t]) => {
+		const cache = t.cacheReadTokens > 0 ? `, ${t.cacheReadTokens.toLocaleString("en-US")} cache-read` : ""
+		const cost = t.cost > 0 ? `, ~$${t.cost.toFixed(2)}` : ""
+		return (
+			`**${purpose}**: ${t.tokenSharePct}% — ` +
+			`${t.inputTokens.toLocaleString("en-US")} in / ${t.outputTokens.toLocaleString("en-US")} out tokens` +
+			` over ${t.calls.toLocaleString("en-US")} call${t.calls === 1 ? "" : "s"}${cache}${cost}`
+		)
+	})
+	details.push(`Measuring since ${sinceIso}; totals accumulate across sessions in ${filePath}.`)
+	details.push("When reporting usage numbers, paste this section or share that file.")
+
+	return {
+		id: "usage-share",
+		label,
+		status: "info",
+		summary: "Share of tokens spent on the main coding loop vs background calls (condense, error analysis, …):",
+		details,
 	}
 }
 

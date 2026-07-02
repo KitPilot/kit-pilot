@@ -14,6 +14,7 @@ import {
 	checkLanguageModels,
 	checkMemory,
 	checkRipgrep,
+	checkUsageShare,
 	formatDiagnosticsReport,
 	type DiagnosticResult,
 	type ModelSelectorLike,
@@ -64,6 +65,7 @@ export async function runDiagnostics(provider: ClineProvider): Promise<void> {
 		await checkRipgrep(vscode.env.appRoot),
 		...(await checkHooksConfigs(cwd || undefined)),
 		await checkMemory(),
+		checkUsageShare(),
 		guardSettingsResult(),
 	]
 
