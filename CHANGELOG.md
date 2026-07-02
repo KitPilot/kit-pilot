@@ -1,5 +1,14 @@
 # KitPilot Changelog
 
+## 0.1.25
+
+This release makes KitPilot's token-usage tracking survive restarts and easy to read.
+
+### Added
+
+- KitPilot now keeps a running record of where your tokens go — how much is spent on your actual coding requests versus background work like summarizing long conversations. The totals are saved to `~/.kitpilot/usage-metrics.json`, so they keep accumulating across window reloads and VS Code restarts instead of resetting every session.
+- The **KitPilot: Run Diagnostics** report now includes a "Token usage by purpose" section showing that breakdown — the share, token counts, and cost for each kind of work since the measurement started. If you want to see (or share) where your Copilot credits are going, run diagnostics and read that section; no digging through log files needed.
+
 ## 0.1.24
 
 This release makes the cost and token numbers accurate instead of estimated.
