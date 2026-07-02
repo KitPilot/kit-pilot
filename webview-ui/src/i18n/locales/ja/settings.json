@@ -273,7 +273,11 @@
 		"selectOptionsFirst": "自動承認を有効にするには、以下のオプションを少なくとも1つ選択してください",
 		"apiCostLimit": {
 			"unlimited": "無制限",
-			"title": "最大料金"
+			"title": "最大料金",
+			"warningPercent": {
+				"title": "警告する割合",
+				"description": "支出が最大コストのこの割合に達したらチャットに警告を表示します(デフォルト 80%)。"
+			}
 		},
 		"maxLimits": {
 			"description": "これらの上限まで自動的にリクエストを行い、その後継続の承認を求めます。"

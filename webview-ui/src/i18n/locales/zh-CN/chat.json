@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "公开链接已复制到剪贴板",
 		"openApiHistory": "打开 API 历史",
 		"openUiHistory": "打开 UI 历史",
-		"backToParentTask": "父任务"
+		"backToParentTask": "父任务",
+		"cacheHitRate": "命中",
+		"cacheHitRateTooltip": "由提示词缓存提供的输入 token 占比 — 缓存输入的成本约为原价的十分之一"
 	},
 	"unpin": "取消置顶",
 	"pin": "置顶",
@@ -359,7 +361,8 @@
 	"costs": {
 		"totalWithSubtasks": "总成本（包括子任务）: ${{cost}}",
 		"total": "总成本: ${{cost}}",
-		"includesSubtasks": "包括子任务成本"
+		"includesSubtasks": "包括子任务成本",
+		"budgetWindow": "自上次限额重置以来的支出:${{spent}} / ${{cap}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -492,5 +495,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "打开设置",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "此任务已使用其 ${{cap}} 自动批准预算中的 ${{spent}}({{percent}}%)。达到限额时 KitPilot 将暂停并等待批准。",
+		"overCapMessage": "此任务已支出 ${{spent}},超出其 ${{cap}} 自动批准预算。KitPilot 将在下次请求前暂停并等待批准。",
+		"dismiss": "关闭"
 	}
 }

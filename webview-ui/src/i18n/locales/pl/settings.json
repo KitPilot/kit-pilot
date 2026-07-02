@@ -273,7 +273,11 @@
 		"selectOptionsFirst": "Wybierz co najmniej jedną opcję poniżej, aby włączyć automatyczne zatwierdzanie",
 		"apiCostLimit": {
 			"title": "Maksymalny koszt",
-			"unlimited": "Bez limitu"
+			"unlimited": "Bez limitu",
+			"warningPercent": {
+				"title": "Ostrzegaj przy",
+				"description": "Pokaż ostrzeżenie na czacie, gdy wydatki osiągną ten procent maksymalnego kosztu (domyślnie 80%)."
+			}
 		},
 		"maxLimits": {
 			"description": "Automatycznie składaj zapytania do tych limitów przed poproszeniem o zgodę na kontynuowanie."

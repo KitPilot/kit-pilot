@@ -251,6 +251,7 @@ export type ExtensionState = Pick<
 	| "deniedCommands"
 	| "allowedMaxRequests"
 	| "allowedMaxCost"
+	| "allowedMaxCostWarningPercent"
 	| "ttsEnabled"
 	| "ttsSpeed"
 	| "soundEnabled"

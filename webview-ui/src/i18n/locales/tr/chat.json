@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "Genel bağlantı panoya kopyalandı",
 		"openApiHistory": "API Geçmişini Aç",
 		"openUiHistory": "UI Geçmişini Aç",
-		"backToParentTask": "Üst görev"
+		"backToParentTask": "Üst görev",
+		"cacheHitRate": "isabet",
+		"cacheHitRateTooltip": "Prompt önbelleğinden sunulan girdi token'larının payı — önbelleğe alınmış girdi yaklaşık 10 kat daha ucuzdur"
 	},
 	"unpin": "Sabitlemeyi iptal et",
 	"pin": "Sabitle",
@@ -359,7 +361,8 @@
 	"costs": {
 		"totalWithSubtasks": "Toplam Maliyet (alt görevler dahil): ${{cost}}",
 		"total": "Toplam Maliyet: ${{cost}}",
-		"includesSubtasks": "Alt görev maliyetlerini içerir"
+		"includesSubtasks": "Alt görev maliyetlerini içerir",
+		"budgetWindow": "Son limit sıfırlamasından bu yana harcama: ${{cap}} içinden ${{spent}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -492,5 +495,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Ayarları aç",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "Bu görev, ${{cap}} otomatik onay bütçesinin ${{spent}} kadarını ({{percent}}%) kullandı. Limite ulaşıldığında KitPilot onay için duraklayacak.",
+		"overCapMessage": "Bu görev ${{spent}} harcadı ve ${{cap}} otomatik onay bütçesini aştı. KitPilot bir sonraki istekten önce onay için duraklayacak.",
+		"dismiss": "Kapat"
 	}
 }

@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "Liên kết công khai đã được sao chép vào clipboard",
 		"openApiHistory": "Mở lịch sử API",
 		"openUiHistory": "Mở lịch sử UI",
-		"backToParentTask": "Nhiệm vụ cha"
+		"backToParentTask": "Nhiệm vụ cha",
+		"cacheHitRate": "trúng cache",
+		"cacheHitRateTooltip": "Tỷ lệ token đầu vào được phục vụ từ bộ nhớ đệm prompt — đầu vào được cache rẻ hơn khoảng 10 lần"
 	},
 	"unpin": "Bỏ ghim khỏi đầu",
 	"pin": "Ghim lên đầu",
@@ -359,7 +361,8 @@
 	"costs": {
 		"totalWithSubtasks": "Tổng chi phí (bao gồm các tác vụ phụ): ${{cost}}",
 		"total": "Tổng chi phí: ${{cost}}",
-		"includesSubtasks": "Bao gồm chi phí của các tác vụ phụ"
+		"includesSubtasks": "Bao gồm chi phí của các tác vụ phụ",
+		"budgetWindow": "Chi tiêu kể từ lần đặt lại giới hạn gần nhất: ${{spent}} trên ${{cap}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -492,5 +495,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Mở cài đặt",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "Tác vụ này đã dùng ${{spent}} trong ngân sách tự động phê duyệt ${{cap}} ({{percent}}%). KitPilot sẽ tạm dừng để chờ phê duyệt khi chạm giới hạn.",
+		"overCapMessage": "Tác vụ này đã chi ${{spent}}, vượt ngân sách tự động phê duyệt ${{cap}}. KitPilot sẽ tạm dừng để chờ phê duyệt trước yêu cầu tiếp theo.",
+		"dismiss": "Đóng"
 	}
 }

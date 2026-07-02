@@ -273,7 +273,11 @@
 		"selectOptionsFirst": "Selecciona al menos una opción a continuación para habilitar la aprobación automática",
 		"apiCostLimit": {
 			"title": "Costo Máximo",
-			"unlimited": "Ilimitado"
+			"unlimited": "Ilimitado",
+			"warningPercent": {
+				"title": "Avisar al",
+				"description": "Muestra una advertencia en el chat cuando el gasto alcance este porcentaje del costo máximo (por defecto 80%)."
+			}
 		},
 		"maxLimits": {
 			"description": "Realizar automáticamente solicitudes hasta estos límites antes de pedir aprobación para continuar."

@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "公開リンクをクリップボードにコピーしました",
 		"openApiHistory": "API履歴を開く",
 		"openUiHistory": "UI履歴を開く",
-		"backToParentTask": "親タスク"
+		"backToParentTask": "親タスク",
+		"cacheHitRate": "ヒット",
+		"cacheHitRateTooltip": "プロンプトキャッシュから提供された入力トークンの割合 — キャッシュされた入力は約10分の1のコストです"
 	},
 	"unpin": "ピン留めを解除",
 	"pin": "ピン留め",
@@ -358,7 +360,8 @@
 	"costs": {
 		"totalWithSubtasks": "合計コスト（サブタスク含む）: ${{cost}}",
 		"total": "合計コスト: ${{cost}}",
-		"includesSubtasks": "サブタスクのコストを含む"
+		"includesSubtasks": "サブタスクのコストを含む",
+		"budgetWindow": "前回の上限リセット以降の支出: ${{cap}} 中 ${{spent}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -491,5 +494,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "設定を開く",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "このタスクは自動承認予算 ${{cap}} のうち ${{spent}}({{percent}}%)を使用しました。上限に達すると KitPilot は承認のため一時停止します。",
+		"overCapMessage": "このタスクは ${{spent}} を支出し、自動承認予算 ${{cap}} を超えています。次のリクエストの前に KitPilot は承認のため一時停止します。",
+		"dismiss": "閉じる"
 	}
 }

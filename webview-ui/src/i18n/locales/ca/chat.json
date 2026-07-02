@@ -19,7 +19,9 @@
 		"shareSuccessPublic": "Enllaç públic copiat al porta-retalls",
 		"openApiHistory": "Obrir historial d'API",
 		"openUiHistory": "Obrir historial d'UI",
-		"backToParentTask": "Tasca principal"
+		"backToParentTask": "Tasca principal",
+		"cacheHitRate": "encerts",
+		"cacheHitRateTooltip": "Proporció de tokens d'entrada servits des de la memòria cau de prompts — l'entrada en cau és aproximadament 10 vegades més barata"
 	},
 	"unpin": "Desfixar",
 	"pin": "Fixar",
@@ -358,7 +360,8 @@
 	"costs": {
 		"totalWithSubtasks": "Cost total (subtasques incloses): ${{cost}}",
 		"total": "Cost total: ${{cost}}",
-		"includesSubtasks": "Inclou els costos de les subtasques"
+		"includesSubtasks": "Inclou els costos de les subtasques",
+		"budgetWindow": "Despesa des de l'últim restabliment del límit: ${{spent}} de ${{cap}}"
 	},
 	"codeblock": {
 		"tooltips": {
@@ -491,5 +494,10 @@
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Obrir configuració",
 		"kitpilotMessage": "As part of our decision to sunset the KitPilot extension, we also ended the KitPilot Router, which only existed to support the extension. Sorry about the hassle."
+	},
+	"budget": {
+		"warningMessage": "Aquesta tasca ha utilitzat ${{spent}} del seu pressupost d'aprovació automàtica de ${{cap}} ({{percent}}%). KitPilot es pausarà per demanar aprovació en arribar al límit.",
+		"overCapMessage": "Aquesta tasca ha gastat ${{spent}}, superant el seu pressupost d'aprovació automàtica de ${{cap}}. KitPilot es pausarà per demanar aprovació abans de la propera sol·licitud.",
+		"dismiss": "Descarta"
 	}
 }

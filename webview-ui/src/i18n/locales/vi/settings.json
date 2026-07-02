@@ -273,7 +273,11 @@
 		"selectOptionsFirst": "Chọn ít nhất một tùy chọn bên dưới để bật tự động phê duyệt",
 		"apiCostLimit": {
 			"title": "Chi phí tối đa",
-			"unlimited": "Không giới hạn"
+			"unlimited": "Không giới hạn",
+			"warningPercent": {
+				"title": "Cảnh báo ở mức",
+				"description": "Hiển thị cảnh báo trong cuộc trò chuyện khi chi tiêu đạt tỷ lệ này của chi phí tối đa (mặc định 80%)."
+			}
 		},
 		"maxLimits": {
 			"description": "Tự động thực hiện các yêu cầu lên đến các giới hạn này trước khi xin phê duyệt để tiếp tục."

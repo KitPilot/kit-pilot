@@ -332,7 +332,11 @@
 		},
 		"apiCostLimit": {
 			"title": "Max Cost",
-			"unlimited": "Unlimited"
+			"unlimited": "Unlimited",
+			"warningPercent": {
+				"title": "Warn At",
+				"description": "Show a warning in the chat when spending reaches this percentage of the max cost (default 80%)."
+			}
 		},
 		"maxLimits": {
 			"description": "Automatically make requests up to these limits before asking for approval to continue."

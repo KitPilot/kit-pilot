@@ -152,6 +152,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		deniedCommands,
 		allowedMaxRequests,
 		allowedMaxCost,
+		allowedMaxCostWarningPercent,
 		language,
 		alwaysAllowExecute,
 		alwaysAllowMcp,
@@ -366,6 +367,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					// extension host. We may need to do the same for other nullable fields.
 					allowedMaxRequests: allowedMaxRequests ?? null,
 					allowedMaxCost: allowedMaxCost ?? null,
+					allowedMaxCostWarningPercent: allowedMaxCostWarningPercent ?? null,
 					autoCondenseContext,
 					autoCondenseContextPercent,
 					soundEnabled: soundEnabled ?? true,
@@ -780,6 +782,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 								allowedCommands={allowedCommands}
 								allowedMaxRequests={allowedMaxRequests ?? undefined}
 								allowedMaxCost={allowedMaxCost ?? undefined}
+								allowedMaxCostWarningPercent={allowedMaxCostWarningPercent ?? undefined}
 								deniedCommands={deniedCommands}
 								setCachedStateField={setCachedStateField}
 							/>
