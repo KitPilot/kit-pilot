@@ -1,6 +1,6 @@
 /**
- * Lightweight, in-memory instrumentation to measure the **auxiliary-vs-main
- * token share** — the decision gate for TODO #3 (auxiliary-call model routing).
+ * Lightweight instrumentation to measure the **auxiliary-vs-main token
+ * share** — the decision gate for TODO #3 (auxiliary-call model routing).
  *
  * Every LLM call tags itself with a `UsagePurpose` (via
  * ApiHandlerCreateMessageMetadata.purpose; defaults to "main"). When a call
@@ -9,10 +9,17 @@
  * everything runs on one model) goes to condense / enhance / etc. rather than
  * the agent's coding loop.
  *
- * Deliberately minimal: in-memory only (resets on window reload — the per-call
- * log lines persist in the output channel for summing if a longer window is
- * needed), no persistence, no UI. It's a measurement tool, not a feature.
+ * Totals persist to `~/.kitpilot/usage-metrics.json` (debounced after each
+ * sample, additively merged back on activation) so the measurement window
+ * spans reloads and sessions. The file plus the diagnostics report section
+ * are the intended way to read the result — no UI. It's a measurement tool,
+ * not a feature.
  */
+
+import * as fs from "fs/promises"
+import * as path from "path"
+
+import { getGlobalKitPilotDirectory } from "../services/kitpilot-config"
 
 export type UsagePurpose = "main" | "condense" | "enhance" | "error-analysis" | "title" | "other"
 
@@ -33,6 +40,22 @@ interface PurposeTotals {
 }
 
 const totals = new Map<UsagePurpose, PurposeTotals>()
+
+/** Start of the measurement window (ISO); loaded from disk when persisted. */
+let since = new Date().toISOString()
+
+/** Undefined until initUsageMetricsPersistence runs — recordUsage stays in-memory-only. */
+let persistPath: string | undefined
+let persistTimer: ReturnType<typeof setTimeout> | undefined
+let pendingWrite: Promise<void> = Promise.resolve()
+
+const PERSIST_DEBOUNCE_MS = 5_000
+
+interface PersistedUsageMetrics {
+	version: 1
+	since: string
+	perPurpose: Partial<Record<UsagePurpose, PurposeTotals>>
+}
 
 function totalsFor(purpose: UsagePurpose): PurposeTotals {
 	let t = totals.get(purpose)
@@ -57,9 +80,91 @@ export function getUsageBreakdown(): Record<string, PurposeTotals & { tokenShare
 	return out
 }
 
-/** Reset accumulated totals (tests). */
+/** ISO timestamp of the start of the current measurement window. */
+export function getUsageMetricsSince(): string {
+	return since
+}
+
+/** Canonical on-disk location of the persisted totals. */
+export function getUsageMetricsFilePath(): string {
+	return path.join(getGlobalKitPilotDirectory(), "usage-metrics.json")
+}
+
+/**
+ * Load persisted totals and enable debounced persistence. Persisted values
+ * are merged additively into whatever is already in memory, so samples
+ * recorded before this async load completes are not lost.
+ */
+export async function initUsageMetricsPersistence(filePath: string = getUsageMetricsFilePath()): Promise<void> {
+	let loaded: PersistedUsageMetrics | undefined
+	try {
+		loaded = JSON.parse(await fs.readFile(filePath, "utf8"))
+	} catch {
+		// Missing or corrupt file — start a fresh window.
+	}
+
+	if (loaded?.version === 1 && typeof loaded.since === "string" && loaded.perPurpose) {
+		since = loaded.since
+		for (const [purpose, persisted] of Object.entries(loaded.perPurpose)) {
+			if (!persisted) continue
+			const t = totalsFor(purpose as UsagePurpose)
+			t.calls += persisted.calls ?? 0
+			t.inputTokens += persisted.inputTokens ?? 0
+			t.outputTokens += persisted.outputTokens ?? 0
+			t.cacheReadTokens += persisted.cacheReadTokens ?? 0
+			t.cost += persisted.cost ?? 0
+		}
+	}
+
+	persistPath = filePath
+}
+
+function schedulePersist(): void {
+	if (!persistPath || persistTimer) return
+	persistTimer = setTimeout(() => {
+		persistTimer = undefined
+		void writeTotals()
+	}, PERSIST_DEBOUNCE_MS)
+}
+
+function writeTotals(): Promise<void> {
+	const filePath = persistPath
+	if (!filePath) return Promise.resolve()
+	const snapshot: PersistedUsageMetrics = {
+		version: 1,
+		since,
+		perPurpose: Object.fromEntries([...totals].map(([purpose, t]) => [purpose, { ...t }])),
+	}
+	// Serialize writes so a slow disk can't interleave two JSON bodies.
+	pendingWrite = pendingWrite
+		.then(async () => {
+			await fs.mkdir(path.dirname(filePath), { recursive: true })
+			await fs.writeFile(filePath, JSON.stringify(snapshot, null, "\t"), "utf8")
+		})
+		.catch((error) => {
+			console.debug(`KitPilot <usage-metric>: failed to persist totals: ${error}`)
+		})
+	return pendingWrite
+}
+
+/** Cancel any pending debounce and write the current totals now (deactivate, tests). */
+export async function flushUsageMetrics(): Promise<void> {
+	if (persistTimer) {
+		clearTimeout(persistTimer)
+		persistTimer = undefined
+	}
+	await writeTotals()
+}
+
+/** Reset accumulated totals and start a new measurement window (tests). */
 export function resetUsageMetrics(): void {
 	totals.clear()
+	since = new Date().toISOString()
+	if (persistTimer) {
+		clearTimeout(persistTimer)
+		persistTimer = undefined
+	}
+	persistPath = undefined
 }
 
 /**
@@ -86,4 +191,6 @@ export function recordUsage(purpose: UsagePurpose, usage: UsageSample): void {
 			(usage.cacheReadTokens ? ` (cacheRead ${usage.cacheReadTokens})` : "") +
 			` | cumulative token share: ${shares}`,
 	)
+
+	schedulePersist()
 }

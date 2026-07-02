@@ -8,6 +8,7 @@ import {
 	checkHooksFile,
 	checkLanguageModels,
 	checkMemory,
+	checkUsageShare,
 	formatDiagnosticsReport,
 	type DiagnosticResult,
 	type LanguageModelLike,
@@ -182,6 +183,49 @@ describe("diagnostics/checkMemory", () => {
 		const result = await checkMemory(dir)
 		expect(result.status).toBe("pass")
 		expect(result.summary).toContain("0 memories")
+	})
+})
+
+describe("diagnostics/checkUsageShare", () => {
+	it("reports info with a pointer to the file when nothing is recorded", () => {
+		const result = checkUsageShare({}, "2026-07-02T00:00:00.000Z", "/home/u/.kitpilot/usage-metrics.json")
+		expect(result.status).toBe("info")
+		expect(result.summary).toContain("No token usage recorded yet")
+		expect(result.details?.join("\n")).toContain("/home/u/.kitpilot/usage-metrics.json")
+	})
+
+	it("lists purposes sorted by share with token, call, and window details", () => {
+		const breakdown = {
+			condense: {
+				calls: 3,
+				inputTokens: 30000,
+				outputTokens: 500,
+				cacheReadTokens: 12000,
+				cost: 0.42,
+				tokenSharePct: 60.4,
+			},
+			main: {
+				calls: 10,
+				inputTokens: 19000,
+				outputTokens: 1000,
+				cacheReadTokens: 0,
+				cost: 0,
+				tokenSharePct: 39.6,
+			},
+		}
+		const result = checkUsageShare(breakdown, "2026-07-01T09:00:00.000Z", "/home/u/.kitpilot/usage-metrics.json")
+		expect(result.status).toBe("info")
+		const details = result.details ?? []
+		// Sorted by share: condense first.
+		expect(details[0]).toContain("condense")
+		expect(details[0]).toContain("60.4%")
+		expect(details[0]).toContain("30,000 in / 500 out")
+		expect(details[0]).toContain("3 calls")
+		expect(details[0]).toContain("12,000 cache-read")
+		expect(details[0]).toContain("$0.42")
+		expect(details[1]).toContain("main")
+		expect(details.join("\n")).toContain("2026-07-01T09:00:00.000Z")
+		expect(details.join("\n")).toContain("/home/u/.kitpilot/usage-metrics.json")
 	})
 })
 
