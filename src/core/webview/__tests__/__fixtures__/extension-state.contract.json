@@ -20,6 +20,7 @@
 	"autoApprovalEnabled": false,
 	"autoCondenseContext": true,
 	"autoCondenseContextPercent": 100,
+	"backgroundEditing": false,
 	"checkpointTimeout": 15,
 	"clineMessages": [],
 	"codebaseIndexConfig": {
@@ -223,9 +224,7 @@
 	"enterBehavior": "send",
 	"experiments": {
 		"customTools": false,
-		"imageGeneration": false,
-		"preventFocusDisruption": false,
-		"runSlashCommand": false
+		"imageGeneration": false
 	},
 	"followupAutoApproveTimeoutMs": 60000,
 	"hasOpenedModeSelector": false,

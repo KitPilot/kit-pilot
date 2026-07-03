@@ -1,5 +1,21 @@
 # KitPilot Changelog
 
+## 0.1.26
+
+This release lets you see your spending before it hits the limit, and promotes two features out of the Experimental section.
+
+### Added
+
+- If you've set a maximum cost in the auto-approval settings, the task header now shows your spending against it — for example **$1.23 / $5.00** — with a progress bar that turns amber as you approach the limit and red past it. It updates live while KitPilot works.
+- A warning appears in the chat when a task has used 80% of its cost limit (you can change the percentage with the new "Warn At" setting next to Max Cost), so hitting the limit is never a surprise. Dismiss it and it stays away until the next budget round.
+- The task details now show how much of your input was served from the prompt cache. Cached input costs about a tenth of the normal rate, so a high percentage here means cheaper requests.
+- **Background editing** is now a regular setting (under Context settings, off by default) instead of an experiment. When on, KitPilot edits files quietly in the background without opening diff views or stealing your focus. If you had the experiment enabled, your choice carries over automatically.
+
+### Changed
+
+- KitPilot can now always use your slash commands and skills when it decides they'd help — this no longer requires enabling an experiment. Each use still asks for your approval first (or follows your auto-approval settings, where it counts as a read-only action).
+- The Experimental section is down to two entries (AI image generation and custom tools — both stay experimental for good reasons), and some leftover descriptions for experiments that no longer exist have been cleaned out.
+
 ## 0.1.25
 
 This release makes KitPilot's token-usage tracking survive restarts and easy to read.
