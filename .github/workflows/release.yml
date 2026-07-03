@@ -74,6 +74,16 @@ jobs:
                   VSCE_PAT: ${{ secrets.VSCE_PAT }}
                   REF: ${{ github.event.inputs.tag || github.ref }}
               run: |
+                  # Idempotency guard: a version can only ever be published once, so
+                  # re-tagging an already-published version (e.g. tagging retroactively
+                  # after a manual publish) skips the publish instead of failing the run.
+                  # The GitHub Release step below still runs either way.
+                  LOCAL_VERSION=$(node -p "require('./package.json').version")
+                  if vsce show KitPilot.kit-pilot --json 2>/dev/null \
+                      | jq -e --arg v "$LOCAL_VERSION" '.versions | map(.version) | index($v) != null' > /dev/null; then
+                      echo "Version $LOCAL_VERSION is already on the Marketplace — skipping publish."
+                      exit 0
+                  fi
                   if [[ "$REF" == *-pre.* ]]; then
                       echo "Detected pre-release tag — publishing to pre-release channel."
                       vsce publish --no-dependencies --allow-package-all-secrets --pre-release
