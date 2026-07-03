@@ -1,9 +1,7 @@
 import type { AssertEqual, Equals, Keys, Values, ExperimentId, Experiments } from "@kit-pilot/types"
 
 export const EXPERIMENT_IDS = {
-	PREVENT_FOCUS_DISRUPTION: "preventFocusDisruption",
 	IMAGE_GENERATION: "imageGeneration",
-	RUN_SLASH_COMMAND: "runSlashCommand",
 	CUSTOM_TOOLS: "customTools",
 } as const satisfies Record<string, ExperimentId>
 
@@ -16,9 +14,7 @@ interface ExperimentConfig {
 }
 
 export const experimentConfigsMap: Record<ExperimentKey, ExperimentConfig> = {
-	PREVENT_FOCUS_DISRUPTION: { enabled: false },
 	IMAGE_GENERATION: { enabled: false },
-	RUN_SLASH_COMMAND: { enabled: false },
 	CUSTOM_TOOLS: { enabled: false },
 }
 

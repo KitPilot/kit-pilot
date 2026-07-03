@@ -19,6 +19,8 @@ export async function migrateSettings(
 ): Promise<void> {
 	// First, migrate commands from old defaults (security fix)
 	await migrateDefaultCommands(context, outputChannel)
+	// Move graduated experiments to their new homes (or drop their stale keys)
+	await migrateGraduatedExperiments(context, outputChannel)
 	// Legacy file names that need to be migrated to the new names in GlobalFileNames
 	const fileMigrations = [
 		// custom_modes.json to custom_modes.yaml is handled separately below
@@ -114,6 +116,52 @@ async function migrateCustomModesToYaml(settingsDir: string, outputChannel: vsco
 		}
 	} catch (fileError) {
 		outputChannel.appendLine(`Error reading custom_modes.json: ${fileError}. Skipping migration.`)
+	}
+}
+
+/**
+ * Moves settings for graduated experiments out of the stored experiments
+ * object. `preventFocusDisruption` became the regular `backgroundEditing`
+ * setting (value carried over); `runSlashCommand` was graduated with no
+ * setting (always available), so its key is simply dropped. Idempotent:
+ * runs only while the old keys are present.
+ */
+async function migrateGraduatedExperiments(
+	context: vscode.ExtensionContext,
+	outputChannel: vscode.OutputChannel,
+): Promise<void> {
+	try {
+		const experiments = context.globalState.get<Record<string, unknown>>("experiments")
+		if (!experiments || typeof experiments !== "object") {
+			return
+		}
+
+		let changed = false
+
+		if ("preventFocusDisruption" in experiments) {
+			const oldValue = experiments["preventFocusDisruption"]
+			if (typeof oldValue === "boolean" && context.globalState.get("backgroundEditing") === undefined) {
+				await context.globalState.update("backgroundEditing", oldValue)
+				outputChannel.appendLine(
+					`[Experiments Migration] preventFocusDisruption (${oldValue}) → backgroundEditing setting`,
+				)
+			}
+			delete experiments["preventFocusDisruption"]
+			changed = true
+		}
+
+		if ("runSlashCommand" in experiments) {
+			// Graduated with no setting — the tool is always available now.
+			delete experiments["runSlashCommand"]
+			changed = true
+			outputChannel.appendLine("[Experiments Migration] dropped runSlashCommand (feature is no longer gated)")
+		}
+
+		if (changed) {
+			await context.globalState.update("experiments", experiments)
+		}
+	} catch (error) {
+		outputChannel.appendLine(`[Experiments Migration] Error migrating graduated experiments: ${error}`)
 	}
 }
 

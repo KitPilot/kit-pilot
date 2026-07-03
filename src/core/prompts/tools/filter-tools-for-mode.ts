@@ -286,11 +286,6 @@ export function filterNativeToolsForMode(
 		allowedToolNames.delete("generate_image")
 	}
 
-	// Conditionally exclude run_slash_command if experiment is not enabled
-	if (!experiments?.runSlashCommand) {
-		allowedToolNames.delete("run_slash_command")
-	}
-
 	// Remove tools that are explicitly disabled via the disabledTools setting
 	if (settings?.disabledTools?.length) {
 		for (const toolName of settings.disabledTools) {
@@ -375,9 +370,6 @@ export function isToolAllowedInMode(
 		}
 		if (toolName === "generate_image") {
 			return experiments?.imageGeneration === true
-		}
-		if (toolName === "run_slash_command") {
-			return experiments?.runSlashCommand === true
 		}
 		return true
 	}

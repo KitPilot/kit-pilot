@@ -632,7 +632,7 @@ export class DiffViewProvider {
 
 	/**
 	 * Directly save content to a file without showing diff view
-	 * Used when preventFocusDisruption experiment is enabled
+	 * Used when the backgroundEditing setting is enabled
 	 *
 	 * @param relPath - Relative path to the file
 	 * @param content - Content to write to the file
@@ -660,7 +660,7 @@ export class DiffViewProvider {
 		await fs.writeFile(absolutePath, content, "utf-8")
 
 		// Open the document to ensure diagnostics are loaded
-		// When openFile is false (PREVENT_FOCUS_DISRUPTION enabled), we only open in memory
+		// When openFile is false (background editing enabled), we only open in memory
 		if (openFile) {
 			// Show the document in the editor
 			await vscode.window.showTextDocument(vscode.Uri.file(absolutePath), {

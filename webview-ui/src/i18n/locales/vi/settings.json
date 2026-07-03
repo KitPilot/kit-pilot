@@ -668,6 +668,10 @@
 		"enableSubfolderRules": {
 			"label": "Bật quy tắc thư mục con",
 			"description": "Khám phá và tải đệ quy các tệp .kitpilot/rules và AGENTS.md từ các thư mục con. Hữu ích cho monorepo có quy tắc theo gói."
+		},
+		"backgroundEditing": {
+			"label": "Chỉnh sửa nền",
+			"description": "Khi được bật, ngăn chặn gián đoạn tiêu điểm trình soạn thảo. Việc chỉnh sửa tệp diễn ra ở nền mà không mở chế độ xem diff hoặc chiếm tiêu điểm. Bạn có thể tiếp tục làm việc không bị gián đoạn trong khi KitPilot thực hiện thay đổi. Các tệp có thể được mở mà không có tiêu điểm để thu thập chẩn đoán hoặc giữ hoàn toàn đóng."
 		}
 	},
 	"terminal": {
@@ -760,34 +764,6 @@
 		}
 	},
 	"experimental": {
-		"DIFF_STRATEGY_UNIFIED": {
-			"name": "Sử dụng chiến lược diff thống nhất thử nghiệm",
-			"description": "Bật chiến lược diff thống nhất thử nghiệm. Chiến lược này có thể giảm số lần thử lại do lỗi mô hình nhưng có thể gây ra hành vi không mong muốn hoặc chỉnh sửa không chính xác. Chỉ bật nếu bạn hiểu rõ các rủi ro và sẵn sàng xem xét cẩn thận tất cả các thay đổi."
-		},
-		"INSERT_BLOCK": {
-			"name": "Sử dụng công cụ chèn nội dung thử nghiệm",
-			"description": "Bật công cụ chèn nội dung thử nghiệm, cho phép KitPilot chèn nội dung tại số dòng cụ thể mà không cần tạo diff."
-		},
-		"MULTI_SEARCH_AND_REPLACE": {
-			"name": "Sử dụng công cụ diff đa khối thử nghiệm",
-			"description": "Khi được bật, KitPilot sẽ sử dụng công cụ diff đa khối. Điều này sẽ cố gắng cập nhật nhiều khối mã trong tệp trong một yêu cầu."
-		},
-		"CONCURRENT_FILE_READS": {
-			"name": "Bật đọc tệp đồng thời",
-			"description": "Khi bật, KitPilot có thể đọc nhiều tệp trong một yêu cầu duy nhất. Khi tắt, KitPilot phải đọc từng tệp một. Việc tắt có thể hữu ích khi làm việc với các mô hình ít khả năng hơn hoặc khi bạn muốn kiểm soát nhiều hơn quyền truy cập tệp."
-		},
-		"PREVENT_FOCUS_DISRUPTION": {
-			"name": "Chỉnh sửa nền",
-			"description": "Khi được bật, ngăn chặn gián đoạn tiêu điểm trình soạn thảo. Việc chỉnh sửa tệp diễn ra ở nền mà không mở chế độ xem diff hoặc chiếm tiêu điểm. Bạn có thể tiếp tục làm việc không bị gián đoạn trong khi KitPilot thực hiện thay đổi. Các tệp có thể được mở mà không có tiêu điểm để thu thập chẩn đoán hoặc giữ hoàn toàn đóng."
-		},
-		"ASSISTANT_MESSAGE_PARSER": {
-			"name": "Dùng bộ phân tích tin nhắn mới",
-			"description": "Bật bộ phân tích tin nhắn streaming thử nghiệm. Tính năng này tăng tốc phản hồi dài bằng cách xử lý tin nhắn hiệu quả hơn."
-		},
-		"NEW_TASK_REQUIRE_TODOS": {
-			"name": "Yêu cầu danh sách 'todos' cho các nhiệm vụ mới",
-			"description": "Khi được bật, công cụ new_task sẽ yêu cầu cung cấp tham số todos. Điều này đảm bảo tất cả các nhiệm vụ mới bắt đầu với một danh sách mục tiêu rõ ràng. Khi bị tắt (mặc định), tham số todos vẫn là tùy chọn để tương thích ngược."
-		},
 		"IMAGE_GENERATION": {
 			"providerLabel": "Nhà cung cấp",
 			"providerDescription": "Chọn nhà cung cấp để tạo hình ảnh.",
@@ -800,10 +776,6 @@
 			"modelSelectionDescription": "Chọn mô hình để sử dụng cho việc tạo hình ảnh",
 			"warningMissingKey": "⚠️ Khóa API OpenRouter là bắt buộc để tạo hình ảnh. Vui lòng cấu hình ở trên.",
 			"successConfigured": "✓ Tạo hình ảnh đã được cấu hình và sẵn sàng sử dụng"
-		},
-		"RUN_SLASH_COMMAND": {
-			"name": "Bật lệnh slash do mô hình khởi tạo",
-			"description": "Khi được bật, KitPilot có thể chạy các lệnh slash của bạn để thực hiện các quy trình làm việc."
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Bật công cụ tùy chỉnh",

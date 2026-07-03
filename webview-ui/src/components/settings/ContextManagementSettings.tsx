@@ -39,6 +39,7 @@ type ContextManagementSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	includeDiagnosticMessages?: boolean
 	maxDiagnosticMessages?: number
 	writeDelayMs: number
+	backgroundEditing?: boolean
 	includeCurrentTime?: boolean
 	includeCurrentCost?: boolean
 	maxGitStatusFiles?: number
@@ -55,6 +56,7 @@ type ContextManagementSettingsProps = HTMLAttributes<HTMLDivElement> & {
 		| "maxTotalImageSize"
 		| "profileThresholds"
 		| "includeDiagnosticMessages"
+		| "backgroundEditing"
 		| "maxDiagnosticMessages"
 		| "writeDelayMs"
 		| "includeCurrentTime"
@@ -78,6 +80,7 @@ export const ContextManagementSettings = ({
 	includeDiagnosticMessages,
 	maxDiagnosticMessages,
 	writeDelayMs,
+	backgroundEditing,
 	includeCurrentTime,
 	includeCurrentCost,
 	maxGitStatusFiles,
@@ -403,6 +406,23 @@ export const ContextManagementSettings = ({
 					</div>
 					<div className="text-vscode-descriptionForeground text-sm mt-1">
 						{t("settings:contextManagement.diagnostics.delayAfterWrite.description")}
+					</div>
+				</SearchableSetting>
+
+				<SearchableSetting
+					settingId="context-background-editing"
+					section="contextManagement"
+					label={t("settings:contextManagement.backgroundEditing.label")}>
+					<VSCodeCheckbox
+						checked={backgroundEditing ?? false}
+						onChange={(e: any) => setCachedStateField("backgroundEditing", e.target.checked)}
+						data-testid="background-editing-checkbox">
+						<label className="block font-medium mb-1">
+							{t("settings:contextManagement.backgroundEditing.label")}
+						</label>
+					</VSCodeCheckbox>
+					<div className="text-vscode-descriptionForeground text-sm mt-1 mb-3">
+						{t("settings:contextManagement.backgroundEditing.description")}
 					</div>
 				</SearchableSetting>
 

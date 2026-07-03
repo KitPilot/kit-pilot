@@ -22,7 +22,9 @@ const TestComponent = () => {
 			<button data-testid="update-button" onClick={() => setAllowedCommands(["npm install", "git status"])}>
 				Update Commands
 			</button>
-			<button data-testid="toggle-kitpilotignore-button" onClick={() => setShowKitPilotIgnoredFiles(!showKitPilotIgnoredFiles)}>
+			<button
+				data-testid="toggle-kitpilotignore-button"
+				onClick={() => setShowKitPilotIgnoredFiles(!showKitPilotIgnoredFiles)}>
 				Update Commands
 			</button>
 		</div>
@@ -224,9 +226,7 @@ describe("mergeExtensionState", () => {
 			...baseState,
 			apiConfiguration: { modelMaxThinkingTokens: 456, modelTemperature: 0.3 },
 			experiments: {
-				preventFocusDisruption: false,
 				imageGeneration: false,
-				runSlashCommand: false,
 				customTools: false,
 			} as Record<ExperimentId, boolean>,
 			checkpointTimeout: DEFAULT_CHECKPOINT_TIMEOUT_SECONDS + 5,
@@ -240,9 +240,7 @@ describe("mergeExtensionState", () => {
 		})
 
 		expect(result.experiments).toEqual({
-			preventFocusDisruption: false,
 			imageGeneration: false,
-			runSlashCommand: false,
 			customTools: false,
 		})
 	})

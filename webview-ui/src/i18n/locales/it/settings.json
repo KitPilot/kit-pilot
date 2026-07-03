@@ -668,6 +668,10 @@
 		"enableSubfolderRules": {
 			"label": "Abilita regole sottocartelle",
 			"description": "Scopri e carica ricorsivamente i file .kitpilot/rules e AGENTS.md dalle sottodirectory. Utile per i monorepo con regole per pacchetto."
+		},
+		"backgroundEditing": {
+			"label": "Modifica in background",
+			"description": "Previene l'interruzione del focus dell'editor quando abilitato. Le modifiche ai file avvengono in background senza aprire viste di differenze o rubare il focus. Puoi continuare a lavorare senza interruzioni mentre KitPilot effettua modifiche. I file possono essere aperti senza focus per catturare diagnostiche o rimanere completamente chiusi."
 		}
 	},
 	"terminal": {
@@ -760,34 +764,6 @@
 		}
 	},
 	"experimental": {
-		"DIFF_STRATEGY_UNIFIED": {
-			"name": "Usa strategia diff unificata sperimentale",
-			"description": "Abilita la strategia diff unificata sperimentale. Questa strategia potrebbe ridurre il numero di tentativi causati da errori del modello, ma può causare comportamenti imprevisti o modifiche errate. Abilitala solo se comprendi i rischi e sei disposto a rivedere attentamente tutte le modifiche."
-		},
-		"INSERT_BLOCK": {
-			"name": "Usa strumento di inserimento contenuti sperimentale",
-			"description": "Abilita lo strumento di inserimento contenuti sperimentale, consentendo a KitPilot di inserire contenuti a numeri di riga specifici senza dover creare un diff."
-		},
-		"MULTI_SEARCH_AND_REPLACE": {
-			"name": "Usa strumento diff multi-blocco sperimentale",
-			"description": "Quando abilitato, KitPilot utilizzerà lo strumento diff multi-blocco. Questo tenterà di aggiornare più blocchi di codice nel file in una singola richiesta."
-		},
-		"CONCURRENT_FILE_READS": {
-			"name": "Abilita lettura simultanea dei file",
-			"description": "Quando abilitato, KitPilot può leggere più file in una singola richiesta. Quando disabilitato, KitPilot deve leggere i file uno alla volta. Disabilitarlo può aiutare quando si lavora con modelli meno capaci o quando si desidera maggiore controllo sull'accesso ai file."
-		},
-		"PREVENT_FOCUS_DISRUPTION": {
-			"name": "Modifica in background",
-			"description": "Previene l'interruzione del focus dell'editor quando abilitato. Le modifiche ai file avvengono in background senza aprire viste di differenze o rubare il focus. Puoi continuare a lavorare senza interruzioni mentre KitPilot effettua modifiche. I file possono essere aperti senza focus per catturare diagnostiche o rimanere completamente chiusi."
-		},
-		"ASSISTANT_MESSAGE_PARSER": {
-			"name": "Usa il nuovo parser dei messaggi",
-			"description": "Abilita il parser di messaggi in streaming sperimentale che migliora nettamente le risposte lunghe elaborando i messaggi in modo più efficiente."
-		},
-		"NEW_TASK_REQUIRE_TODOS": {
-			"name": "Richiedi elenco 'todos' per nuove attività",
-			"description": "Quando abilitato, lo strumento new_task richiederà la fornitura di un parametro todos. Ciò garantisce che tutte le nuove attività inizino con un elenco chiaro di obiettivi. Quando disabilitato (impostazione predefinita), il parametro todos rimane facoltativo per la compatibilità con le versioni precedenti."
-		},
 		"IMAGE_GENERATION": {
 			"providerLabel": "Provider",
 			"providerDescription": "Seleziona il provider per la generazione di immagini.",
@@ -800,10 +776,6 @@
 			"modelSelectionDescription": "Seleziona il modello per la generazione di immagini",
 			"warningMissingKey": "⚠️ La chiave API OpenRouter è richiesta per la generazione di immagini. Configurala sopra.",
 			"successConfigured": "✓ La generazione di immagini è configurata e pronta per l'uso"
-		},
-		"RUN_SLASH_COMMAND": {
-			"name": "Abilita comandi slash avviati dal modello",
-			"description": "Quando abilitato, KitPilot può eseguire i tuoi comandi slash per eseguire flussi di lavoro."
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Abilita strumenti personalizzati",

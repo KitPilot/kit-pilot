@@ -1,7 +1,6 @@
 import { Task } from "../task/Task"
 import { formatResponse } from "../prompts/responses"
 import { getCommand, getCommandNames } from "../../services/command/commands"
-import { EXPERIMENT_IDS, experiments } from "../../shared/experiments"
 import { BaseTool, ToolCallbacks } from "./BaseTool"
 import type { ToolUse } from "../../shared/tools"
 import { getModeBySlug } from "../../shared/modes"
@@ -23,22 +22,8 @@ export class RunSlashCommandTool extends BaseTool<"run_slash_command"> {
 		const { command: commandName, args } = params
 		const { askApproval, handleError, pushToolResult } = callbacks
 
-		// Check if run slash command experiment is enabled
 		const provider = task.providerRef.deref()
 		const state = await provider?.getState()
-		const isRunSlashCommandEnabled = experiments.isEnabled(
-			state?.experiments ?? {},
-			EXPERIMENT_IDS.RUN_SLASH_COMMAND,
-		)
-
-		if (!isRunSlashCommandEnabled) {
-			pushToolResult(
-				formatResponse.toolError(
-					"Run slash command is an experimental feature that must be enabled in settings. Please enable 'Run Slash Command' in the Experimental Settings section.",
-				),
-			)
-			return
-		}
 
 		try {
 			if (!commandName) {
