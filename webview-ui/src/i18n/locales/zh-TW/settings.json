@@ -678,6 +678,10 @@
 		"enableSubfolderRules": {
 			"label": "啟用子資料夾規則",
 			"description": "遞迴發現並載入子目錄中的 .kitpilot/rules 和 AGENTS.md 檔案。適用於具有每包規則的 monorepo。"
+		},
+		"backgroundEditing": {
+			"label": "背景編輯",
+			"description": "啟用後可防止編輯器焦點中斷。檔案編輯會在背景進行，不會開啟 diff 檢視或搶奪焦點。您可以在 KitPilot 進行變更時繼續不受干擾地工作。檔案可能會在不獲得焦點的情況下開啟以捕獲診斷，或保持完全關閉。"
 		}
 	},
 	"terminal": {
@@ -770,34 +774,6 @@
 		}
 	},
 	"experimental": {
-		"DIFF_STRATEGY_UNIFIED": {
-			"name": "使用實驗性統一差異比對策略",
-			"description": "啟用實驗性的統一差異比對策略。此策略可能減少因模型錯誤而導致的重試次數，但也可能導致意外行為或錯誤的編輯。請務必了解風險，並願意仔細檢查所有變更後再啟用。"
-		},
-		"INSERT_BLOCK": {
-			"name": "使用實驗性插入內容工具",
-			"description": "啟用實驗性的插入內容工具，允許 KitPilot 直接在指定行號插入內容，而無需產生差異比對。"
-		},
-		"CONCURRENT_FILE_READS": {
-			"name": "啟用並行檔案讀取",
-			"description": "啟用後，KitPilot 可以在單一請求中讀取多個檔案。停用後，KitPilot 必須逐一讀取檔案。在使用能力較弱的模型或希望對檔案存取有更多控制時，停用此功能可能會有所幫助。"
-		},
-		"MULTI_SEARCH_AND_REPLACE": {
-			"name": "使用實驗性多區塊差異比對工具",
-			"description": "啟用後，KitPilot 將使用多區塊差異比對工具，嘗試在單一請求中更新檔案內的多個程式碼區塊。"
-		},
-		"PREVENT_FOCUS_DISRUPTION": {
-			"name": "背景編輯",
-			"description": "啟用後可防止編輯器焦點中斷。檔案編輯會在背景進行，不會開啟 diff 檢視或搶奪焦點。您可以在 KitPilot 進行變更時繼續不受干擾地工作。檔案可能會在不獲得焦點的情況下開啟以捕獲診斷，或保持完全關閉。"
-		},
-		"ASSISTANT_MESSAGE_PARSER": {
-			"name": "使用全新訊息解析器",
-			"description": "啟用實驗性的串流訊息解析器。透過更有效率地處理訊息，能顯著提升長回覆的效能。"
-		},
-		"NEW_TASK_REQUIRE_TODOS": {
-			"name": "要求新工作提供 'todos' 清單",
-			"description": "啟用後，new_task 工具將需要提供 todos 參數。這可以確保所有新工作都以明確的目標列表開始。停用時（預設），todos 參數保持可選，以實現向後相容。"
-		},
 		"IMAGE_GENERATION": {
 			"name": "啟用 AI 影像生成",
 			"description": "啟用後，KitPilot 可以使用 OpenRouter 的影像生成模型，從文字提示產生影像。需要設定 OpenRouter API 金鑰。",
@@ -810,10 +786,6 @@
 			"modelSelectionDescription": "選擇用於影像生成的模型",
 			"warningMissingKey": "⚠️ 影像生成需要 OpenRouter API 金鑰。請在上方設定。",
 			"successConfigured": "✓ 影像生成已設定完成並準備使用"
-		},
-		"RUN_SLASH_COMMAND": {
-			"name": "啟用模型啟動的斜線命令",
-			"description": "啟用時，KitPilot 可以執行您的斜線命令來執行工作流程。"
 		},
 		"CUSTOM_TOOLS": {
 			"name": "啟用自訂工具",

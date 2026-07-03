@@ -9,7 +9,6 @@ import { Task } from "../task/Task"
 import { formatResponse } from "../prompts/responses"
 import { RecordSource } from "../context-tracking/FileContextTrackerTypes"
 import { fileExistsAtPath } from "../../utils/fs"
-import { EXPERIMENT_IDS, experiments } from "../../shared/experiments"
 import { sanitizeUnifiedDiff, computeDiffStats } from "../diff/stats"
 import { BaseTool, ToolCallbacks } from "./BaseTool"
 import type { ToolUse } from "../../shared/tools"
@@ -173,10 +172,7 @@ export class ApplyPatchTool extends BaseTool<"apply_patch"> {
 		const state = await provider?.getState()
 		const diagnosticsEnabled = state?.diagnosticsEnabled ?? true
 		const writeDelayMs = state?.writeDelayMs ?? DEFAULT_WRITE_DELAY_MS
-		const isPreventFocusDisruptionEnabled = experiments.isEnabled(
-			state?.experiments ?? {},
-			EXPERIMENT_IDS.PREVENT_FOCUS_DISRUPTION,
-		)
+		const isPreventFocusDisruptionEnabled = state?.backgroundEditing ?? false
 
 		const sanitizedDiff = sanitizeUnifiedDiff(diff || "")
 		const diffStats = computeDiffStats(sanitizedDiff) || undefined
@@ -329,10 +325,7 @@ export class ApplyPatchTool extends BaseTool<"apply_patch"> {
 		const state = await provider?.getState()
 		const diagnosticsEnabled = state?.diagnosticsEnabled ?? true
 		const writeDelayMs = state?.writeDelayMs ?? DEFAULT_WRITE_DELAY_MS
-		const isPreventFocusDisruptionEnabled = experiments.isEnabled(
-			state?.experiments ?? {},
-			EXPERIMENT_IDS.PREVENT_FOCUS_DISRUPTION,
-		)
+		const isPreventFocusDisruptionEnabled = state?.backgroundEditing ?? false
 
 		const sanitizedDiff = sanitizeUnifiedDiff(diff)
 		const diffStats = computeDiffStats(sanitizedDiff) || undefined
@@ -384,7 +377,8 @@ export class ApplyPatchTool extends BaseTool<"apply_patch"> {
 			}
 
 			// Check if destination path is write-protected
-			const isMovePathWriteProtected = task.kitpilotProtectedController?.isWriteProtected(change.movePath) || false
+			const isMovePathWriteProtected =
+				task.kitpilotProtectedController?.isWriteProtected(change.movePath) || false
 			if (isMovePathWriteProtected) {
 				task.consecutiveMistakeCount++
 				task.recordToolError("apply_patch")

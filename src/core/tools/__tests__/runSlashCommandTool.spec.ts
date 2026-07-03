@@ -26,11 +26,7 @@ describe("runSlashCommandTool", () => {
 			cwd: "/test/project",
 			providerRef: {
 				deref: vi.fn().mockReturnValue({
-					getState: vi.fn().mockResolvedValue({
-						experiments: {
-							runSlashCommand: true,
-						},
-					}),
+					getState: vi.fn().mockResolvedValue({}),
 					getSkillsManager: vi.fn().mockReturnValue(undefined),
 				}),
 			},
@@ -106,9 +102,6 @@ describe("runSlashCommandTool", () => {
 
 		mockTask.providerRef.deref = vi.fn().mockReturnValue({
 			getState: vi.fn().mockResolvedValue({
-				experiments: {
-					runSlashCommand: true,
-				},
 				mode: "code",
 			}),
 			getSkillsManager: vi.fn().mockReturnValue({
@@ -174,9 +167,6 @@ Use skill workflow`,
 
 		mockTask.providerRef.deref = vi.fn().mockReturnValue({
 			getState: vi.fn().mockResolvedValue({
-				experiments: {
-					runSlashCommand: true,
-				},
 				mode: "code",
 			}),
 			getSkillsManager: vi.fn().mockReturnValue({
@@ -459,9 +449,6 @@ Deploy application to production`,
 
 		mockTask.providerRef.deref = vi.fn().mockReturnValue({
 			getState: vi.fn().mockResolvedValue({
-				experiments: {
-					runSlashCommand: true,
-				},
 				customModes: undefined,
 			}),
 			handleModeSwitch: mockHandleModeSwitch,
@@ -506,9 +493,6 @@ Start debugging the application`,
 
 		mockTask.providerRef.deref = vi.fn().mockReturnValue({
 			getState: vi.fn().mockResolvedValue({
-				experiments: {
-					runSlashCommand: true,
-				},
 				customModes: undefined,
 			}),
 			handleModeSwitch: mockHandleModeSwitch,
@@ -543,9 +527,6 @@ Start debugging the application`,
 
 		mockTask.providerRef.deref = vi.fn().mockReturnValue({
 			getState: vi.fn().mockResolvedValue({
-				experiments: {
-					runSlashCommand: true,
-				},
 				customModes: undefined,
 			}),
 			handleModeSwitch: vi.fn(),

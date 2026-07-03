@@ -668,6 +668,10 @@
 		"enableSubfolderRules": {
 			"label": "启用子文件夹规则",
 			"description": "递归发现并加载子目录中的 .kitpilot/rules 和 AGENTS.md 文件。适用于具有每包规则的 monorepo。"
+		},
+		"backgroundEditing": {
+			"label": "后台编辑",
+			"description": "启用后防止编辑器焦点干扰。文件编辑在后台进行，不会打开差异视图或抢夺焦点。你可以在 KitPilot 进行更改时继续不受干扰地工作。文件可以在不获取焦点的情况下打开以捕获诊断信息，或保持完全关闭状态。"
 		}
 	},
 	"terminal": {
@@ -760,34 +764,6 @@
 		}
 	},
 	"experimental": {
-		"DIFF_STRATEGY_UNIFIED": {
-			"name": "启用diff更新工具",
-			"description": "可减少因模型错误导致的重复尝试，但可能引发意外操作。启用前请确保理解风险并会仔细检查所有修改。"
-		},
-		"INSERT_BLOCK": {
-			"name": "启用插入内容工具",
-			"description": "允许 KitPilot 在特定行号插入内容，无需处理差异。"
-		},
-		"MULTI_SEARCH_AND_REPLACE": {
-			"name": "允许批量搜索和替换",
-			"description": "启用后，KitPilot 将尝试在一个请求中进行批量搜索和替换。"
-		},
-		"CONCURRENT_FILE_READS": {
-			"name": "启用并发文件读取",
-			"description": "启用后，KitPilot 可以在单个请求中读取多个文件。禁用后，KitPilot 必须逐个读取文件。在使用能力较弱的模型或希望对文件访问有更多控制时，禁用此功能可能会有所帮助。"
-		},
-		"PREVENT_FOCUS_DISRUPTION": {
-			"name": "后台编辑",
-			"description": "启用后防止编辑器焦点干扰。文件编辑在后台进行，不会打开差异视图或抢夺焦点。你可以在 KitPilot 进行更改时继续不受干扰地工作。文件可以在不获取焦点的情况下打开以捕获诊断信息，或保持完全关闭状态。"
-		},
-		"ASSISTANT_MESSAGE_PARSER": {
-			"name": "使用新的消息解析器",
-			"description": "启用实验性的流式消息解析器。通过更高效地处理消息，可显著提升长回复的性能。"
-		},
-		"NEW_TASK_REQUIRE_TODOS": {
-			"name": "要求新任务提供 'todos' 列表",
-			"description": "启用后，new_task 工具将需要提供 todos 参数。这可以确保所有新任务都以明确的目标列表开始。禁用时（默认），todos 参数保持可选，以实现向后兼容。"
-		},
 		"IMAGE_GENERATION": {
 			"providerLabel": "提供商",
 			"providerDescription": "选择用于图像生成的提供商。",
@@ -800,10 +776,6 @@
 			"modelSelectionDescription": "选择用于图像生成的模型",
 			"warningMissingKey": "⚠️ 图像生成需要 OpenRouter API 密钥。请在上方配置。",
 			"successConfigured": "✓ 图像生成已配置完成，可以使用"
-		},
-		"RUN_SLASH_COMMAND": {
-			"name": "启用模型发起的斜杠命令",
-			"description": "启用后 KitPilot 可运行斜杠命令执行工作流程。"
 		},
 		"CUSTOM_TOOLS": {
 			"name": "启用自定义工具",

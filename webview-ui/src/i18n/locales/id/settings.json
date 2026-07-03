@@ -668,6 +668,10 @@
 		"enableSubfolderRules": {
 			"label": "Aktifkan aturan subfolder",
 			"description": "Temukan dan muat file .kitpilot/rules dan AGENTS.md secara rekursif dari subdirektori. Berguna untuk monorepo dengan aturan per-paket."
+		},
+		"backgroundEditing": {
+			"label": "Pengeditan Latar Belakang",
+			"description": "Ketika diaktifkan, mencegah gangguan fokus editor. Pengeditan file terjadi di latar belakang tanpa membuka tampilan diff atau mencuri fokus. Anda dapat terus bekerja tanpa gangguan saat KitPilot melakukan perubahan. File mungkin dibuka tanpa fokus untuk menangkap diagnostik atau tetap tertutup sepenuhnya."
 		}
 	},
 	"terminal": {
@@ -760,34 +764,6 @@
 		}
 	},
 	"experimental": {
-		"DIFF_STRATEGY_UNIFIED": {
-			"name": "Gunakan strategi unified diff eksperimental",
-			"description": "Aktifkan strategi unified diff eksperimental. Strategi ini mungkin mengurangi jumlah retry yang disebabkan oleh error model tetapi dapat menyebabkan perilaku yang tidak terduga atau edit yang salah. Hanya aktifkan jika kamu memahami risikonya dan bersedia meninjau semua perubahan dengan hati-hati."
-		},
-		"INSERT_BLOCK": {
-			"name": "Gunakan tool insert content eksperimental",
-			"description": "Aktifkan tool insert content eksperimental, memungkinkan KitPilot menyisipkan konten pada nomor baris spesifik tanpa perlu membuat diff."
-		},
-		"CONCURRENT_FILE_READS": {
-			"name": "Aktifkan pembacaan file bersamaan",
-			"description": "Ketika diaktifkan, KitPilot dapat membaca beberapa file dalam satu permintaan. Ketika dinonaktifkan, KitPilot harus membaca file satu per satu. Menonaktifkan ini dapat membantu saat bekerja dengan model yang kurang mampu atau ketika kamu ingin kontrol lebih terhadap akses file."
-		},
-		"MULTI_SEARCH_AND_REPLACE": {
-			"name": "Gunakan tool multi block diff eksperimental",
-			"description": "Ketika diaktifkan, KitPilot akan menggunakan tool multi block diff. Ini akan mencoba memperbarui beberapa blok kode dalam file dalam satu permintaan."
-		},
-		"PREVENT_FOCUS_DISRUPTION": {
-			"name": "Pengeditan Latar Belakang",
-			"description": "Ketika diaktifkan, mencegah gangguan fokus editor. Pengeditan file terjadi di latar belakang tanpa membuka tampilan diff atau mencuri fokus. Anda dapat terus bekerja tanpa gangguan saat KitPilot melakukan perubahan. File mungkin dibuka tanpa fokus untuk menangkap diagnostik atau tetap tertutup sepenuhnya."
-		},
-		"ASSISTANT_MESSAGE_PARSER": {
-			"name": "Gunakan parser pesan baru",
-			"description": "Aktifkan parser pesan streaming eksperimental yang meningkatkan kinerja untuk respons panjang dengan memproses pesan lebih efisien."
-		},
-		"NEW_TASK_REQUIRE_TODOS": {
-			"name": "Membutuhkan daftar 'todos' untuk tugas baru",
-			"description": "Ketika diaktifkan, alat new_task akan membutuhkan parameter todos untuk disediakan. Ini memastikan semua tugas baru dimulai dengan daftar tujuan yang jelas. Ketika dinonaktifkan (default), parameter todos tetap opsional untuk kompatibilitas mundur."
-		},
 		"IMAGE_GENERATION": {
 			"name": "Aktifkan pembuatan gambar AI",
 			"description": "Ketika diaktifkan, KitPilot dapat menghasilkan gambar dari prompt teks menggunakan model pembuatan gambar.",
@@ -800,10 +776,6 @@
 			"modelSelectionDescription": "Pilih model untuk pembuatan gambar",
 			"warningMissingKey": "⚠️ Kunci API OpenRouter diperlukan untuk pembuatan gambar. Silakan konfigurasi di atas.",
 			"successConfigured": "✓ Pembuatan gambar dikonfigurasi dan siap digunakan"
-		},
-		"RUN_SLASH_COMMAND": {
-			"name": "Aktifkan perintah slash yang dimulai model",
-			"description": "Ketika diaktifkan, KitPilot dapat menjalankan perintah slash Anda untuk mengeksekusi alur kerja."
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Aktifkan tool kustom",

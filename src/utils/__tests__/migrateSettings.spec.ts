@@ -291,4 +291,57 @@ describe("migrateSettings", () => {
 			expect(vscode.window.showInformationMessage).not.toHaveBeenCalled()
 		})
 	})
+	describe("graduated experiments migration", () => {
+		beforeEach(async () => {
+			const { fileExistsAtPath } = await import("../fs")
+			vi.mocked(fileExistsAtPath).mockResolvedValue(false)
+		})
+
+		it("moves preventFocusDisruption value to backgroundEditing and drops the key", async () => {
+			mockGlobalState.set("experiments", { preventFocusDisruption: true, imageGeneration: false })
+
+			await migrateSettings(mockContext, mockOutputChannel)
+
+			expect(mockGlobalState.get("backgroundEditing")).toBe(true)
+			expect(mockGlobalState.get("experiments")).toEqual({ imageGeneration: false })
+		})
+
+		it("does not overwrite an existing backgroundEditing value", async () => {
+			mockGlobalState.set("backgroundEditing", false)
+			mockGlobalState.set("experiments", { preventFocusDisruption: true })
+
+			await migrateSettings(mockContext, mockOutputChannel)
+
+			expect(mockGlobalState.get("backgroundEditing")).toBe(false)
+			expect(mockGlobalState.get("experiments")).toEqual({})
+		})
+
+		it("drops the stale runSlashCommand key without creating a setting", async () => {
+			mockGlobalState.set("experiments", { runSlashCommand: true, customTools: true })
+
+			await migrateSettings(mockContext, mockOutputChannel)
+
+			expect(mockGlobalState.get("experiments")).toEqual({ customTools: true })
+			expect(mockGlobalState.get("runSlashCommand")).toBeUndefined()
+		})
+
+		it("is a no-op when no experiments object is stored", async () => {
+			await migrateSettings(mockContext, mockOutputChannel)
+
+			expect(mockGlobalState.get("backgroundEditing")).toBeUndefined()
+			expect(mockGlobalState.has("experiments")).toBe(false)
+		})
+
+		it("is idempotent on rerun", async () => {
+			mockGlobalState.set("experiments", { preventFocusDisruption: true })
+
+			await migrateSettings(mockContext, mockOutputChannel)
+			// User flips the migrated setting off; a second run must not resurrect it.
+			mockGlobalState.set("backgroundEditing", false)
+			await migrateSettings(mockContext, mockOutputChannel)
+
+			expect(mockGlobalState.get("backgroundEditing")).toBe(false)
+			expect(mockGlobalState.get("experiments")).toEqual({})
+		})
+	})
 })

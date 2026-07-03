@@ -183,6 +183,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		terminalZshP10k,
 		terminalZdotdir,
 		writeDelayMs,
+		backgroundEditing,
 		showKitPilotIgnoredFiles,
 		enableSubfolderRules,
 		maxImageFileSize,
@@ -377,6 +378,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					enableCheckpoints: enableCheckpoints ?? false,
 					checkpointTimeout: checkpointTimeout ?? DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
 					writeDelayMs,
+					backgroundEditing: backgroundEditing ?? false,
 					terminalShellIntegrationTimeout: terminalShellIntegrationTimeout ?? 30_000,
 					terminalShellIntegrationDisabled,
 					terminalCommandDelay,
@@ -830,6 +832,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 								includeDiagnosticMessages={includeDiagnosticMessages}
 								maxDiagnosticMessages={maxDiagnosticMessages}
 								writeDelayMs={writeDelayMs}
+								backgroundEditing={backgroundEditing}
 								includeCurrentTime={includeCurrentTime}
 								includeCurrentCost={includeCurrentCost}
 								maxGitStatusFiles={maxGitStatusFiles}

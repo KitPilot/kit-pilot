@@ -668,6 +668,10 @@
 		"enableSubfolderRules": {
 			"label": "Unterordner-Regeln aktivieren",
 			"description": "Rekursiv .kitpilot/rules und AGENTS.md-Dateien aus Unterverzeichnissen laden. Nützlich für Monorepos mit paketspezifischen Regeln."
+		},
+		"backgroundEditing": {
+			"label": "Hintergrundbearbeitung",
+			"description": "Verhindert Editor-Fokus-Störungen wenn aktiviert. Dateibearbeitungen erfolgen im Hintergrund ohne Öffnung von Diff-Ansichten oder Fokus-Diebstahl. Du kannst ungestört weiterarbeiten, während KitPilot Änderungen vornimmt. Dateien können ohne Fokus geöffnet werden, um Diagnosen zu erfassen oder vollständig geschlossen bleiben."
 		}
 	},
 	"terminal": {
@@ -760,34 +764,6 @@
 		}
 	},
 	"experimental": {
-		"DIFF_STRATEGY_UNIFIED": {
-			"name": "Experimentelle einheitliche Diff-Strategie verwenden",
-			"description": "Aktiviere die experimentelle einheitliche Diff-Strategie. Diese Strategie könnte die Anzahl der durch Modellfehler verursachten Wiederholungsversuche reduzieren, kann aber zu unerwartetem Verhalten oder falschen Bearbeitungen führen. Aktiviere sie nur, wenn du die Risiken verstehst und bereit bist, alle Änderungen sorgfältig zu überprüfen."
-		},
-		"INSERT_BLOCK": {
-			"name": "Experimentelles Inhalts-Einfügewerkzeug verwenden",
-			"description": "Aktiviere das experimentelle Inhalts-Einfügewerkzeug, mit dem KitPilot Inhalte an bestimmten Zeilennummern einfügen kann, ohne einen Diff erstellen zu müssen."
-		},
-		"CONCURRENT_FILE_READS": {
-			"name": "Gleichzeitiges Lesen von Dateien aktivieren",
-			"description": "Wenn aktiviert, kann KitPilot mehrere Dateien in einer einzigen Anfrage lesen. Wenn deaktiviert, muss KitPilot Dateien einzeln lesen. Das Deaktivieren kann hilfreich sein, wenn mit weniger fähigen Modellen gearbeitet wird oder wenn du mehr Kontrolle über den Dateizugriff haben möchtest."
-		},
-		"MULTI_SEARCH_AND_REPLACE": {
-			"name": "Experimentelles Multi-Block-Diff-Tool verwenden",
-			"description": "Wenn aktiviert, wird KitPilot das Multi-Block-Diff-Tool verwenden. Dies wird versuchen, mehrere Codeblöcke in der Datei in einer Anfrage zu aktualisieren."
-		},
-		"PREVENT_FOCUS_DISRUPTION": {
-			"name": "Hintergrundbearbeitung",
-			"description": "Verhindert Editor-Fokus-Störungen wenn aktiviert. Dateibearbeitungen erfolgen im Hintergrund ohne Öffnung von Diff-Ansichten oder Fokus-Diebstahl. Du kannst ungestört weiterarbeiten, während KitPilot Änderungen vornimmt. Dateien können ohne Fokus geöffnet werden, um Diagnosen zu erfassen oder vollständig geschlossen bleiben."
-		},
-		"ASSISTANT_MESSAGE_PARSER": {
-			"name": "Neuen Nachrichtenparser verwenden",
-			"description": "Aktiviere den experimentellen Streaming-Nachrichtenparser, der lange Antworten durch effizientere Verarbeitung spürbar schneller macht."
-		},
-		"NEW_TASK_REQUIRE_TODOS": {
-			"name": "'todos'-Liste für neue Aufgaben anfordern",
-			"description": "Wenn aktiviert, erfordert das new_task-Tool die Angabe eines todos-Parameters. Dies stellt sicher, dass alle neuen Aufgaben mit einer klaren Zielliste beginnen. Wenn deaktiviert (Standard), bleibt der todos-Parameter aus Gründen der Abwärtskompatibilität optional."
-		},
 		"IMAGE_GENERATION": {
 			"name": "KI-Bildgenerierung aktivieren",
 			"description": "Wenn aktiviert, kann KitPilot Bilder aus Textprompts mit Bildgenerierungsmodellen erstellen.",
@@ -800,10 +776,6 @@
 			"modelSelectionDescription": "Wähle das Modell für die Bildgenerierung aus",
 			"warningMissingKey": "⚠️ OpenRouter API-Schlüssel ist für Bildgenerierung erforderlich. Bitte konfiguriere ihn oben.",
 			"successConfigured": "✓ Bildgenerierung ist konfiguriert und einsatzbereit"
-		},
-		"RUN_SLASH_COMMAND": {
-			"name": "Modellinitierte Slash-Befehle aktivieren",
-			"description": "Wenn aktiviert, kann KitPilot deine Slash-Befehle ausführen, um Workflows zu starten."
 		},
 		"CUSTOM_TOOLS": {
 			"name": "Benutzerdefinierte Tools aktivieren",

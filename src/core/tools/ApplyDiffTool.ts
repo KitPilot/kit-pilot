@@ -9,7 +9,6 @@ import { formatResponse } from "../prompts/responses"
 import { fileExistsAtPath } from "../../utils/fs"
 import { RecordSource } from "../context-tracking/FileContextTrackerTypes"
 import { unescapeHtmlEntities } from "../../utils/text-normalization"
-import { EXPERIMENT_IDS, experiments } from "../../shared/experiments"
 import { computeDiffStats, sanitizeUnifiedDiff } from "../diff/stats"
 import type { ToolUse } from "../../shared/tools"
 
@@ -123,15 +122,11 @@ export class ApplyDiffTool extends BaseTool<"apply_diff"> {
 			const unifiedPatch = sanitizeUnifiedDiff(unifiedPatchRaw)
 			const diffStats = computeDiffStats(unifiedPatch) || undefined
 
-			// Check if preventFocusDisruption experiment is enabled
 			const provider = task.providerRef.deref()
 			const state = await provider?.getState()
 			const diagnosticsEnabled = state?.diagnosticsEnabled ?? true
 			const writeDelayMs = state?.writeDelayMs ?? DEFAULT_WRITE_DELAY_MS
-			const isPreventFocusDisruptionEnabled = experiments.isEnabled(
-				state?.experiments ?? {},
-				EXPERIMENT_IDS.PREVENT_FOCUS_DISRUPTION,
-			)
+			const isPreventFocusDisruptionEnabled = state?.backgroundEditing ?? false
 
 			// Check if file is write-protected
 			const isWriteProtected = task.kitpilotProtectedController?.isWriteProtected(relPath) || false

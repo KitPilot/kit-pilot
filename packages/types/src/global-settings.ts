@@ -180,6 +180,12 @@ export const globalSettingsSchema = z.object({
 
 	diagnosticsEnabled: z.boolean().optional(),
 
+	/**
+	 * Edit files in the background without opening diff views or stealing
+	 * editor focus. Graduated from the preventFocusDisruption experiment.
+	 */
+	backgroundEditing: z.boolean().optional(),
+
 	rateLimitSeconds: z.number().optional(),
 	experiments: experimentsSchema.optional(),
 

@@ -80,6 +80,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	checkpointTimeout: number
 	setCheckpointTimeout: (value: number) => void
 	setWriteDelayMs: (value: number) => void
+	setBackgroundEditing: (value: boolean) => void
 	terminalOutputPreviewSize?: "small" | "medium" | "large"
 	setTerminalOutputPreviewSize: (value: "small" | "medium" | "large") => void
 	mcpEnabled: boolean
@@ -192,6 +193,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		checkpointTimeout: DEFAULT_CHECKPOINT_TIMEOUT_SECONDS, // Default to 15 seconds
 		language: "en", // Default language code
 		writeDelayMs: 1000,
+		backgroundEditing: false,
 		terminalShellIntegrationTimeout: 4000,
 		mcpEnabled: true,
 		currentApiConfigName: "default",
@@ -444,6 +446,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		soundVolume: state.soundVolume,
 		ttsSpeed: state.ttsSpeed,
 		writeDelayMs: state.writeDelayMs,
+		backgroundEditing: state.backgroundEditing,
 		routerModels: extensionRouterModels,
 		profileThresholds: state.profileThresholds ?? {},
 		alwaysAllowFollowupQuestions,
@@ -479,6 +482,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		setEnableCheckpoints: (value) => setState((prevState) => ({ ...prevState, enableCheckpoints: value })),
 		setCheckpointTimeout: (value) => setState((prevState) => ({ ...prevState, checkpointTimeout: value })),
 		setWriteDelayMs: (value) => setState((prevState) => ({ ...prevState, writeDelayMs: value })),
+		setBackgroundEditing: (value) => setState((prevState) => ({ ...prevState, backgroundEditing: value })),
 		setTerminalOutputPreviewSize: (value) =>
 			setState((prevState) => ({ ...prevState, terminalOutputPreviewSize: value })),
 		setTerminalShellIntegrationTimeout: (value) =>

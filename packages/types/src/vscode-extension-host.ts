@@ -267,6 +267,7 @@ export type ExtensionState = Pick<
 	| "terminalZdotdir"
 	| "execaShellPath"
 	| "diagnosticsEnabled"
+	| "backgroundEditing"
 	| "language"
 	| "modeApiConfigs"
 	| "customModePrompts"
