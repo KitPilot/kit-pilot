@@ -495,5 +495,8 @@
 		"warningMessage": "此任務已使用其 ${{cap}} 自動核准預算中的 ${{spent}}({{percent}}%)。達到限額時 KitPilot 將暫停並等待核准。",
 		"overCapMessage": "此任務已支出 ${{spent}},超出其 ${{cap}} 自動核准預算。KitPilot 將在下次請求前暫停並等待核准。",
 		"dismiss": "關閉"
+	},
+	"home": {
+		"tagline": "已獲准起飛。我們來做點什麼?"
 	}
 }

@@ -500,5 +500,8 @@
 		"warningMessage": "Bu görev, ${{cap}} otomatik onay bütçesinin ${{spent}} kadarını ({{percent}}%) kullandı. Limite ulaşıldığında KitPilot onay için duraklayacak.",
 		"overCapMessage": "Bu görev ${{spent}} harcadı ve ${{cap}} otomatik onay bütçesini aştı. KitPilot bir sonraki istekten önce onay için duraklayacak.",
 		"dismiss": "Kapat"
+	},
+	"home": {
+		"tagline": "Kalkış izni verildi. Ne inşa ediyoruz?"
 	}
 }

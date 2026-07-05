@@ -499,5 +499,8 @@
 		"warningMessage": "このタスクは自動承認予算 ${{cap}} のうち ${{spent}}({{percent}}%)を使用しました。上限に達すると KitPilot は承認のため一時停止します。",
 		"overCapMessage": "このタスクは ${{spent}} を支出し、自動承認予算 ${{cap}} を超えています。次のリクエストの前に KitPilot は承認のため一時停止します。",
 		"dismiss": "閉じる"
+	},
+	"home": {
+		"tagline": "離陸許可が出ました。何を作りましょう?"
 	}
 }

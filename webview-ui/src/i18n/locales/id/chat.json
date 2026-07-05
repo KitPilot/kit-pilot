@@ -505,5 +505,8 @@
 		"warningMessage": "Tugas ini telah menggunakan ${{spent}} dari anggaran persetujuan otomatis ${{cap}} ({{percent}}%). KitPilot akan berhenti untuk persetujuan saat mencapai batas.",
 		"overCapMessage": "Tugas ini telah menghabiskan ${{spent}}, melebihi anggaran persetujuan otomatis ${{cap}}. KitPilot akan berhenti untuk persetujuan sebelum permintaan berikutnya.",
 		"dismiss": "Tutup"
+	},
+	"home": {
+		"tagline": "Izin lepas landas diberikan. Kita bangun apa?"
 	}
 }

@@ -499,5 +499,8 @@
 		"warningMessage": "Cette tâche a utilisé ${{spent}} de son budget d'approbation automatique de ${{cap}} ({{percent}}%). KitPilot se mettra en pause pour approbation à la limite.",
 		"overCapMessage": "Cette tâche a dépensé ${{spent}}, au-delà de son budget d'approbation automatique de ${{cap}}. KitPilot se mettra en pause pour approbation avant la prochaine requête.",
 		"dismiss": "Ignorer"
+	},
+	"home": {
+		"tagline": "Autorisé au décollage. On construit quoi ?"
 	}
 }

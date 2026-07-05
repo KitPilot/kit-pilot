@@ -499,5 +499,8 @@
 		"warningMessage": "Esta tarea ha usado ${{spent}} de su presupuesto de aprobación automática de ${{cap}} ({{percent}}%). KitPilot se pausará para pedir aprobación al llegar al límite.",
 		"overCapMessage": "Esta tarea ha gastado ${{spent}}, superando su presupuesto de aprobación automática de ${{cap}}. KitPilot se pausará para pedir aprobación antes de la siguiente solicitud.",
 		"dismiss": "Descartar"
+	},
+	"home": {
+		"tagline": "Autorizado para despegar. ¿Qué construimos?"
 	}
 }

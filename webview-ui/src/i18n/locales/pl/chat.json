@@ -499,5 +499,8 @@
 		"warningMessage": "To zadanie zużyło ${{spent}} z budżetu automatycznego zatwierdzania ${{cap}} ({{percent}}%). Po osiągnięciu limitu KitPilot wstrzyma się w oczekiwaniu na zatwierdzenie.",
 		"overCapMessage": "To zadanie wydało ${{spent}}, przekraczając budżet automatycznego zatwierdzania ${{cap}}. KitPilot wstrzyma się przed następnym żądaniem w oczekiwaniu na zatwierdzenie.",
 		"dismiss": "Zamknij"
+	},
+	"home": {
+		"tagline": "Zezwolenie na start wydane. Co budujemy?"
 	}
 }
