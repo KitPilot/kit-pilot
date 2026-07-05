@@ -229,5 +229,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "KitPilot paneli yüklemeyi tamamlayamadı. Bu, uzantı güncellemesinden hemen sonra olabilir — pencereyi yeniden yüklemek sorunu çözer.",
+			"reload": "Pencereyi Yeniden Yükle"
+		}
 	}
 }

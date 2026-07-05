@@ -234,5 +234,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "KitPilot 面板未能完成加载。这可能发生在扩展更新之后 — 重新加载窗口即可解决。",
+			"reload": "重新加载窗口"
+		}
 	}
 }

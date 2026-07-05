@@ -229,5 +229,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "Панель KitPilot не загрузилась полностью. Это может произойти сразу после обновления расширения — перезагрузка окна решает проблему.",
+			"reload": "Перезагрузить окно"
+		}
 	}
 }

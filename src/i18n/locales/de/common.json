@@ -229,5 +229,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "Das KitPilot-Panel wurde nicht vollständig geladen. Das kann direkt nach einem Extension-Update passieren — ein Neuladen des Fensters behebt es.",
+			"reload": "Fenster neu laden"
+		}
 	}
 }

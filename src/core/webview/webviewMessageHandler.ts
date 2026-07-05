@@ -533,6 +533,9 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 
 	switch (message.type) {
 		case "webviewDidLaunch":
+			// The webview bundle booted — stand down the boot watchdog.
+			provider.clearWebviewLaunchWatchdog()
+
 			// Load custom modes first
 			const customModes = await provider.customModesManager.getCustomModes()
 			await updateGlobalState("customModes", customModes)

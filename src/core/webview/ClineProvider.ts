@@ -540,11 +540,55 @@ export class ClineProvider
 	- https://github.com/microsoft/vscode-extension-samples/blob/main/webview-sample/src/extension.ts
 	*/
 	private clearWebviewResources() {
+		this.clearWebviewLaunchWatchdog()
 		while (this.webviewDisposables.length) {
 			const x = this.webviewDisposables.pop()
 			if (x) {
 				x.dispose()
 			}
+		}
+	}
+
+	/**
+	 * Webview boot watchdog. After a VS Code extension update, a live webview
+	 * can be left pointing at the previous version's resource URIs / service
+	 * worker, so its bundle never loads and the panel sits blank until the
+	 * window is reloaded (VS Code platform behavior — nothing extension code
+	 * can prevent). Detect it instead: if the webview hasn't reported
+	 * `webviewDidLaunch` within the grace period, offer a one-click reload.
+	 */
+	private static readonly WEBVIEW_LAUNCH_GRACE_MS = 20_000
+	private webviewLaunchWatchdog?: ReturnType<typeof setTimeout>
+	private webviewLaunchWatchdogNotified = false
+
+	private startWebviewLaunchWatchdog() {
+		this.clearWebviewLaunchWatchdog()
+		// One notification per extension-host session is enough.
+		if (this.webviewLaunchWatchdogNotified) {
+			return
+		}
+		this.webviewLaunchWatchdog = setTimeout(() => {
+			this.webviewLaunchWatchdog = undefined
+			this.webviewLaunchWatchdogNotified = true
+			this.log(
+				`Webview did not finish loading within ${ClineProvider.WEBVIEW_LAUNCH_GRACE_MS / 1000}s — likely a stale webview after an extension update. Offering a window reload.`,
+			)
+			const reload = t("common:webview.stalled.reload")
+			Promise.resolve(vscode.window.showWarningMessage(t("common:webview.stalled.message"), reload)).then(
+				(selection) => {
+					if (selection === reload) {
+						vscode.commands.executeCommand("workbench.action.reloadWindow")
+					}
+				},
+			)
+		}, ClineProvider.WEBVIEW_LAUNCH_GRACE_MS)
+	}
+
+	/** Called when the webview reports `webviewDidLaunch` (and on teardown). */
+	public clearWebviewLaunchWatchdog() {
+		if (this.webviewLaunchWatchdog) {
+			clearTimeout(this.webviewLaunchWatchdog)
+			this.webviewLaunchWatchdog = undefined
 		}
 	}
 
@@ -762,6 +806,11 @@ export class ClineProvider
 		// Sets up an event listener to listen for messages passed from the webview view context
 		// and executes code based on the message that is received.
 		this.setWebviewMessageListener(webviewView.webview)
+
+		// Arm the boot watchdog: cleared when the webview reports
+		// webviewDidLaunch; fires a reload-window offer if it never does
+		// (stale webview after an extension update).
+		this.startWebviewLaunchWatchdog()
 
 		// Initialize code index status subscription for the current workspace.
 		this.updateCodeIndexStatusSubscription()

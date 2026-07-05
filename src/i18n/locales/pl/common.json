@@ -229,5 +229,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "Panel KitPilot nie załadował się do końca. Może się to zdarzyć tuż po aktualizacji rozszerzenia — przeładowanie okna to naprawia.",
+			"reload": "Przeładuj okno"
+		}
 	}
 }

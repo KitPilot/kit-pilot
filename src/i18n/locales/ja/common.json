@@ -229,5 +229,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "KitPilot のパネルの読み込みが完了しませんでした。拡張機能の更新直後に起こることがあります。ウィンドウを再読み込みすると解決します。",
+			"reload": "ウィンドウを再読み込み"
+		}
 	}
 }
