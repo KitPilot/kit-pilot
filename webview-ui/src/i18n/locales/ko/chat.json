@@ -499,5 +499,8 @@
 		"warningMessage": "이 작업은 자동 승인 예산 ${{cap}} 중 ${{spent}}({{percent}}%)를 사용했습니다. 한도에 도달하면 KitPilot이 승인을 위해 일시 중지됩니다.",
 		"overCapMessage": "이 작업은 ${{spent}}를 지출하여 자동 승인 예산 ${{cap}}를 초과했습니다. 다음 요청 전에 KitPilot이 승인을 위해 일시 중지됩니다.",
 		"dismiss": "닫기"
+	},
+	"home": {
+		"tagline": "이륙 허가 완료. 무엇을 만들까요?"
 	}
 }

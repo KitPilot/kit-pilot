@@ -499,5 +499,8 @@
 		"warningMessage": "Questa attività ha usato ${{spent}} del suo budget di approvazione automatica di ${{cap}} ({{percent}}%). KitPilot si fermerà per l'approvazione al limite.",
 		"overCapMessage": "Questa attività ha speso ${{spent}}, oltre il suo budget di approvazione automatica di ${{cap}}. KitPilot si fermerà per l'approvazione prima della prossima richiesta.",
 		"dismiss": "Ignora"
+	},
+	"home": {
+		"tagline": "Autorizzato al decollo. Cosa costruiamo?"
 	}
 }

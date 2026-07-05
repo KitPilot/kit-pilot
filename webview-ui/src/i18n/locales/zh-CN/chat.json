@@ -500,5 +500,8 @@
 		"warningMessage": "此任务已使用其 ${{cap}} 自动批准预算中的 ${{spent}}({{percent}}%)。达到限额时 KitPilot 将暂停并等待批准。",
 		"overCapMessage": "此任务已支出 ${{spent}},超出其 ${{cap}} 自动批准预算。KitPilot 将在下次请求前暂停并等待批准。",
 		"dismiss": "关闭"
+	},
+	"home": {
+		"tagline": "已获准起飞。我们来做点什么?"
 	}
 }

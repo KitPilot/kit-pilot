@@ -666,3 +666,64 @@ input[cmdk-input]:focus {
 		animation: none;
 	}
 }
+
+/* ---------- KitPilot home (welcome) screen ---------- */
+
+/* Binary backdrop for the empty-state home screen ONLY (the class is applied
+   solely to ChatView's no-task container, so the chat/task view is untouched).
+   Tiny sky-blue 0s and 1s scattered on a repeating SVG tile; a radial mask
+   clears the middle so the hero reads crisply. */
+.kitpilot-home {
+	position: relative;
+}
+
+.kitpilot-home::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52'%3E%3Cg font-family='monospace' font-size='7' fill='%2387CEEB' fill-opacity='0.45'%3E%3Ctext x='5' y='11'%3E0%3C/text%3E%3Ctext x='31' y='8'%3E1%3C/text%3E%3Ctext x='18' y='24'%3E1%3C/text%3E%3Ctext x='43' y='20'%3E0%3C/text%3E%3Ctext x='8' y='39'%3E1%3C/text%3E%3Ctext x='29' y='44'%3E0%3C/text%3E%3Ctext x='45' y='36'%3E1%3C/text%3E%3C/g%3E%3C/svg%3E");
+	background-size: 52px 52px;
+	-webkit-mask-image: radial-gradient(ellipse 75% 55% at 50% 40%, transparent 30%, black 78%);
+	mask-image: radial-gradient(ellipse 75% 55% at 50% 40%, transparent 30%, black 78%);
+}
+
+/* Keep the actual content above the dot layer. */
+.kitpilot-home > * {
+	position: relative;
+}
+
+/* The aviator cub gently floats, like it's holding a hover. */
+@keyframes kitpilot-hover-float {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-6px);
+	}
+}
+
+.kitpilot-home-hero__mascot {
+	animation: kitpilot-hover-float 4.5s ease-in-out infinite;
+}
+
+.kitpilot-home-hero__wordmark {
+	font-size: 28px;
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	line-height: 1;
+	color: var(--vscode-foreground);
+}
+
+.kitpilot-home-hero__tagline {
+	font-size: 13px;
+	color: var(--vscode-descriptionForeground);
+	letter-spacing: 0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.kitpilot-home-hero__mascot {
+		animation: none;
+	}
+}

@@ -499,5 +499,8 @@
 		"warningMessage": "Diese Aufgabe hat ${{spent}} ihres Auto-Genehmigungsbudgets von ${{cap}} verbraucht ({{percent}}%). KitPilot pausiert am Limit für eine Genehmigung.",
 		"overCapMessage": "Diese Aufgabe hat ${{spent}} ausgegeben und liegt über ihrem Auto-Genehmigungsbudget von ${{cap}}. KitPilot pausiert vor der nächsten Anfrage für eine Genehmigung.",
 		"dismiss": "Ausblenden"
+	},
+	"home": {
+		"tagline": "Startfreigabe erteilt. Was bauen wir?"
 	}
 }

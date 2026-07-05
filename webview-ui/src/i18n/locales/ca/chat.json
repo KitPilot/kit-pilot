@@ -499,5 +499,8 @@
 		"warningMessage": "Aquesta tasca ha utilitzat ${{spent}} del seu pressupost d'aprovació automàtica de ${{cap}} ({{percent}}%). KitPilot es pausarà per demanar aprovació en arribar al límit.",
 		"overCapMessage": "Aquesta tasca ha gastat ${{spent}}, superant el seu pressupost d'aprovació automàtica de ${{cap}}. KitPilot es pausarà per demanar aprovació abans de la propera sol·licitud.",
 		"dismiss": "Descarta"
+	},
+	"home": {
+		"tagline": "Autoritzat per enlairar-se. Què construïm?"
 	}
 }

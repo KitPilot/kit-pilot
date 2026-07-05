@@ -495,5 +495,8 @@
 		"warningMessage": "This task has used ${{spent}} of its ${{cap}} auto-approval budget ({{percent}}%). KitPilot will pause for approval at the limit.",
 		"overCapMessage": "This task has spent ${{spent}}, over its ${{cap}} auto-approval budget. KitPilot will pause for approval before the next request.",
 		"dismiss": "Dismiss"
+	},
+	"home": {
+		"tagline": "Cleared for takeoff. What are we building?"
 	}
 }

@@ -499,5 +499,8 @@
 		"warningMessage": "Deze taak heeft ${{spent}} van het automatische goedkeuringsbudget van ${{cap}} gebruikt ({{percent}}%). KitPilot pauzeert voor goedkeuring bij de limiet.",
 		"overCapMessage": "Deze taak heeft ${{spent}} uitgegeven, boven het automatische goedkeuringsbudget van ${{cap}}. KitPilot pauzeert voor goedkeuring vóór het volgende verzoek.",
 		"dismiss": "Sluiten"
+	},
+	"home": {
+		"tagline": "Vrijgegeven voor vertrek. Wat gaan we bouwen?"
 	}
 }
