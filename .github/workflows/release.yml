@@ -84,12 +84,29 @@ jobs:
                       echo "Version $LOCAL_VERSION is already on the Marketplace — skipping publish."
                       exit 0
                   fi
+                  # Second net for the propagation race: the Marketplace read API
+                  # can lag a fresh publish by several minutes, so the pre-check
+                  # above may miss a version that IS already live. If the publish
+                  # itself then reports "already exists", that is the same benign
+                  # already-published case — succeed, don't fail the run.
+                  EXTRA_FLAGS=""
                   if [[ "$REF" == *-pre.* ]]; then
                       echo "Detected pre-release tag — publishing to pre-release channel."
-                      vsce publish --no-dependencies --allow-package-all-secrets --pre-release
+                      EXTRA_FLAGS="--pre-release"
                   else
                       echo "Publishing to stable channel."
-                      vsce publish --no-dependencies --allow-package-all-secrets
+                  fi
+                  set +e
+                  OUTPUT=$(vsce publish --no-dependencies --allow-package-all-secrets $EXTRA_FLAGS 2>&1)
+                  STATUS=$?
+                  set -e
+                  echo "$OUTPUT"
+                  if [ $STATUS -ne 0 ]; then
+                      if echo "$OUTPUT" | grep -q "already exists"; then
+                          echo "Version $LOCAL_VERSION is already on the Marketplace (read API lagged) — treating as published."
+                          exit 0
+                      fi
+                      exit $STATUS
                   fi
 
             - name: Extract version from tag
