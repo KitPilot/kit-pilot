@@ -949,8 +949,10 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		return (
 			<div
 				className={cn(
-					"flex flex-col gap-1 bg-editor-background outline-none border border-none box-border",
-					isEditMode ? "p-2 w-full" : "relative px-1.5 pb-1 w-[calc(100%-16px)] ml-auto mr-auto",
+					"flex flex-col gap-1 outline-none box-border",
+					isEditMode
+						? "bg-editor-background border border-none p-2 w-full"
+						: "kitpilot-chatbox relative w-[calc(100%-16px)] ml-auto mr-auto",
 				)}>
 				<div className={cn(!isEditMode && "relative")}>
 					<div
@@ -1034,7 +1036,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 									"font-vscode-font-family",
 									"text-vscode-editor-font-size",
 									"leading-vscode-editor-line-height",
-									isFocused
+									isFocused && isEditMode
 										? "border border-vscode-focusBorder outline outline-vscode-focusBorder"
 										: isDraggingOver
 											? "border-2 border-dashed border-vscode-focusBorder"
@@ -1098,14 +1100,16 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 									"leading-vscode-editor-line-height",
 									"cursor-text",
 									"py-2 pl-2",
-									isFocused
+									isFocused && isEditMode
 										? "border border-vscode-focusBorder outline outline-vscode-focusBorder"
 										: isDraggingOver
 											? "border-2 border-dashed border-vscode-focusBorder"
 											: "border border-transparent",
 									isDraggingOver
 										? "bg-[color-mix(in_srgb,var(--vscode-input-background)_95%,var(--vscode-focusBorder))]"
-										: "bg-vscode-input-background",
+										: isEditMode
+											? "bg-vscode-input-background"
+											: "bg-transparent",
 									"transition-background-color duration-150 ease-in-out",
 									"will-change-background-color",
 									"min-h-[94px]",
