@@ -229,5 +229,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "Panel KitPilot tidak selesai dimuat. Ini bisa terjadi tepat setelah pembaruan ekstensi — memuat ulang jendela memperbaikinya.",
+			"reload": "Muat Ulang Jendela"
+		}
 	}
 }

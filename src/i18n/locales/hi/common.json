@@ -229,5 +229,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "KitPilot का पैनल लोड होना पूरा नहीं हुआ। एक्सटेंशन अपडेट के तुरंत बाद ऐसा हो सकता है — विंडो को फिर से लोड करने से यह ठीक हो जाता है।",
+			"reload": "विंडो पुनः लोड करें"
+		}
 	}
 }

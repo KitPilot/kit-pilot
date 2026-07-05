@@ -447,6 +447,53 @@ describe("ClineProvider", () => {
 		expect(mockWebviewView.webview.html).toContain("<!DOCTYPE html>")
 	})
 
+	describe("webview boot watchdog", () => {
+		// The shared mockWebviewView auto-fires onDidDispose, which (correctly)
+		// tears the watchdog down via clearWebviewResources. Use a mock whose
+		// dispose event never fires so the armed timer survives, like a real
+		// live panel.
+		let liveWebviewView: vscode.WebviewView
+
+		beforeEach(() => {
+			vi.useFakeTimers()
+			liveWebviewView = {
+				...(mockWebviewView as any),
+				webview: { ...(mockWebviewView as any).webview },
+				onDidDispose: vi.fn().mockImplementation(() => ({ dispose: vi.fn() })),
+			} as unknown as vscode.WebviewView
+		})
+
+		afterEach(() => {
+			vi.useRealTimers()
+		})
+
+		test("offers a window reload when the webview never reports webviewDidLaunch", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+
+			expect(vscode.window.showWarningMessage).not.toHaveBeenCalled()
+			vi.advanceTimersByTime(21_000)
+			expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1)
+		})
+
+		test("stays quiet when webviewDidLaunch arrives in time", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+
+			provider.clearWebviewLaunchWatchdog()
+			vi.advanceTimersByTime(60_000)
+			expect(vscode.window.showWarningMessage).not.toHaveBeenCalled()
+		})
+
+		test("notifies at most once per session across re-resolves", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+			vi.advanceTimersByTime(21_000)
+			expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1)
+
+			await provider.resolveWebviewView(liveWebviewView)
+			vi.advanceTimersByTime(60_000)
+			expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1)
+		})
+	})
+
 	test("resolveWebviewView sets up webview correctly in development mode even if local server is not running", async () => {
 		provider = new ClineProvider(
 			{ ...mockContext, extensionMode: vscode.ExtensionMode.Development },

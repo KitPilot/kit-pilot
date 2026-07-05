@@ -236,5 +236,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "Bảng điều khiển KitPilot chưa tải xong. Điều này có thể xảy ra ngay sau khi cập nhật tiện ích — tải lại cửa sổ sẽ khắc phục.",
+			"reload": "Tải lại cửa sổ"
+		}
 	}
 }

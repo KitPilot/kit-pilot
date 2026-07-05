@@ -226,5 +226,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "KitPilot's panel didn't finish loading. This can happen right after an extension update — reloading the window fixes it.",
+			"reload": "Reload Window"
+		}
 	}
 }

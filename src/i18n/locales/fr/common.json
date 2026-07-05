@@ -229,5 +229,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "Le panneau KitPilot n'a pas fini de se charger. Cela peut arriver juste après une mise à jour de l'extension — recharger la fenêtre corrige le problème.",
+			"reload": "Recharger la fenêtre"
+		}
 	}
 }

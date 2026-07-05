@@ -229,5 +229,11 @@
 	"docsLink": {
 		"label": "Docs",
 		"url": "https://github.com/KitPilotInc/KitPilot-Code"
+	},
+	"webview": {
+		"stalled": {
+			"message": "KitPilot 패널이 로드를 완료하지 못했습니다. 확장 프로그램 업데이트 직후에 발생할 수 있으며, 창을 다시 로드하면 해결됩니다.",
+			"reload": "창 다시 로드"
+		}
 	}
 }
