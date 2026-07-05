@@ -1,5 +1,13 @@
 # KitPilot Changelog
 
+## 0.1.27
+
+This release gives KitPilot's home screen a face.
+
+### Changed
+
+- The welcome screen has a new look: a backdrop of tiny sky-blue 0s and 1s, the KitPilot aviator cub gently floating above a proper wordmark, and a new tagline — "Cleared for takeoff. What are we building?" (in your language). The pattern fades out behind the mascot to keep things calm, and it appears only on the home screen — your active chats look exactly as before.
+
 ## 0.1.26
 
 This release lets you see your spending before it hits the limit, and promotes two features out of the Experimental section.
