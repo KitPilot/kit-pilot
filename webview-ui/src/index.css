@@ -727,3 +727,32 @@ input[cmdk-input]:focus {
 		animation: none;
 	}
 }
+
+/* ---------- KitPilot chat input box ---------- */
+
+/* The whole input group (textarea + control pills) reads as one spacious
+   rounded container with a soft indigo→sea-green diagonal gradient. Hues are
+   fixed brand colors blended into the theme's input background, so dark
+   themes get a deep muted wash and light themes a pastel one, while text
+   keeps using the theme's input foreground. */
+.kitpilot-chatbox {
+	border-radius: 14px;
+	padding: 6px 6px 4px;
+	background: linear-gradient(
+		135deg,
+		color-mix(in srgb, #5b7cfa 32%, var(--vscode-input-background)) 0%,
+		color-mix(in srgb, #2ea88a 32%, var(--vscode-input-background)) 100%
+	);
+	border: 1px solid color-mix(in srgb, var(--vscode-foreground) 14%, transparent);
+}
+
+/* One focus ring on the container instead of an inner rectangle on the
+   textarea (the textarea's own outline is suppressed below). */
+.kitpilot-chatbox:focus-within {
+	outline: 1.5px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.kitpilot-chatbox textarea:focus {
+	outline: none;
+}
