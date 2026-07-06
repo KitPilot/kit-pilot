@@ -1,5 +1,17 @@
 # KitPilot Changelog
 
+## 0.1.28
+
+This release refreshes the chat input and makes broken panels explain themselves.
+
+### Changed
+
+- The chat input has a new look: the text area and its controls (mode, model, send) now sit together in one rounded card with a soft blue-to-green gradient. It adapts to your theme — a deep wash on dark themes, a pastel one on light themes — and your text stays as readable as before.
+
+### Fixed
+
+- If KitPilot's panel ever fails to finish loading — which can happen right after VS Code updates the extension while the panel is open — KitPilot now notices within a few seconds and shows a message with a one-click **Reload Window** button, instead of leaving you with a silent blank panel wondering what broke.
+
 ## 0.1.27
 
 This release gives KitPilot's home screen a face.
