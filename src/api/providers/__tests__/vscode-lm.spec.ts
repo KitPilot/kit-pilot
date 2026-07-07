@@ -82,7 +82,7 @@ vi.mock("vscode", () => {
 })
 
 import * as vscode from "vscode"
-import { VsCodeLmHandler } from "../vscode-lm"
+import { VsCodeLmHandler, getVsCodeLmModels } from "../vscode-lm"
 import type { ApiHandlerOptions } from "../../../shared/api"
 import type { Anthropic } from "@anthropic-ai/sdk"
 
@@ -811,5 +811,59 @@ describe("VsCodeLmHandler", () => {
 			handler.dispose()
 			expect(registration.dispose).toHaveBeenCalled()
 		})
+	})
+})
+
+describe("getVsCodeLmModels", () => {
+	const model = (over: Record<string, unknown>) => ({
+		id: "id",
+		name: "name",
+		vendor: "copilot",
+		family: "family",
+		version: "1.0",
+		maxInputTokens: 4096,
+		sendRequest: vi.fn(),
+		countTokens: vi.fn(),
+		...over,
+	})
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+	})
+
+	it("keeps Copilot-vendor models (the only ones KitPilot can drive)", async () => {
+		;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([model({ vendor: "copilot" })])
+		const result = await getVsCodeLmModels()
+		expect(result).toHaveLength(1)
+	})
+
+	it("drops models from other providers that gate access behind their own auth", async () => {
+		;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([
+			model({ id: "opus-copilot", vendor: "copilot" }),
+			model({ id: "opus-claude-code", vendor: "claude-code" }),
+			model({ id: "opus-cli", vendor: "copilot-cli" }),
+		])
+		const result = await getVsCodeLmModels()
+		expect(result.map((m) => m.id)).toEqual(["opus-copilot"])
+	})
+
+	it("matches the usable vendor case-insensitively", async () => {
+		;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([model({ vendor: "Copilot" })])
+		const result = await getVsCodeLmModels()
+		expect(result).toHaveLength(1)
+	})
+
+	it("still applies the static id blacklist for Copilot models", async () => {
+		;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([
+			model({ id: "claude-3.7-sonnet", vendor: "copilot" }),
+		])
+		const result = await getVsCodeLmModels()
+		expect(result).toHaveLength(0)
+	})
+
+	it("returns [] when selectChatModels throws", async () => {
+		;(vscode.lm.selectChatModels as Mock).mockRejectedValueOnce(new Error("boom"))
+		const result = await getVsCodeLmModels()
+		expect(result).toEqual([])
 	})
 })

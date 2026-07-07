@@ -1294,7 +1294,8 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 									)}
 									style={{
 										bottom: "0.75rem",
-										color: "color-mix(in oklab, var(--vscode-input-foreground) 50%, transparent)",
+										color: "color-mix(in oklab, var(--vscode-input-foreground) 72%, transparent)",
+										fontWeight: 500,
 										userSelect: "none",
 										pointerEvents: "none",
 									}}>

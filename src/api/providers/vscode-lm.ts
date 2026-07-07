@@ -796,10 +796,33 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 // Static blacklist of VS Code Language Model IDs that should be excluded from the model list e.g. because they will never work
 const VSCODE_LM_STATIC_BLACKLIST: string[] = ["claude-3.7-sonnet", "claude-3.7-sonnet-thought"]
 
+// Vendors whose models KitPilot can actually drive through the VS Code LM API.
+//
+// Newer VS Code versions let several extensions register the SAME model under
+// different vendors (e.g. the picker shows "Opus 4.7 - Copilot", "… - Copilot
+// CLI", "… - Claude Code"). Only GitHub Copilot opts its models into the general
+// third-party consumer API. The others gate access behind their own extension's
+// authorization: VS Code's `_isUsingAuth` trips whenever a model carries `auth`
+// metadata and the caller (KitPilot) isn't the providing extension, so the
+// request fails with NoPermissions / a provider "API error". That auth flag is
+// NOT exposed on the consumer-facing `LanguageModelChat` (only id/vendor/family/
+// version/maxInputTokens are), so we can't detect it directly — we key off the
+// vendor instead. VS Code registers each vendor to exactly one extension, so the
+// Copilot CLI / Claude Code entries necessarily report a different vendor than
+// GitHub Copilot's "copilot". Matched case-insensitively.
+const VSCODE_LM_USABLE_VENDORS: readonly string[] = ["copilot"]
+
+function isUsableVsCodeLmModel(model: { vendor?: string; id: string }): boolean {
+	if (VSCODE_LM_STATIC_BLACKLIST.includes(model.id)) {
+		return false
+	}
+	return VSCODE_LM_USABLE_VENDORS.includes((model.vendor ?? "").toLowerCase())
+}
+
 export async function getVsCodeLmModels() {
 	try {
 		const models = (await vscode.lm.selectChatModels({})) || []
-		return models.filter((model) => !VSCODE_LM_STATIC_BLACKLIST.includes(model.id))
+		return models.filter((model) => isUsableVsCodeLmModel(model))
 	} catch (error) {
 		console.error(
 			`Error fetching VS Code LM models: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,

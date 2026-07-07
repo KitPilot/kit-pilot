@@ -756,3 +756,14 @@ input[cmdk-input]:focus {
 .kitpilot-chatbox textarea:focus {
 	outline: none;
 }
+
+/* Placeholder / hint text sits on the gradient wash, so the browser's default
+   dimmed placeholder (~54% of the text color) washes out. Lift it to a firmer,
+   theme-aware opacity + medium weight so it stays legible on both the deep dark
+   wash and the light pastel one. `opacity: 1` overrides the UA's own dimming so
+   the color-mix alpha is the single source of truth. */
+.kitpilot-chatbox textarea::placeholder {
+	color: color-mix(in oklab, var(--vscode-input-foreground) 72%, transparent);
+	opacity: 1;
+	font-weight: 500;
+}
