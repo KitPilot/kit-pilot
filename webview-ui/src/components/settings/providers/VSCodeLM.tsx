@@ -87,6 +87,15 @@ export const VSCodeLM = ({ apiConfiguration, setApiConfigurationField }: VSCodeL
 				</div>
 			)}
 			<div className="text-sm text-vscode-errorForeground">{t("settings:providers.vscodeLmWarning")}</div>
+			<div className="flex flex-col gap-2 rounded border border-vscode-panel-border p-3">
+				<div className="flex items-center gap-1.5 font-medium">
+					<span className="codicon codicon-lightbulb" />
+					{t("settings:providers.vscodeLmThinkingEffortTitle")}
+				</div>
+				<div className="text-sm text-vscode-descriptionForeground">
+					{t("settings:providers.vscodeLmThinkingEffortDescription")}
+				</div>
+			</div>
 		</>
 	)
 }

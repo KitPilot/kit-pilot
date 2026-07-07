@@ -1,5 +1,18 @@
 # KitPilot Changelog
 
+## 0.1.29
+
+This release cleans up the model list and makes the chat input easier to read.
+
+### Changed
+
+- The placeholder and hint text inside the chat input are now brighter and a touch bolder, so they stay easy to read against the input's gradient background on both light and dark themes.
+- The VS Code LM provider settings now include a short note about "Thinking Effort" (how hard Copilot models reason): it's set in VS Code's own model picker, not in KitPilot, and whatever level you choose there already applies to KitPilot — so there's nothing extra to configure here.
+
+### Fixed
+
+- Recent VS Code versions can list the same model under several providers — for example "Claude Opus — Copilot", "— Copilot CLI", and "— Claude Code". Only the Copilot ones actually work with KitPilot; picking one of the others failed with an authorization error. KitPilot now shows only the models it can genuinely use, so you can't accidentally select one that errors out.
+
 ## 0.1.28
 
 This release refreshes the chat input and makes broken panels explain themselves.
