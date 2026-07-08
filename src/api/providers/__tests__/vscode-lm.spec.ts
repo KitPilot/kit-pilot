@@ -847,6 +847,27 @@ describe("getVsCodeLmModels", () => {
 		expect(result.map((m) => m.id)).toEqual(["opus-copilot"])
 	})
 
+	it("keeps Copilot BYOK models (contributed by Copilot Chat under per-provider vendors)", async () => {
+		// BYOK models the user adds via Copilot report vendor ids like these
+		// (not "copilot") but are still served through Copilot, so they work.
+		const byokVendors = [
+			"openai",
+			"anthropic",
+			"gemini",
+			"ollama",
+			"openrouter",
+			"azure",
+			"xai",
+			"customoai",
+			"customendpoint",
+		]
+		;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce(
+			byokVendors.map((vendor, i) => model({ id: `byok-${i}`, vendor })),
+		)
+		const result = await getVsCodeLmModels()
+		expect(result).toHaveLength(byokVendors.length)
+	})
+
 	it("matches the usable vendor case-insensitively", async () => {
 		;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([model({ vendor: "Copilot" })])
 		const result = await getVsCodeLmModels()
