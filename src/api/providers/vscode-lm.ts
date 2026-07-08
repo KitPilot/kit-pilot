@@ -800,17 +800,37 @@ const VSCODE_LM_STATIC_BLACKLIST: string[] = ["claude-3.7-sonnet", "claude-3.7-s
 //
 // Newer VS Code versions let several extensions register the SAME model under
 // different vendors (e.g. the picker shows "Opus 4.7 - Copilot", "… - Copilot
-// CLI", "… - Claude Code"). Only GitHub Copilot opts its models into the general
-// third-party consumer API. The others gate access behind their own extension's
-// authorization: VS Code's `_isUsingAuth` trips whenever a model carries `auth`
-// metadata and the caller (KitPilot) isn't the providing extension, so the
-// request fails with NoPermissions / a provider "API error". That auth flag is
-// NOT exposed on the consumer-facing `LanguageModelChat` (only id/vendor/family/
-// version/maxInputTokens are), so we can't detect it directly — we key off the
-// vendor instead. VS Code registers each vendor to exactly one extension, so the
-// Copilot CLI / Claude Code entries necessarily report a different vendor than
-// GitHub Copilot's "copilot". Matched case-insensitively.
-const VSCODE_LM_USABLE_VENDORS: readonly string[] = ["copilot"]
+// CLI", "… - Claude Code"). Models served by the GitHub Copilot Chat extension
+// work with third-party consumers like KitPilot; models contributed by OTHER
+// extensions (the standalone Copilot CLI / Claude Code providers) gate access
+// behind their own extension's authorization: VS Code's `_isUsingAuth` trips
+// whenever a model carries `auth` metadata and the caller (KitPilot) isn't the
+// providing extension, so the request fails with NoPermissions / a provider
+// "API error".
+//
+// The right discriminator is the CONTRIBUTING EXTENSION, but that (and the
+// `auth`/`isBYOK` flags) is NOT exposed on the consumer-facing `LanguageModelChat`
+// — only id/vendor/family/version/maxInputTokens are, even in @types/vscode 1.120.
+// So we key off vendor. Besides first-party "copilot", GitHub Copilot Chat also
+// contributes BYOK models (your own API key, still served through Copilot) under
+// per-provider vendor ids. VS Code core hardcodes that built-in BYOK set as
+// "stable and known ahead of time" (see BUILT_IN_BYOK_VENDOR_IDS in VS Code's
+// languageModels.ts), and vendor ids are unique per registering extension, so a
+// separate Claude Code / Copilot CLI provider necessarily reports a DIFFERENT
+// vendor and stays filtered out. Matched case-insensitively.
+const VSCODE_LM_USABLE_VENDORS: readonly string[] = [
+	"copilot",
+	// GitHub Copilot Chat built-in BYOK providers (vendor id = providerName.toLowerCase()).
+	"openai",
+	"anthropic",
+	"gemini",
+	"ollama",
+	"openrouter",
+	"azure",
+	"xai",
+	"customoai",
+	"customendpoint",
+]
 
 function isUsableVsCodeLmModel(model: { vendor?: string; id: string }): boolean {
 	if (VSCODE_LM_STATIC_BLACKLIST.includes(model.id)) {

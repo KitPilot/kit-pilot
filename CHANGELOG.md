@@ -1,5 +1,13 @@
 # KitPilot Changelog
 
+## 0.1.30
+
+This release fixes models added with your own API key going missing from KitPilot.
+
+### Fixed
+
+- If you added a model to GitHub Copilot with your own API key (BYOK) — for example your own OpenAI, Anthropic, Gemini, or OpenRouter key — it stopped showing up in KitPilot's model list in 0.1.29. The new model filter was too strict and hid these along with the ones that genuinely don't work. KitPilot now recognizes Copilot's own bring-your-own-key models and shows them again, while still hiding the separate providers (like Claude Code or the Copilot CLI) that can't be used from KitPilot.
+
 ## 0.1.29
 
 This release cleans up the model list and makes the chat input easier to read.
