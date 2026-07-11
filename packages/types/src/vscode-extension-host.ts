@@ -272,6 +272,7 @@ export type ExtensionState = Pick<
 	| "execaShellPath"
 	| "diagnosticsEnabled"
 	| "backgroundEditing"
+	| "backgroundTaskWakeEnabled"
 	| "language"
 	| "modeApiConfigs"
 	| "customModePrompts"

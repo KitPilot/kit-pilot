@@ -194,6 +194,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		language: "en", // Default language code
 		writeDelayMs: 1000,
 		backgroundEditing: false,
+		backgroundTaskWakeEnabled: true,
 		terminalShellIntegrationTimeout: 4000,
 		mcpEnabled: true,
 		currentApiConfigName: "default",

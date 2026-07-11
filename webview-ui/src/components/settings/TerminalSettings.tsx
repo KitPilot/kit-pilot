@@ -20,6 +20,7 @@ type TerminalSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	terminalOutputPreviewSize?: TerminalOutputPreviewSize
 	terminalShellIntegrationTimeout?: number
 	terminalShellIntegrationDisabled?: boolean
+	backgroundTaskWakeEnabled?: boolean
 	terminalCommandDelay?: number
 	terminalPowershellCounter?: boolean
 	terminalZshClearEolMark?: boolean
@@ -30,6 +31,7 @@ type TerminalSettingsProps = HTMLAttributes<HTMLDivElement> & {
 		| "terminalOutputPreviewSize"
 		| "terminalShellIntegrationTimeout"
 		| "terminalShellIntegrationDisabled"
+		| "backgroundTaskWakeEnabled"
 		| "terminalCommandDelay"
 		| "terminalPowershellCounter"
 		| "terminalZshClearEolMark"
@@ -43,6 +45,7 @@ export const TerminalSettings = ({
 	terminalOutputPreviewSize,
 	terminalShellIntegrationTimeout,
 	terminalShellIntegrationDisabled,
+	backgroundTaskWakeEnabled,
 	terminalCommandDelay,
 	terminalPowershellCounter,
 	terminalZshClearEolMark,
@@ -122,6 +125,22 @@ export const TerminalSettings = ({
 							</Select>
 							<div className="text-vscode-descriptionForeground text-sm mt-1">
 								{t("settings:terminal.outputPreviewSize.description")}
+							</div>
+						</SearchableSetting>
+
+						<SearchableSetting
+							settingId="background-task-wake-enabled"
+							section="terminal"
+							label={t("settings:terminal.backgroundTaskWake.label")}>
+							<VSCodeCheckbox
+								checked={backgroundTaskWakeEnabled ?? true}
+								onChange={(e: any) =>
+									setCachedStateField("backgroundTaskWakeEnabled", e.target.checked)
+								}>
+								<span className="font-medium">{t("settings:terminal.backgroundTaskWake.label")}</span>
+							</VSCodeCheckbox>
+							<div className="text-vscode-descriptionForeground text-sm mt-1">
+								{t("settings:terminal.backgroundTaskWake.description")}
 							</div>
 						</SearchableSetting>
 					</div>

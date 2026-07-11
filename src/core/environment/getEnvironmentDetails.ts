@@ -13,6 +13,8 @@ import { getApiMetrics } from "../../shared/getApiMetrics"
 import { listFiles } from "../../services/glob/list-files"
 import { TerminalRegistry } from "../../integrations/terminal/TerminalRegistry"
 import { Terminal } from "../../integrations/terminal/Terminal"
+import { BackgroundTaskRegistry } from "../../services/background-tasks/BackgroundTaskRegistry"
+import { drainPendingEvents } from "../../services/background-tasks/notifications"
 import { arePathsEqual } from "../../utils/path"
 import { formatResponse } from "../prompts/responses"
 import { getGitStatus } from "../../utils/git"
@@ -74,16 +76,21 @@ export async function getEnvironmentDetails(cline: Task, includeFileDetails: boo
 	}
 	cache.openTabs = allowedOpenTabs ?? ""
 
+	// Terminals owned by BackgroundTaskRegistry tasks report through the
+	// "# Background Tasks" section below (and push notifications), so they are
+	// excluded here to avoid double-reporting the same output.
+	const backgroundOwnedTerminalIds = BackgroundTaskRegistry.ownedTerminalIds()
+
 	// Get task-specific and background terminals.
 	const busyTerminals = [
 		...TerminalRegistry.getTerminals(true, cline.taskId),
 		...TerminalRegistry.getBackgroundTerminals(true),
-	]
+	].filter((t) => !backgroundOwnedTerminalIds.has(t.id))
 
 	const inactiveTerminals = [
 		...TerminalRegistry.getTerminals(false, cline.taskId),
 		...TerminalRegistry.getBackgroundTerminals(false),
-	]
+	].filter((t) => !backgroundOwnedTerminalIds.has(t.id))
 
 	if (busyTerminals.length > 0) {
 		if (cline.didEditFile) {
@@ -161,6 +168,32 @@ export async function getEnvironmentDetails(cline: Task, includeFileDetails: boo
 					terminalDetails += `\n### New Output\n${output}`
 				})
 			}
+		}
+	}
+
+	// Background tasks: pending events (exit / pattern match that didn't wake
+	// an idle task) drain here — this is the free delivery path while the
+	// agent is working — plus a status line per live registry entry.
+	const pendingBackgroundEvents = drainPendingEvents()
+	const backgroundTasks = BackgroundTaskRegistry.list()
+
+	if (pendingBackgroundEvents.length > 0 || backgroundTasks.length > 0) {
+		terminalDetails += "\n\n# Background Tasks"
+
+		for (const eventText of pendingBackgroundEvents) {
+			terminalDetails += `\n${eventText}`
+		}
+
+		for (const bgTask of backgroundTasks) {
+			const exit = bgTask.exitDetails
+			const status =
+				bgTask.status === "running"
+					? "running"
+					: bgTask.status === "killed"
+						? "killed"
+						: `exited (code ${exit?.exitCode ?? "?"})`
+			const hasNew = BackgroundTaskRegistry.hasUnreadOutput(bgTask.id) ? ", has new output" : ""
+			terminalDetails += `\n- #${bgTask.id} \`${bgTask.command}\` — ${status}${hasNew} (check_task/stop_task)`
 		}
 	}
 

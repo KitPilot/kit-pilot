@@ -112,6 +112,9 @@ export const globalSettingsSchema = z.object({
 	deniedCommands: z.array(z.string()).optional(),
 	commandExecutionTimeout: z.number().optional(),
 	commandTimeoutAllowlist: z.array(z.string()).optional(),
+	// Wake an idle agent when a background task exits or matches notify_on
+	// (default true). Off = events only surface in env details on the next turn.
+	backgroundTaskWakeEnabled: z.boolean().optional(),
 	preventCompletionWithOpenTodos: z.boolean().optional(),
 	allowedMaxRequests: z.number().nullish(),
 	allowedMaxCost: z.number().nullish(),

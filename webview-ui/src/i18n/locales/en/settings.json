@@ -764,6 +764,10 @@
 				"large": "Large (20KB)"
 			}
 		},
+		"backgroundTaskWake": {
+			"label": "Wake the agent when a background task finishes",
+			"description": "When the agent starts a command in the background (like a dev server or long test run) and that command exits or hits its watch pattern while the agent is idle, KitPilot wakes the agent so it can react. Each wake costs one model request. Turn this off to have background events wait quietly until the next time the agent works."
+		},
 		"shellIntegrationTimeout": {
 			"label": "Terminal shell integration timeout",
 			"description": "How long to wait for VS Code shell integration before running commands. Raise if your shell starts slowly or you see 'Shell Integration Unavailable' errors. <0>Learn more</0>"
