@@ -21,6 +21,7 @@
 	"autoCondenseContext": true,
 	"autoCondenseContextPercent": 100,
 	"backgroundEditing": false,
+	"backgroundTaskWakeEnabled": true,
 	"checkpointTimeout": 15,
 	"clineMessages": [],
 	"codebaseIndexConfig": {
