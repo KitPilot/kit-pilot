@@ -797,6 +797,22 @@ export class NativeToolCallParser {
 					}
 					break
 
+				case "check_task":
+					if (args.id !== undefined) {
+						nativeArgs = {
+							id: args.id,
+							wait_for_pattern: args.wait_for_pattern,
+							wait_seconds: args.wait_seconds,
+						} as NativeArgsFor<TName>
+					}
+					break
+
+				case "stop_task":
+					if (args.id !== undefined) {
+						nativeArgs = { id: args.id } as NativeArgsFor<TName>
+					}
+					break
+
 				case "apply_diff":
 					if (args.path !== undefined && args.diff !== undefined) {
 						nativeArgs = {

@@ -709,6 +709,8 @@ export interface ClineSayTool {
 		| "codebaseSearch"
 		| "readFile"
 		| "readCommandOutput"
+		| "checkTask"
+		| "stopTask"
 		| "listFilesTopLevel"
 		| "listFilesRecursive"
 		| "searchFiles"
@@ -727,6 +729,12 @@ export interface ClineSayTool {
 	totalBytes?: number
 	searchPattern?: string
 	matchCount?: number
+	// For checkTask / stopTask (background tasks); `command` is shared with
+	// the runSlashCommand fields below.
+	id?: number
+	status?: string
+	exitCode?: number
+	wasRunning?: boolean
 	diff?: string
 	content?: string
 	// Original file content before first edit (for merged diff display in FileChangesPanel)
