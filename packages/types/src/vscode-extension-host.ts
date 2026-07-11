@@ -44,6 +44,7 @@ export interface ExtensionMessage {
 		| "lmStudioModels"
 		| "vsCodeLmModels"
 		| "vsCodeLmApiAvailable"
+		| "copilotThinkingEffort"
 		| "updatePrompt"
 		| "systemPrompt"
 		| "autoApprovalEnabled"
@@ -130,6 +131,9 @@ export interface ExtensionMessage {
 	ollamaModels?: ModelRecord
 	lmStudioModels?: ModelRecord
 	vsCodeLmModels?: { vendor?: string; family?: string; version?: string; id?: string; info?: ModelInfo }[]
+	// For copilotThinkingEffort: a level string ("low"|"medium"|"high"|"xhigh"|"none"),
+	// undefined = model default, null = unknown (indicator hides).
+	copilotThinkingEffort?: string | null
 	mcpServers?: McpServer[]
 	commits?: GitCommit[]
 	listApiConfig?: ProviderSettingsEntry[]
@@ -408,6 +412,7 @@ export interface WebviewMessage {
 		| "requestOllamaModels"
 		| "requestLmStudioModels"
 		| "requestVsCodeLmModels"
+		| "requestCopilotThinkingEffort"
 		| "openImage"
 		| "saveImage"
 		| "openFile"

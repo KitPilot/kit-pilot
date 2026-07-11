@@ -39,6 +39,8 @@ vitest.mock("../../prompts/responses")
 
 // Import the module
 import * as executeCommandModule from "../ExecuteCommandTool"
+import { TerminalRegistry } from "../../../integrations/terminal/TerminalRegistry"
+import { BackgroundTaskRegistry } from "../../../services/background-tasks/BackgroundTaskRegistry"
 const { executeCommandTool } = executeCommandModule
 
 describe("executeCommandTool", () => {
@@ -299,6 +301,83 @@ describe("executeCommandTool", () => {
 		it("should honor model timeout outside CLI runtime", () => {
 			delete process.env.KITPILOT_CLI_RUNTIME
 			expect(executeCommandModule.resolveAgentTimeoutMs(30)).toBe(30_000)
+		})
+	})
+
+	describe("run_in_background parameter", () => {
+		beforeEach(() => {
+			delete process.env.KITPILOT_CLI_RUNTIME
+			BackgroundTaskRegistry.resetForTests()
+			// Restore the default fast-resolving terminal (a previous test may
+			// have installed a never-resolving one; clearAllMocks doesn't).
+			;(TerminalRegistry.getOrCreateTerminal as any).mockResolvedValue({
+				runCommand: vitest.fn().mockResolvedValue(undefined),
+				getCurrentWorkingDirectory: vitest.fn().mockReturnValue("/test/workspace"),
+			})
+		})
+
+		const runWith = async (nativeArgs: Record<string, unknown>) => {
+			mockToolUse.nativeArgs = { command: "npm run dev", ...nativeArgs } as any
+			mockToolUse.params = { command: "npm run dev" }
+			await executeCommandTool.handle(mockCline, mockToolUse, {
+				askApproval: mockAskApproval,
+				handleError: mockHandleError,
+				pushToolResult: mockPushToolResult,
+			})
+		}
+
+		it("starts a background task with the user kill-timeout disabled", async () => {
+			// User-configured 5s kill timeout must not apply to background tasks.
+			const mockConfig = {
+				get: vitest
+					.fn()
+					.mockImplementation((key: string, defaultValue: any) =>
+						key === "commandExecutionTimeout" ? 5 : defaultValue,
+					),
+			}
+			;(vscode.workspace.getConfiguration as any).mockReturnValue(mockConfig)
+
+			// Long-running process: never settles, never fires exit callbacks.
+			const neverResolving: any = new Promise(() => {})
+			neverResolving.continue = vitest.fn()
+			;(TerminalRegistry.getOrCreateTerminal as any).mockResolvedValue({
+				runCommand: vitest.fn().mockReturnValue(neverResolving),
+				getCurrentWorkingDirectory: vitest.fn().mockReturnValue("/test/workspace"),
+			})
+
+			vitest.useFakeTimers()
+			try {
+				const done = runWith({ run_in_background: true, notify_on: "ready" })
+				// Well past both the grace window and the configured kill timeout.
+				await vitest.advanceTimersByTimeAsync(10_000)
+				await done
+			} finally {
+				vitest.useRealTimers()
+			}
+
+			const result = mockPushToolResult.mock.calls[0][0]
+			expect(result).toContain("Started background task #1")
+			const entry = BackgroundTaskRegistry.get(1)
+			expect(entry?.status).toBe("running")
+			expect(entry?.notifyOn).toBeInstanceOf(RegExp)
+			expect(entry?.detached).toBe(false)
+		})
+
+		it("rejects an invalid notify_on regex before asking for approval", async () => {
+			await runWith({ run_in_background: true, notify_on: "(unclosed" })
+
+			expect(mockPushToolResult).toHaveBeenCalledWith(expect.stringContaining("Invalid notify_on pattern"))
+			expect(mockAskApproval).not.toHaveBeenCalled()
+			expect(BackgroundTaskRegistry.list()).toEqual([])
+		})
+
+		it("ignores run_in_background in the CLI runtime", async () => {
+			process.env.KITPILOT_CLI_RUNTIME = "1"
+			await runWith({ run_in_background: true })
+
+			// Foreground path taken: no "Started background task" handle result.
+			const result = mockPushToolResult.mock.calls[0][0]
+			expect(result).not.toContain("Started background task")
 		})
 	})
 })

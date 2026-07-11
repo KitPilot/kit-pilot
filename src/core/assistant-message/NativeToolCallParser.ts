@@ -460,6 +460,8 @@ export class NativeToolCallParser {
 						command: partialArgs.command,
 						cwd: partialArgs.cwd,
 						timeout: partialArgs.timeout,
+						run_in_background: partialArgs.run_in_background,
+						notify_on: partialArgs.notify_on,
 					}
 				}
 				break
@@ -789,6 +791,8 @@ export class NativeToolCallParser {
 							command: args.command,
 							cwd: args.cwd,
 							timeout: args.timeout,
+							run_in_background: args.run_in_background,
+							notify_on: args.notify_on,
 						} as NativeArgsFor<TName>
 					}
 					break
