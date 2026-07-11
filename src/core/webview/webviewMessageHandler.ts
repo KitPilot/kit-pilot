@@ -62,6 +62,7 @@ const getOpenAiModels = async (
 	_headers?: Record<string, string>,
 ): Promise<string[]> => []
 import { getVsCodeLmModels, buildVsCodeLmModelInfo } from "../../api/providers/vscode-lm"
+import { readCopilotThinkingEffort, watchChatLanguageModelsFile } from "../../api/providers/vscode-lm-thinking-effort"
 import { openMention } from "../mentions"
 import { resolveImageMentions } from "../mentions/resolveImageMentions"
 import { KitPilotIgnoreController } from "../ignore/KitPilotIgnoreController"
@@ -75,6 +76,38 @@ import { resolveDefaultSaveUri, saveLastExportPath } from "../../utils/export"
 import { getCommand } from "../../utils/commands"
 
 const ALLOWED_VSCODE_SETTINGS = new Set(["terminal.integrated.inheritEnv"])
+
+/**
+ * Read the current model's Copilot Thinking Effort and ship it to the webview.
+ * Effort is user-set in VS Code's model picker (KitPilot can't set it via the
+ * LM API) and persisted to chatLanguageModels.json — see
+ * vscode-lm-thinking-effort.ts for the value semantics.
+ */
+async function sendCopilotThinkingEffort(provider: ClineProvider): Promise<void> {
+	const { apiConfiguration } = await provider.getState()
+	const effort = await readCopilotThinkingEffort(provider.context, apiConfiguration?.vsCodeLmModelSelector)
+	await provider.postMessageToWebview({ type: "copilotThinkingEffort", copilotThinkingEffort: effort })
+}
+
+// Single module-level watcher on chatLanguageModels.json: pushes a fresh effort
+// value whenever the user changes it in the picker. Rebound to the most recent
+// requesting provider (typically there is exactly one webview).
+let thinkingEffortWatcher: vscode.Disposable | undefined
+let thinkingEffortProvider: ClineProvider | undefined
+
+function ensureThinkingEffortWatcher(provider: ClineProvider): void {
+	thinkingEffortProvider = provider
+	if (thinkingEffortWatcher) {
+		return
+	}
+	thinkingEffortWatcher = watchChatLanguageModelsFile(provider.context, () => {
+		const target = thinkingEffortProvider
+		if (target) {
+			sendCopilotThinkingEffort(target).catch(() => {})
+		}
+	})
+	provider.context.subscriptions.push(thinkingEffortWatcher)
+}
 
 import { setPendingTodoList } from "../tools/UpdateTodoListTool"
 import {
@@ -982,6 +1015,13 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			}))
 			// TODO: Cache like we do for OpenRouter, etc?
 			provider.postMessageToWebview({ type: "vsCodeLmModels", vsCodeLmModels })
+			break
+		}
+		case "requestCopilotThinkingEffort": {
+			await sendCopilotThinkingEffort(provider)
+			// The picker writes effort changes to chatLanguageModels.json; watch it
+			// (once) so the indicator updates live without the webview polling.
+			ensureThinkingEffortWatcher(provider)
 			break
 		}
 		case "openImage":

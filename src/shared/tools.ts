@@ -67,6 +67,11 @@ export const toolParamNames = [
 	"replace_all", // edit tool parameter for replacing all occurrences
 	"expected_replacements", // edit_file parameter for multiple occurrences
 	"timeout", // execute_command parameter
+	"run_in_background", // execute_command parameter: start as background task
+	"notify_on", // execute_command parameter: output pattern to notify on
+	"id", // check_task and stop_task parameter: background task id
+	"wait_for_pattern", // check_task parameter: bounded wait for output match
+	"wait_seconds", // check_task parameter: bounded wait duration
 	"artifact_id", // read_command_output parameter
 	"search", // read_command_output parameter for grep-like search
 	"offset", // read_command_output and read_file parameter
@@ -94,7 +99,15 @@ export type NativeToolArgs = {
 	read_file: import("@kit-pilot/types").ReadFileToolParams
 	read_command_output: { artifact_id: string; search?: string; offset?: number; limit?: number }
 	attempt_completion: { result: string }
-	execute_command: { command: string; cwd?: string; timeout?: number | null }
+	execute_command: {
+		command: string
+		cwd?: string
+		timeout?: number | null
+		run_in_background?: boolean | null
+		notify_on?: string | null
+	}
+	check_task: { id: number; wait_for_pattern?: string | null; wait_seconds?: number | null }
+	stop_task: { id: number }
 	apply_diff: { path: string; diff: string }
 	edit: { file_path: string; old_string: string; new_string: string; replace_all?: boolean }
 	search_and_replace: { file_path: string; old_string: string; new_string: string; replace_all?: boolean }
@@ -116,7 +129,12 @@ export type NativeToolArgs = {
 	update_todo_list: { todos: string }
 	use_mcp_tool: { server_name: string; tool_name: string; arguments?: Record<string, unknown> }
 	write_to_file: { path: string; content: string }
-	remember_this: { name: string; type: "user" | "feedback" | "project" | "reference"; description: string; content: string }
+	remember_this: {
+		name: string
+		type: "user" | "feedback" | "project" | "reference"
+		description: string
+		content: string
+	}
 	forget_this: { name: string }
 	// Add more tools as they are migrated to native protocol
 }
@@ -271,6 +289,8 @@ export const TOOL_DISPLAY_NAMES: Record<ToolName, string> = {
 	execute_command: "run commands",
 	read_file: "read files",
 	read_command_output: "read command output",
+	check_task: "check background tasks",
+	stop_task: "stop background tasks",
 	write_to_file: "write files",
 	apply_diff: "apply changes",
 	edit: "edit files",
@@ -306,7 +326,7 @@ export const TOOL_GROUPS: Record<ToolGroup, ToolGroupConfig> = {
 		customTools: ["edit", "search_replace", "edit_file", "apply_patch"],
 	},
 	command: {
-		tools: ["execute_command", "read_command_output"],
+		tools: ["execute_command", "check_task", "stop_task", "read_command_output"],
 	},
 	mcp: {
 		tools: ["use_mcp_tool", "access_mcp_resource"],

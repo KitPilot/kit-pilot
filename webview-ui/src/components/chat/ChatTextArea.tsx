@@ -27,6 +27,7 @@ import { StandardTooltip } from "@src/components/ui"
 import Thumbnails from "../common/Thumbnails"
 import { ModeSelector } from "./ModeSelector"
 import { ModelSelector } from "./ModelSelector"
+import { ThinkingEffortBadge } from "./ThinkingEffortBadge"
 import { AutoApproveDropdown } from "./AutoApproveDropdown"
 import { MAX_IMAGES_PER_MESSAGE } from "./ChatView"
 import ContextMenu from "./ContextMenu"
@@ -1336,6 +1337,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							onChange={handleModelChange}
 							triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink"
 						/>
+						<ThinkingEffortBadge modelSelector={apiConfiguration?.vsCodeLmModelSelector} />
 						<AutoApproveDropdown triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink" />
 					</div>
 					<div className={cn("flex flex-shrink-0 items-center gap-0.5 h-5 leading-none", "pr-2")}>

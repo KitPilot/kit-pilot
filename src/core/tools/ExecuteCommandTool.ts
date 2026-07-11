@@ -18,14 +18,20 @@ import { OutputInterceptor } from "../../integrations/terminal/OutputInterceptor
 import { Package } from "../../shared/package"
 import { t } from "../../i18n"
 import { getTaskDirectoryPath } from "../../utils/storage"
+import { BackgroundTaskRegistry } from "../../services/background-tasks/BackgroundTaskRegistry"
 import { BaseTool, ToolCallbacks } from "./BaseTool"
 
 class ShellIntegrationError extends Error {}
+
+/** How long a run_in_background start waits to catch commands that die instantly. */
+const BACKGROUND_START_GRACE_MS = 2_000
 
 interface ExecuteCommandParams {
 	command: string
 	cwd?: string
 	timeout?: number | null
+	run_in_background?: boolean
+	notify_on?: string
 }
 
 export function resolveAgentTimeoutMs(timeoutSeconds: number | null | undefined): number {
@@ -41,7 +47,7 @@ export class ExecuteCommandTool extends BaseTool<"execute_command"> {
 	readonly name = "execute_command" as const
 
 	async execute(params: ExecuteCommandParams, task: Task, callbacks: ToolCallbacks): Promise<void> {
-		const { command, cwd: customCwd, timeout: timeoutSeconds } = params
+		const { command, cwd: customCwd, timeout: timeoutSeconds, run_in_background: runInBackgroundParam } = params
 		const { handleError, pushToolResult, askApproval } = callbacks
 
 		try {
@@ -50,6 +56,25 @@ export class ExecuteCommandTool extends BaseTool<"execute_command"> {
 				task.recordToolError("execute_command")
 				pushToolResult(await task.sayAndCreateMissingParamError("execute_command", "command"))
 				return
+			}
+
+			// Background mode is unavailable in the CLI runtime for the same
+			// reason agent timeouts are disabled there: command lifetime must be
+			// governed solely by the user-configured timeout.
+			const runInBackground = runInBackgroundParam === true && process.env.KITPILOT_CLI_RUNTIME !== "1"
+
+			let notifyOn: RegExp | undefined
+			if (runInBackground && params.notify_on) {
+				try {
+					notifyOn = new RegExp(params.notify_on)
+				} catch (error) {
+					task.consecutiveMistakeCount++
+					task.recordToolError("execute_command")
+					pushToolResult(
+						`Invalid notify_on pattern: ${error instanceof Error ? error.message : "not a valid regular expression"}`,
+					)
+					return
+				}
 			}
 
 			const canonicalCommand = unescapeHtmlEntities(command)
@@ -102,8 +127,11 @@ export class ExecuteCommandTool extends BaseTool<"execute_command"> {
 				command: canonicalCommand,
 				customCwd,
 				terminalShellIntegrationDisabled,
-				commandExecutionTimeout,
-				agentTimeout,
+				// Background tasks are meant to be long-lived: neither the user
+				// kill-timeout nor the agent detach-timeout applies to them.
+				commandExecutionTimeout: runInBackground ? 0 : commandExecutionTimeout,
+				agentTimeout: runInBackground ? 0 : agentTimeout,
+				background: runInBackground ? { notifyOn } : undefined,
 			}
 
 			try {
@@ -158,6 +186,8 @@ export type ExecuteCommandOptions = {
 	terminalShellIntegrationDisabled?: boolean
 	commandExecutionTimeout?: number
 	agentTimeout?: number
+	/** Present = start as a background task (registry handle, fast return). */
+	background?: { notifyOn?: RegExp }
 }
 
 export async function executeCommandInTerminal(
@@ -169,6 +199,7 @@ export async function executeCommandInTerminal(
 		terminalShellIntegrationDisabled = true,
 		commandExecutionTimeout = 0,
 		agentTimeout = 0,
+		background,
 	}: ExecuteCommandOptions,
 ): Promise<[boolean, ToolResponse]> {
 	// Convert milliseconds back to seconds for display purposes.
@@ -190,7 +221,13 @@ export async function executeCommandInTerminal(
 	}
 
 	let message: { text?: string; images?: string[] } | undefined
-	let runInBackground = false
+	// Background-from-start commands never enter the "Proceed While Running"
+	// ask loop; setting this up front makes onLine skip it.
+	let runInBackground = !!background
+	// Registry handle once the command is registered as a background task.
+	// Output before registration (the start grace window) buffers in prelude.
+	let backgroundTaskId: number | undefined
+	let preludeOutput = ""
 	let completed = false
 	let result: string = ""
 	let persistedResult: PersistedCommandOutput | undefined
@@ -295,6 +332,17 @@ export async function executeCommandInTerminal(
 			// Write to interceptor for persisted output
 			interceptor?.write(lines)
 
+			// Background tasks stream into the registry (live pattern matching +
+			// check_task reads). Before registration (start grace window) the
+			// output buffers in prelude, bounded like accumulatedOutput.
+			if (background) {
+				if (backgroundTaskId !== undefined) {
+					BackgroundTaskRegistry.appendOutput(backgroundTaskId, lines)
+				} else {
+					preludeOutput = (preludeOutput + lines).slice(-maxAccumulatedOutputSize)
+				}
+			}
+
 			// Continue sending compressed output to webview for UI display (unchanged behavior)
 			const compressedOutput = Terminal.compressTerminalOutput(accumulatedOutput)
 			latestCompressedOutput = compressedOutput
@@ -331,6 +379,13 @@ export async function executeCommandInTerminal(
 				// before we advertise the artifact_id to the LLM.
 				if (interceptor) {
 					persistedResult = await interceptor.finalize()
+					if (backgroundTaskId !== undefined && persistedResult?.artifactPath) {
+						// read_command_output addresses artifacts by basename (cmd-*.txt).
+						BackgroundTaskRegistry.setArtifactId(
+							backgroundTaskId,
+							path.basename(persistedResult.artifactPath),
+						)
+					}
 				}
 
 				// Continue using compressed output for UI display
@@ -355,6 +410,9 @@ export async function executeCommandInTerminal(
 			const status: CommandExecutionStatus = { executionId, status: "exited", exitCode: details.exitCode }
 			provider?.postMessageToWebview({ type: "commandExecutionStatus", text: JSON.stringify(status) })
 			exitDetails = details
+			if (backgroundTaskId !== undefined) {
+				BackgroundTaskRegistry.notifyExit(backgroundTaskId, details)
+			}
 		},
 	}
 
@@ -370,71 +428,142 @@ export async function executeCommandInTerminal(
 	}
 
 	const process = terminal.runCommand(command, callbacks)
-	task.terminalProcess = process
 
-	// Dual-timeout logic:
-	// - Agent timeout: transitions the command to background (continues running)
-	// - User timeout: aborts the command (kills it)
-	// Both timers run independently — the user timeout remains active as a safety net
-	// even after the agent timeout moves the command to the background.
-	let agentTimeoutId: NodeJS.Timeout | undefined
-	let userTimeoutId: NodeJS.Timeout | undefined
-	let isUserTimedOut = false
-
-	try {
-		const racers: Promise<void>[] = [process]
-
-		// Agent timeout: transition to background (command keeps running)
-		if (agentTimeout > 0) {
-			racers.push(
-				new Promise<void>((resolve) => {
-					agentTimeoutId = setTimeout(() => {
-						runInBackground = true
-						process.continue()
-						task.supersedePendingAsk()
-						resolve()
-					}, agentTimeout)
-				}),
-			)
+	if (background) {
+		// Background-from-start: no ask loop, no timeouts, no task.terminalProcess
+		// (the user's terminal continue/abort buttons target foreground commands
+		// only — background tasks are addressed via check_task/stop_task).
+		// Wait a short grace window so commands that die instantly (typo, missing
+		// binary) report their failure inline instead of returning a dead handle.
+		let processSettled = false
+		try {
+			await Promise.race([
+				(async () => {
+					await process
+					processSettled = true
+				})(),
+				delay(BACKGROUND_START_GRACE_MS),
+			])
+		} catch (error) {
+			// Spawn/stream failure inside the grace window. If the callbacks
+			// recorded an exit, the shared tail below formats it; otherwise
+			// propagate so the caller's fallback handling applies.
+			processSettled = true
+			if (!exitDetails && !completed) {
+				throw error
+			}
+		} finally {
+			clearTimeout(pendingCommandOutputEmitTimer)
 		}
 
-		// User timeout: abort the command (existing behavior)
-		if (commandExecutionTimeout > 0) {
-			racers.push(
-				new Promise<void>((_, reject) => {
-					userTimeoutId = setTimeout(() => {
-						isUserTimedOut = true
-						task.terminalProcess?.abort()
-						reject(new Error(`Command execution timed out after ${commandExecutionTimeout}ms`))
-					}, commandExecutionTimeout)
-				}),
-			)
+		if (shellIntegrationError) {
+			throw new ShellIntegrationError(shellIntegrationError)
 		}
 
-		await Promise.race(racers)
-	} catch (error) {
-		if (isUserTimedOut) {
-			const status: CommandExecutionStatus = { executionId, status: "timeout" }
-			provider?.postMessageToWebview({ type: "commandExecutionStatus", text: JSON.stringify(status) })
-			await task.say("error", t("common:errors:command_timeout", { seconds: commandExecutionTimeoutSeconds }))
-			task.didToolFailInCurrentTurn = true
-			task.terminalProcess = undefined
+		// processSettled without exit callbacks means the process is dead even
+		// though no exit details arrived — never hand out a handle to it; the
+		// shared tail reports it inline instead.
+		if (!exitDetails && !completed && !processSettled) {
+			// Still running after the grace window — hand the model a handle.
+			// No awaits between capturing the prelude and assigning the id, so
+			// no onLine callback can slip output into the gap.
+			const bgTask = BackgroundTaskRegistry.register({
+				agentTaskId: task.taskId,
+				command,
+				cwd: workingDir,
+				terminal,
+				process,
+				executionId,
+				notifyOn: background.notifyOn,
+				seedOutput: preludeOutput,
+			})
+			backgroundTaskId = bgTask.id
+
+			const initialOutput = preludeOutput ? Terminal.compressTerminalOutput(preludeOutput) : ""
+			const patternNote = background.notifyOn
+				? bgTask.notifyOnMatched
+					? `Note: the notify_on pattern already matched in the output below.`
+					: `You will be notified when output matches ${background.notifyOn} or the process exits.`
+				: `You will be notified when the process exits.`
 
 			return [
 				false,
-				`The command was terminated after exceeding a user-configured ${commandExecutionTimeoutSeconds}s timeout. Do not try to re-run the command.`,
+				[
+					`Started background task #${bgTask.id} ('${command}') in '${workingDir.toPosix()}'.`,
+					initialOutput ? `Initial output:\n${initialOutput}` : `No output yet.`,
+					`Use check_task with id ${bgTask.id} to read status/new output, stop_task to kill it. ${patternNote}`,
+				].join("\n"),
 			]
 		}
-		throw error
-	} finally {
-		clearTimeout(agentTimeoutId)
-		clearTimeout(userTimeoutId)
-		clearTimeout(pendingCommandOutputEmitTimer)
-		task.terminalProcess = undefined
-	}
+		// Exited within the grace window: fall through to the shared tail so the
+		// model gets the normal inline result (exit code + output), no handle.
+	} else {
+		task.terminalProcess = process
 
-	if (shellIntegrationError) {
-		throw new ShellIntegrationError(shellIntegrationError)
+		// Dual-timeout logic:
+		// - Agent timeout: transitions the command to background (continues running)
+		// - User timeout: aborts the command (kills it)
+		// Both timers run independently — the user timeout remains active as a safety net
+		// even after the agent timeout moves the command to the background.
+		let agentTimeoutId: NodeJS.Timeout | undefined
+		let userTimeoutId: NodeJS.Timeout | undefined
+		let isUserTimedOut = false
+
+		try {
+			const racers: Promise<void>[] = [process]
+
+			// Agent timeout: transition to background (command keeps running)
+			if (agentTimeout > 0) {
+				racers.push(
+					new Promise<void>((resolve) => {
+						agentTimeoutId = setTimeout(() => {
+							runInBackground = true
+							process.continue()
+							task.supersedePendingAsk()
+							resolve()
+						}, agentTimeout)
+					}),
+				)
+			}
+
+			// User timeout: abort the command (existing behavior)
+			if (commandExecutionTimeout > 0) {
+				racers.push(
+					new Promise<void>((_, reject) => {
+						userTimeoutId = setTimeout(() => {
+							isUserTimedOut = true
+							task.terminalProcess?.abort()
+							reject(new Error(`Command execution timed out after ${commandExecutionTimeout}ms`))
+						}, commandExecutionTimeout)
+					}),
+				)
+			}
+
+			await Promise.race(racers)
+		} catch (error) {
+			if (isUserTimedOut) {
+				const status: CommandExecutionStatus = { executionId, status: "timeout" }
+				provider?.postMessageToWebview({ type: "commandExecutionStatus", text: JSON.stringify(status) })
+				await task.say("error", t("common:errors:command_timeout", { seconds: commandExecutionTimeoutSeconds }))
+				task.didToolFailInCurrentTurn = true
+				task.terminalProcess = undefined
+
+				return [
+					false,
+					`The command was terminated after exceeding a user-configured ${commandExecutionTimeoutSeconds}s timeout. Do not try to re-run the command.`,
+				]
+			}
+			throw error
+		} finally {
+			clearTimeout(agentTimeoutId)
+			clearTimeout(userTimeoutId)
+			clearTimeout(pendingCommandOutputEmitTimer)
+			task.terminalProcess = undefined
+		}
+
+		if (shellIntegrationError) {
+			throw new ShellIntegrationError(shellIntegrationError)
+		}
 	}
 
 	// Wait for a short delay to ensure all messages are sent to the webview.
@@ -451,9 +580,33 @@ export async function executeCommandInTerminal(
 		await onCompletedPromise
 	}
 
+	// Foreground command left running (agent timeout or user's "Proceed While
+	// Running"): register a detached handle so check_task/stop_task can address
+	// it. Detached = process.continue() already stopped line events, so output
+	// is read via the process's own unretrieved-output tracking; notify_on is
+	// unavailable, but exit notification still fires via onShellExecutionComplete.
+	const registerDetachedHandle = (): number | undefined => {
+		if (background || exitDetails || completed || backgroundTaskId !== undefined) {
+			return undefined
+		}
+		const bgTask = BackgroundTaskRegistry.register({
+			agentTaskId: task.taskId,
+			command,
+			cwd: workingDir,
+			terminal,
+			process,
+			executionId,
+			detached: true,
+		})
+		backgroundTaskId = bgTask.id
+		return bgTask.id
+	}
+
 	if (message) {
 		const { text, images } = message
 		await task.say("user_feedback", text, images)
+
+		const detachedId = registerDetachedHandle()
 
 		return [
 			true,
@@ -461,6 +614,9 @@ export async function executeCommandInTerminal(
 				[
 					`Command is still running in terminal from '${terminal.getCurrentWorkingDirectory().toPosix()}'.`,
 					result.length > 0 ? `Here's the output so far:\n${result}\n` : "\n",
+					...(detachedId !== undefined
+						? [`It is registered as background task #${detachedId} (check_task / stop_task).`]
+						: []),
 					`<user_message>\n${text}\n</user_message>`,
 				].join("\n"),
 				images,
@@ -504,11 +660,18 @@ export async function executeCommandInTerminal(
 			`Command executed in terminal within working directory '${currentWorkingDir}'. ${exitStatus}\nOutput:\n${result}`,
 		]
 	} else {
+		const detachedId = registerDetachedHandle()
+
 		return [
 			false,
 			[
 				`Command is still running in terminal ${workingDir ? ` from '${workingDir.toPosix()}'` : ""}.`,
 				result.length > 0 ? `Here's the output so far:\n${result}\n` : "\n",
+				...(detachedId !== undefined
+					? [
+							`It is registered as background task #${detachedId} — use check_task(id: ${detachedId}) for status/new output, stop_task to kill it.`,
+						]
+					: []),
 				"You will be updated on the terminal status and new output in the future.",
 			].join("\n"),
 		]

@@ -767,3 +767,41 @@ input[cmdk-input]:focus {
 	opacity: 1;
 	font-weight: 500;
 }
+
+/* Thinking Effort indicator: gradient text in the brand hues (same pair as the
+   chatbox wash) with a slow Claude-Code-style shimmer sweeping through it.
+   The gradient is 200% wide and the background-position animates across, so
+   the sheen travels without the text changing size or layout. */
+.kitpilot-thinking-badge {
+	font-size: calc(var(--vscode-font-size) * 0.85);
+	font-weight: 600;
+	white-space: nowrap;
+	background: linear-gradient(
+		90deg,
+		#5b7cfa 0%,
+		#2ea88a 40%,
+		color-mix(in srgb, var(--vscode-input-foreground) 85%, #5b7cfa) 50%,
+		#2ea88a 60%,
+		#5b7cfa 100%
+	);
+	background-size: 200% 100%;
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	animation: kitpilot-thinking-shimmer 6s linear infinite;
+}
+
+@keyframes kitpilot-thinking-shimmer {
+	from {
+		background-position: 200% 0;
+	}
+	to {
+		background-position: 0% 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.kitpilot-thinking-badge {
+		animation: none;
+	}
+}

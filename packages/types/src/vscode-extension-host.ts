@@ -44,6 +44,7 @@ export interface ExtensionMessage {
 		| "lmStudioModels"
 		| "vsCodeLmModels"
 		| "vsCodeLmApiAvailable"
+		| "copilotThinkingEffort"
 		| "updatePrompt"
 		| "systemPrompt"
 		| "autoApprovalEnabled"
@@ -130,6 +131,9 @@ export interface ExtensionMessage {
 	ollamaModels?: ModelRecord
 	lmStudioModels?: ModelRecord
 	vsCodeLmModels?: { vendor?: string; family?: string; version?: string; id?: string; info?: ModelInfo }[]
+	// For copilotThinkingEffort: a level string ("low"|"medium"|"high"|"xhigh"|"none"),
+	// undefined = model default, null = unknown (indicator hides).
+	copilotThinkingEffort?: string | null
 	mcpServers?: McpServer[]
 	commits?: GitCommit[]
 	listApiConfig?: ProviderSettingsEntry[]
@@ -268,6 +272,7 @@ export type ExtensionState = Pick<
 	| "execaShellPath"
 	| "diagnosticsEnabled"
 	| "backgroundEditing"
+	| "backgroundTaskWakeEnabled"
 	| "language"
 	| "modeApiConfigs"
 	| "customModePrompts"
@@ -408,6 +413,7 @@ export interface WebviewMessage {
 		| "requestOllamaModels"
 		| "requestLmStudioModels"
 		| "requestVsCodeLmModels"
+		| "requestCopilotThinkingEffort"
 		| "openImage"
 		| "saveImage"
 		| "openFile"
@@ -704,6 +710,8 @@ export interface ClineSayTool {
 		| "codebaseSearch"
 		| "readFile"
 		| "readCommandOutput"
+		| "checkTask"
+		| "stopTask"
 		| "listFilesTopLevel"
 		| "listFilesRecursive"
 		| "searchFiles"
@@ -722,6 +730,12 @@ export interface ClineSayTool {
 	totalBytes?: number
 	searchPattern?: string
 	matchCount?: number
+	// For checkTask / stopTask (background tasks); `command` is shared with
+	// the runSlashCommand fields below.
+	id?: number
+	status?: string
+	exitCode?: number
+	wasRunning?: boolean
 	diff?: string
 	content?: string
 	// Original file content before first edit (for merged diff display in FileChangesPanel)

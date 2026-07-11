@@ -184,6 +184,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		terminalZdotdir,
 		writeDelayMs,
 		backgroundEditing,
+		backgroundTaskWakeEnabled,
 		showKitPilotIgnoredFiles,
 		enableSubfolderRules,
 		maxImageFileSize,
@@ -379,6 +380,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					checkpointTimeout: checkpointTimeout ?? DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
 					writeDelayMs,
 					backgroundEditing: backgroundEditing ?? false,
+					backgroundTaskWakeEnabled: backgroundTaskWakeEnabled ?? true,
 					terminalShellIntegrationTimeout: terminalShellIntegrationTimeout ?? 30_000,
 					terminalShellIntegrationDisabled,
 					terminalCommandDelay,
@@ -848,6 +850,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 								terminalOutputPreviewSize={terminalOutputPreviewSize}
 								terminalShellIntegrationTimeout={terminalShellIntegrationTimeout}
 								terminalShellIntegrationDisabled={terminalShellIntegrationDisabled}
+								backgroundTaskWakeEnabled={backgroundTaskWakeEnabled}
 								terminalCommandDelay={terminalCommandDelay}
 								terminalPowershellCounter={terminalPowershellCounter}
 								terminalZshClearEolMark={terminalZshClearEolMark}

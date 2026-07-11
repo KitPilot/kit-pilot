@@ -7,6 +7,8 @@ import attemptCompletion from "./attempt_completion"
 import codebaseSearch from "./codebase_search"
 import editTool from "./edit"
 import executeCommand from "./execute_command"
+import checkTask from "./check_task"
+import stopTask from "./stop_task"
 // vscode-lm-only build: generate_image is unregistered (no image-gen provider).
 // import generateImage from "./generate_image"
 import listFiles from "./list_files"
@@ -57,6 +59,8 @@ export function getNativeTools(options: NativeToolsOptions = {}): OpenAI.Chat.Ch
 		attemptCompletion,
 		codebaseSearch,
 		executeCommand,
+		checkTask,
+		stopTask,
 		// generate_image is unregistered in this vscode-lm-only build
 		listFiles,
 		newTask,

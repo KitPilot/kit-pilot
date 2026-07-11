@@ -1520,6 +1520,44 @@ export const ChatRowContent = ({
 								</div>
 							)
 						}
+						case "checkTask": {
+							const statusText =
+								sayTool.status === "running"
+									? t("chat:backgroundTask.running")
+									: sayTool.status === "killed"
+										? t("chat:backgroundTask.killed")
+										: t("chat:backgroundTask.exited", { code: sayTool.exitCode ?? "?" })
+							return (
+								<div style={headerStyle}>
+									<FileCode2 className="w-4 shrink-0" aria-label="Check background task icon" />
+									<span style={{ fontWeight: "bold" }}>
+										{t("chat:backgroundTask.checked", { id: sayTool.id })}
+									</span>
+									<span
+										className="text-xs ml-1"
+										style={{ color: "var(--vscode-descriptionForeground)" }}>
+										({sayTool.command} • {statusText})
+									</span>
+								</div>
+							)
+						}
+						case "stopTask": {
+							return (
+								<div style={headerStyle}>
+									<FileCode2 className="w-4 shrink-0" aria-label="Stop background task icon" />
+									<span style={{ fontWeight: "bold" }}>
+										{sayTool.wasRunning
+											? t("chat:backgroundTask.stopped", { id: sayTool.id })
+											: t("chat:backgroundTask.alreadyFinished", { id: sayTool.id })}
+									</span>
+									<span
+										className="text-xs ml-1"
+										style={{ color: "var(--vscode-descriptionForeground)" }}>
+										({sayTool.command})
+									</span>
+								</div>
+							)
+						}
 						default:
 							return null
 					}

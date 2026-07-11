@@ -141,6 +141,18 @@
 	"selectModel": "Select model",
 	"loadingModels": "Loading models…",
 	"noModelSelected": "Select model",
+	"thinkingEffort": {
+		"tooltip": "Thinking effort for this model. Set it in VS Code's Copilot model picker — the level you pick there applies to KitPilot too.",
+		"aria": "Thinking effort: {{level}}",
+		"levels": {
+			"none": "None",
+			"low": "Low",
+			"medium": "Medium",
+			"high": "High",
+			"xhigh": "Max",
+			"default": "Default"
+		}
+	},
 	"lockApiConfigAcrossModes": "Lock API configuration across all modes in this workspace",
 	"unlockApiConfigAcrossModes": "API configuration is locked across all modes in this workspace (click to unlock)",
 	"enhancePrompt": "Enhance prompt with additional context",
@@ -484,6 +496,14 @@
 	},
 	"readCommandOutput": {
 		"title": "KitPilot read command output"
+	},
+	"backgroundTask": {
+		"checked": "KitPilot checked background task #{{id}}",
+		"stopped": "KitPilot stopped background task #{{id}}",
+		"alreadyFinished": "Background task #{{id}} had already finished",
+		"running": "running",
+		"killed": "killed",
+		"exited": "exited with code {{code}}"
 	},
 	"retiredProvider": {
 		"title": "Provider no longer supported",

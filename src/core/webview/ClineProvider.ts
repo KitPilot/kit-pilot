@@ -56,6 +56,7 @@ import { resolveDefaultSaveUri, saveLastExportPath } from "../../utils/export"
 import { getTheme } from "../../integrations/theme/getTheme"
 import WorkspaceTracker from "../../integrations/workspace/WorkspaceTracker"
 
+import { initBackgroundTaskNotifications } from "../../services/background-tasks/notifications"
 import { McpHub } from "../../services/mcp/McpHub"
 import { McpServerManager } from "../../services/mcp/McpServerManager"
 import { ShadowCheckpointService } from "../../services/checkpoints/ShadowCheckpointService"
@@ -189,6 +190,10 @@ export class ClineProvider
 		})
 
 		this._workspaceTracker = new WorkspaceTracker(this)
+
+		// Background-task events (exit / notify_on match) deliver through this
+		// provider: idle wake via submitUserMessage, otherwise env details.
+		initBackgroundTaskNotifications(this)
 
 		this.providerSettingsManager = new ProviderSettingsManager(this.context)
 
@@ -2037,6 +2042,7 @@ export class ClineProvider
 			allowedMaxCost,
 			allowedMaxCostWarningPercent,
 			backgroundEditing,
+			backgroundTaskWakeEnabled,
 			autoCondenseContext,
 			autoCondenseContextPercent,
 			soundEnabled,
@@ -2118,6 +2124,7 @@ export class ClineProvider
 			allowedMaxCost,
 			allowedMaxCostWarningPercent,
 			backgroundEditing: backgroundEditing ?? false,
+			backgroundTaskWakeEnabled: backgroundTaskWakeEnabled ?? true,
 			autoCondenseContext: autoCondenseContext ?? true,
 			autoCondenseContextPercent: autoCondenseContextPercent ?? 100,
 			uriScheme: vscode.env.uriScheme,
@@ -2267,6 +2274,7 @@ export class ClineProvider
 			followupAutoApproveTimeoutMs: stateValues.followupAutoApproveTimeoutMs ?? 60000,
 			diagnosticsEnabled: stateValues.diagnosticsEnabled ?? true,
 			backgroundEditing: stateValues.backgroundEditing ?? false,
+			backgroundTaskWakeEnabled: stateValues.backgroundTaskWakeEnabled ?? true,
 			allowedMaxRequests: stateValues.allowedMaxRequests,
 			allowedMaxCost: stateValues.allowedMaxCost,
 			allowedMaxCostWarningPercent: stateValues.allowedMaxCostWarningPercent,

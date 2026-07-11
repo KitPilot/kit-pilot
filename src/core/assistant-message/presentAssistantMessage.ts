@@ -15,6 +15,8 @@ import { Task } from "../task/Task"
 import { listFilesTool } from "../tools/ListFilesTool"
 import { readFileTool } from "../tools/ReadFileTool"
 import { readCommandOutputTool } from "../tools/ReadCommandOutputTool"
+import { checkTaskTool } from "../tools/CheckTaskTool"
+import { stopTaskTool } from "../tools/StopTaskTool"
 import { writeToFileTool } from "../tools/WriteToFileTool"
 import { editTool } from "../tools/EditTool"
 import { searchReplaceTool } from "../tools/SearchReplaceTool"
@@ -369,6 +371,9 @@ export async function presentAssistantMessage(cline: Task) {
 						return `[${block.name} for '${block.params.query}']`
 					case "read_command_output":
 						return `[${block.name} for '${block.params.artifact_id}']`
+					case "check_task":
+					case "stop_task":
+						return `[${block.name} #${(block.nativeArgs as { id?: number } | undefined)?.id ?? "?"}]`
 					case "update_todo_list":
 						return `[${block.name}]`
 					case "remember_this":
@@ -835,6 +840,20 @@ export async function presentAssistantMessage(cline: Task) {
 					break
 				case "read_command_output":
 					await readCommandOutputTool.handle(cline, block as ToolUse<"read_command_output">, {
+						askApproval,
+						handleError,
+						pushToolResult,
+					})
+					break
+				case "check_task":
+					await checkTaskTool.handle(cline, block as ToolUse<"check_task">, {
+						askApproval,
+						handleError,
+						pushToolResult,
+					})
+					break
+				case "stop_task":
+					await stopTaskTool.handle(cline, block as ToolUse<"stop_task">, {
 						askApproval,
 						handleError,
 						pushToolResult,

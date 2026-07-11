@@ -22,6 +22,7 @@ vitest.mock("../../../integrations/terminal/ExecaTerminal")
 
 // Import the actual executeCommand function (not mocked)
 import { executeCommandInTerminal } from "../ExecuteCommandTool"
+import { BackgroundTaskRegistry } from "../../../services/background-tasks/BackgroundTaskRegistry"
 
 // Tests for the executeCommand function
 describe("executeCommand", () => {
@@ -52,6 +53,7 @@ describe("executeCommand", () => {
 				deref: vitest.fn().mockResolvedValue(mockProvider),
 			},
 			say: vitest.fn().mockResolvedValue(undefined),
+			supersedePendingAsk: vitest.fn(),
 			terminalProcess: undefined,
 		}
 
@@ -436,6 +438,132 @@ describe("executeCommand", () => {
 
 			// Verify the terminal's getCurrentWorkingDirectory was called
 			expect(mockTerminalInstance.getCurrentWorkingDirectory).toHaveBeenCalled()
+		})
+	})
+
+	describe("Background execution (run_in_background)", () => {
+		let capturedCallbacks: KitPilotTerminalCallbacks | undefined
+
+		beforeEach(() => {
+			BackgroundTaskRegistry.resetForTests()
+			vitest.useFakeTimers()
+			// compressTerminalOutput is a static on the mocked Terminal class;
+			// make it pass text through so output assertions are meaningful.
+			;(Terminal.compressTerminalOutput as any) = vitest.fn((s: string) => s)
+
+			// A process that never resolves (long-running command).
+			let neverResolve: Promise<void> & { continue?: any; abort?: any } = new Promise(() => {}) as any
+			mockProcess = neverResolve
+			mockProcess.continue = vitest.fn()
+			mockProcess.abort = vitest.fn()
+
+			capturedCallbacks = undefined
+			mockTerminal.runCommand = vitest.fn().mockImplementation((_c: string, cb: KitPilotTerminalCallbacks) => {
+				capturedCallbacks = cb
+				return mockProcess
+			})
+		})
+
+		afterEach(() => {
+			vitest.useRealTimers()
+		})
+
+		const backgroundOptions = (over: Partial<ExecuteCommandOptions> = {}): ExecuteCommandOptions => ({
+			executionId: "bg-1",
+			command: "npm run dev",
+			terminalShellIntegrationDisabled: true,
+			background: {},
+			...over,
+		})
+
+		it("returns a task handle when still running after the grace window", async () => {
+			const resultPromise = executeCommandInTerminal(mockTask, backgroundOptions())
+			await vitest.advanceTimersByTimeAsync(2_100)
+			const [rejected, result] = await resultPromise
+
+			expect(rejected).toBe(false)
+			expect(result).toContain("Started background task #1")
+			expect(result).toContain("check_task")
+			const entry = BackgroundTaskRegistry.get(1)
+			expect(entry?.status).toBe("running")
+			expect(entry?.detached).toBe(false)
+			// Background commands must not become the task's foreground process.
+			expect(mockTask.terminalProcess).toBeUndefined()
+		})
+
+		it("returns the inline result (no handle) when the command exits within the grace window", async () => {
+			const resultPromise = executeCommandInTerminal(mockTask, backgroundOptions())
+			await vitest.advanceTimersByTimeAsync(0)
+			// Simulate instant failure before the grace elapses.
+			capturedCallbacks!.onShellExecutionComplete({ exitCode: 127 }, mockProcess)
+			await capturedCallbacks!.onCompleted("command not found", mockProcess)
+			await vitest.advanceTimersByTimeAsync(2_100)
+			const [rejected, result] = await resultPromise
+
+			expect(rejected).toBe(false)
+			expect(result).toContain("Exit code: 127")
+			expect(result).not.toContain("Started background task")
+			expect(BackgroundTaskRegistry.list()).toEqual([])
+		})
+
+		it("delivers pre-registration output inline and seeds the registry cursor past it", async () => {
+			const resultPromise = executeCommandInTerminal(mockTask, backgroundOptions())
+			await vitest.advanceTimersByTimeAsync(0)
+			await capturedCallbacks!.onLine("early output line\n", mockProcess)
+			await vitest.advanceTimersByTimeAsync(2_100)
+			const [, result] = await resultPromise
+
+			expect(result).toContain("early output line")
+			// The prelude was delivered inline — check_task must not re-deliver it.
+			expect(BackgroundTaskRegistry.readNewOutput(1)!.text).toBe("")
+		})
+
+		it("reports an already-matched notify_on pattern inline without emitting an event", async () => {
+			const matched = vitest.fn()
+			BackgroundTaskRegistry.events.on("patternMatched", matched)
+
+			const resultPromise = executeCommandInTerminal(
+				mockTask,
+				backgroundOptions({ background: { notifyOn: /ready/ } }),
+			)
+			await vitest.advanceTimersByTimeAsync(0)
+			await capturedCallbacks!.onLine("server ready\n", mockProcess)
+			await vitest.advanceTimersByTimeAsync(2_100)
+			const [, result] = await resultPromise
+
+			expect(result).toContain("already matched")
+			expect(BackgroundTaskRegistry.get(1)?.notifyOnMatched).toBe(true)
+			expect(matched).not.toHaveBeenCalled()
+		})
+
+		it("streams post-registration output into the registry and fires exit notification", async () => {
+			const exited = vitest.fn()
+			BackgroundTaskRegistry.events.on("taskExited", exited)
+
+			const resultPromise = executeCommandInTerminal(mockTask, backgroundOptions())
+			await vitest.advanceTimersByTimeAsync(2_100)
+			await resultPromise
+
+			await capturedCallbacks!.onLine("later output\n", mockProcess)
+			expect(BackgroundTaskRegistry.readNewOutput(1)!.text).toBe("later output\n")
+
+			capturedCallbacks!.onShellExecutionComplete({ exitCode: 0 }, mockProcess)
+			expect(exited).toHaveBeenCalledTimes(1)
+			expect(BackgroundTaskRegistry.get(1)?.status).toBe("exited")
+		})
+
+		it("registers a detached handle when the agent timeout backgrounds a foreground command", async () => {
+			const resultPromise = executeCommandInTerminal(
+				mockTask,
+				backgroundOptions({ background: undefined, agentTimeout: 100 }),
+			)
+			await vitest.advanceTimersByTimeAsync(200)
+			const [rejected, result] = await resultPromise
+
+			expect(rejected).toBe(false)
+			expect(result).toContain("background task #1")
+			expect(BackgroundTaskRegistry.get(1)?.detached).toBe(true)
+			expect(mockProcess.continue).toHaveBeenCalled()
 		})
 	})
 })
