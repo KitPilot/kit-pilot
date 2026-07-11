@@ -1,5 +1,20 @@
 # KitPilot Changelog
 
+## 0.2.0
+
+KitPilot can now run commands in the background and keep working — the milestone this version number was waiting for.
+
+### Added
+
+- **Background tasks.** KitPilot can start long-running commands — dev servers, file watchers, big test suites, slow builds — in the background and keep working while they run. It gets a task handle back in about two seconds and carries on; commands that fail instantly (a typo, a missing tool) still report their error right away instead of pretending to run.
+- **Watch for readiness.** When starting a background task, KitPilot can watch its output for a pattern — say, a dev server's "ready in 320ms" line — and gets told the moment it appears. That means it can start your server, keep coding while it boots, and only then go test the endpoint.
+- **Check and stop.** Two new abilities go with this: checking a background task (its status plus only the output that's new since the last look, with an optional bounded wait for a pattern) and stopping one (cleanly killing the whole process tree when a server or watcher is no longer needed).
+- **Wake on finish.** If a background task exits — or its watched pattern appears — while KitPilot is idle, KitPilot wakes up and reacts: a crashed dev server gets reported with its exit code and last output instead of sitting dead until you notice. A new checkbox under Terminal settings ("Wake the agent when a background task finishes", on by default) controls this; each wake costs one model request, so wakes are capped at three per minute. While KitPilot is actively working, background updates simply arrive with its next step at no extra cost.
+
+### Changed
+
+- Commands that KitPilot leaves running after a timeout are now tracked as background tasks too, so it can check on them or stop them later instead of losing track of them.
+
 ## 0.1.30
 
 This release fixes models added with your own API key going missing from KitPilot.
