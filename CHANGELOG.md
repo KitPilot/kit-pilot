@@ -16,6 +16,7 @@ This release makes KitPilot's package, indexing settings, and privacy promises a
 - Removed duplicate webview startup work and restored `.rooignore` compatibility when a project has not yet migrated to `.kitpilotignore`.
 - Release packages can no longer opt past secret scanning or include `.env` and source-map files. Pull requests and releases now run quality gates and validate the exact VSIX before it is published.
 - Corrected the documented minimum VS Code version to 1.107.
+- Hardened hook execution against a harmless broken-pipe error that could surface when a hook command exits before KitPilot finishes sending it input.
 
 ## 0.2.0
 
