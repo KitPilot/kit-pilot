@@ -6,8 +6,6 @@ import { defineConfig, type PluginOption, type Plugin } from "vite"
 import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 
-import { sourcemapPlugin } from "./src/vite-plugins/sourcemapPlugin"
-
 function getGitSha() {
 	let gitSha: string | undefined = undefined
 
@@ -90,7 +88,6 @@ export default defineConfig(({ mode }) => {
 		tailwindcss(),
 		persistPortPlugin(),
 		wasmPlugin(),
-		sourcemapPlugin(),
 	]
 
 	return {
@@ -106,9 +103,10 @@ export default defineConfig(({ mode }) => {
 			outDir,
 			emptyOutDir: true,
 			reportCompressedSize: false,
-			// Generate complete source maps with original TypeScript sources
-			sourcemap: true,
-			// Ensure source maps are properly included in the build
+			// Dev-only source maps: release VSIXes must not ship maps (they were
+			// ~1/3 of the download and disclosed webview sources); error stacks
+			// degrade gracefully to unmapped frames in production.
+			sourcemap: mode !== "production",
 			minify: mode === "production" ? "esbuild" : false,
 			// Use a single combined CSS bundle so all webviews share styles
 			cssCodeSplit: false,

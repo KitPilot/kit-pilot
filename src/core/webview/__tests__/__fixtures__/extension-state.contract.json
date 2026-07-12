@@ -28,7 +28,7 @@
 		"codebaseIndexEmbedderBaseUrl": "",
 		"codebaseIndexEmbedderModelDimension": 1536,
 		"codebaseIndexEmbedderModelId": "",
-		"codebaseIndexEmbedderProvider": "openai",
+		"codebaseIndexEmbedderProvider": "ollama",
 		"codebaseIndexEnabled": false,
 		"codebaseIndexQdrantUrl": "http://localhost:6333"
 	},
@@ -246,7 +246,6 @@
 	"mcpEnabled": true,
 	"mcpServers": [],
 	"mode": "architect",
-	"openAiCodexIsAuthenticated": false,
 	"organizationAllowList": {
 		"allowAll": true,
 		"providers": {}

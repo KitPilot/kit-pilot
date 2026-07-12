@@ -10,6 +10,14 @@ import {
 
 import { ExtensionStateContextProvider, useExtensionState, mergeExtensionState } from "../ExtensionStateContext"
 
+const { mockPostMessage } = vi.hoisted(() => ({
+	mockPostMessage: vi.fn(),
+}))
+
+vi.mock("@/utils/vscode", () => ({
+	vscode: { postMessage: mockPostMessage },
+}))
+
 const TestComponent = () => {
 	const { allowedCommands, setAllowedCommands, soundEnabled, showKitPilotIgnoredFiles, setShowKitPilotIgnoredFiles } =
 		useExtensionState()
@@ -50,6 +58,21 @@ const ApiConfigTestComponent = () => {
 }
 
 describe("ExtensionStateContext", () => {
+	beforeEach(() => {
+		mockPostMessage.mockClear()
+	})
+
+	it("posts webviewDidLaunch exactly once when the state owner mounts", () => {
+		render(
+			<ExtensionStateContextProvider>
+				<TestComponent />
+			</ExtensionStateContextProvider>,
+		)
+
+		expect(mockPostMessage).toHaveBeenCalledTimes(1)
+		expect(mockPostMessage).toHaveBeenCalledWith({ type: "webviewDidLaunch" })
+	})
+
 	it("initializes with empty allowedCommands array", () => {
 		render(
 			<ExtensionStateContextProvider>

@@ -6,7 +6,6 @@ import { type ExtensionMessage } from "@kit-pilot/types"
 
 import TranslationProvider from "./i18n/TranslationContext"
 import { vscode } from "./utils/vscode"
-import { initializeSourceMaps, exposeSourceMapsForDebugging } from "./utils/sourceMapInitializer"
 import { ExtensionStateContextProvider, useExtensionState } from "./context/ExtensionStateContext"
 import ChatView, { ChatViewRef } from "./components/chat/ChatView"
 import HistoryView from "./components/history/HistoryView"
@@ -138,22 +137,8 @@ const App = () => {
 		}
 	}, [shouldShowAnnouncement, tab])
 
-	// Tell the extension that we are ready to receive messages.
-	useEffect(() => vscode.postMessage({ type: "webviewDidLaunch" }), [])
-
-	// Initialize source map support for better error reporting
-	useEffect(() => {
-		// Initialize source maps for better error reporting in production
-		initializeSourceMaps()
-
-		// Expose source map debugging utilities in production
-		if (process.env.NODE_ENV === "production") {
-			exposeSourceMapsForDebugging()
-		}
-
-		// Log initialization for debugging
-		console.debug("App initialized with source map support")
-	}, [])
+	// webviewDidLaunch is posted by ExtensionStateContextProvider (which owns
+	// state hydration); posting it here too caused double boot work upstream.
 
 	// Focus the WebView when non-interactive content is clicked (only in editor/tab mode)
 	useAddNonInteractiveClickListener(

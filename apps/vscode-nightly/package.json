@@ -4,7 +4,7 @@
 	"private": true,
 	"packageManager": "pnpm@10.8.1",
 	"scripts": {
-		"bundle:nightly": "node esbuild.mjs",
+		"bundle:nightly": "node esbuild.mjs --production",
 		"vsix:nightly": "cd build && mkdirp ../../../bin && npx vsce package --no-dependencies --out ../../../bin",
 		"clean": "rimraf build .turbo"
 	},

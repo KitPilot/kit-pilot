@@ -2,21 +2,17 @@ import { ApiHandlerOptions } from "../../../shared/api" // Adjust path if needed
 import { EmbedderProvider } from "./manager"
 
 /**
- * Configuration state for the code indexing feature
+ * Configuration state for the code indexing feature.
+ * vscode-lm-only build: Ollama is the only supported embedder, so the config
+ * surface is Ollama + Qdrant. Legacy persisted cloud-provider values are
+ * tolerated at parse time and coerced to Ollama on load.
  */
 export interface CodeIndexConfig {
 	isConfigured: boolean
 	embedderProvider: EmbedderProvider
 	modelId?: string
-	modelDimension?: number // Generic dimension property for all providers
-	openAiOptions?: ApiHandlerOptions
+	modelDimension?: number
 	ollamaOptions?: ApiHandlerOptions
-	openAiCompatibleOptions?: { baseUrl: string; apiKey: string }
-	geminiOptions?: { apiKey: string }
-	mistralOptions?: { apiKey: string }
-	vercelAiGatewayOptions?: { apiKey: string }
-	bedrockOptions?: { region: string; profile?: string }
-	openRouterOptions?: { apiKey: string; specificProvider?: string }
 	qdrantUrl?: string
 	qdrantApiKey?: string
 	searchMinScore?: number
@@ -31,18 +27,8 @@ export type PreviousConfigSnapshot = {
 	configured: boolean
 	embedderProvider: EmbedderProvider
 	modelId?: string
-	modelDimension?: number // Generic dimension property
-	openAiKey?: string
+	modelDimension?: number
 	ollamaBaseUrl?: string
-	openAiCompatibleBaseUrl?: string
-	openAiCompatibleApiKey?: string
-	geminiApiKey?: string
-	mistralApiKey?: string
-	vercelAiGatewayApiKey?: string
-	bedrockRegion?: string
-	bedrockProfile?: string
-	openRouterApiKey?: string
-	openRouterSpecificProvider?: string
 	qdrantUrl?: string
 	qdrantApiKey?: string
 }

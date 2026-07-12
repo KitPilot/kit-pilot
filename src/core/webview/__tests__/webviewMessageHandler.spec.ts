@@ -5,17 +5,6 @@ import type { Mock } from "vitest"
 // Mock dependencies - must come before imports
 vi.mock("../../../api/providers/fetchers/modelCache")
 
-vi.mock("../../../integrations/openai-codex/oauth", () => ({
-	openAiCodexOAuthManager: {
-		getAccessToken: vi.fn(),
-		getAccountId: vi.fn(),
-	},
-}))
-
-vi.mock("../../../integrations/openai-codex/rate-limits", () => ({
-	fetchOpenAiCodexRateLimitInfo: vi.fn(),
-}))
-
 vi.mock("../../../services/command/commands", () => ({
 	getCommands: vi.fn(),
 }))
@@ -43,14 +32,9 @@ import { webviewMessageHandler } from "../webviewMessageHandler"
 import type { ClineProvider } from "../ClineProvider"
 import { getModels } from "../../../api/providers/fetchers/modelCache"
 import { getCommands } from "../../../services/command/commands"
-const { openAiCodexOAuthManager } = await import("../../../integrations/openai-codex/oauth")
-const { fetchOpenAiCodexRateLimitInfo } = await import("../../../integrations/openai-codex/rate-limits")
 
 const mockGetModels = getModels as Mock<typeof getModels>
 const mockGetCommands = vi.mocked(getCommands)
-const mockGetAccessToken = vi.mocked(openAiCodexOAuthManager.getAccessToken)
-const mockGetAccountId = vi.mocked(openAiCodexOAuthManager.getAccountId)
-const mockFetchOpenAiCodexRateLimitInfo = vi.mocked(fetchOpenAiCodexRateLimitInfo)
 
 // Mock ClineProvider
 const mockClineProvider = {
@@ -311,43 +295,6 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 			type: "routerModels",
 			routerModels: {},
 			values: { provider: "litellm" },
-		})
-	})
-})
-
-describe("webviewMessageHandler - requestOpenAiCodexRateLimits", () => {
-	beforeEach(() => {
-		vi.clearAllMocks()
-		mockGetAccessToken.mockResolvedValue(null)
-		mockGetAccountId.mockResolvedValue(null)
-	})
-
-	it("posts error when not authenticated", async () => {
-		await webviewMessageHandler(mockClineProvider, { type: "requestOpenAiCodexRateLimits" } as any)
-
-		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
-			type: "openAiCodexRateLimits",
-			error: "Not authenticated with OpenAI Codex",
-		})
-	})
-
-	it("posts values when authenticated", async () => {
-		mockGetAccessToken.mockResolvedValue("token")
-		mockGetAccountId.mockResolvedValue("acct_123")
-		mockFetchOpenAiCodexRateLimitInfo.mockResolvedValue({
-			primary: { usedPercent: 10, resetsAt: 1700000000000 },
-			fetchedAt: 1700000000000,
-		})
-
-		await webviewMessageHandler(mockClineProvider, { type: "requestOpenAiCodexRateLimits" } as any)
-
-		expect(mockFetchOpenAiCodexRateLimitInfo).toHaveBeenCalledWith("token", { accountId: "acct_123" })
-		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
-			type: "openAiCodexRateLimits",
-			values: {
-				primary: { usedPercent: 10, resetsAt: 1700000000000 },
-				fetchedAt: 1700000000000,
-			},
 		})
 	})
 })

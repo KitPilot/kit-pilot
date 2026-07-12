@@ -14,7 +14,6 @@
 !dist
 
 # Include the built webview
-!**/*.map
 !webview-ui/audio
 !webview-ui/build/assets/*.js
 !webview-ui/build/assets/*.ttf
@@ -31,6 +30,3 @@
 !assets/vscode-material-icons/**
 !assets/icons/**
 !assets/images/**
-
-# Include .env file for telemetry
-!.env

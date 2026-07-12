@@ -315,7 +315,8 @@ export class CustomModesManager {
 		this.disposables.push(settingsWatcher.onDidDelete(handleSettingsChange))
 		this.disposables.push(settingsWatcher)
 
-		// Watch both the new ".kitpilotmodes" and legacy ".kitpilotmodes" filenames at workspace root.
+		// Watch the ".kitpilotmodes" file at workspace root. (Legacy ".roomodes"
+		// files are handled by the one-time migration, not a runtime fallback.)
 		const workspaceFolders = vscode.workspace.workspaceFolders
 		if (workspaceFolders && workspaceFolders.length > 0) {
 			const workspaceRoot = getWorkspacePath()
@@ -623,7 +624,7 @@ export class CustomModesManager {
 			const mode = allModes.find((m) => m.slug === slug)
 
 			if (!mode) {
-				// If not in custom modes, check if it's defined in the project modes file (preferring .kitpilotmodes, falling back to legacy .kitpilotmodes).
+				// If not in custom modes, check if it's defined in the project .kitpilotmodes file.
 				const workspacePath = getWorkspacePath()
 				if (!workspacePath) {
 					return false

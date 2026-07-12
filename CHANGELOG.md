@@ -1,5 +1,23 @@
 # KitPilot Changelog
 
+## 0.2.1
+
+This release makes KitPilot's package, indexing settings, and privacy promises agree with what actually runs.
+
+### Changed
+
+- **A 33% smaller download.** The VSIX is down from 27.5 MiB to 18.4 MiB after removing 286 unused debug source maps — 9.2 MiB less to download and install.
+- **Local embeddings only.** Code indexing now shows Ollama, the one embedding provider KitPilot actually supports, instead of cloud options that failed after saving. Existing cloud-provider settings are safely treated as Ollama settings, and new saves are enforced by the extension as well as the UI.
+- **Clearer indexing privacy.** The privacy notice now explains that Ollama and Qdrant default to local endpoints but can be pointed at hosts you control, and that an optional Qdrant key is kept in VS Code's SecretStorage.
+
+### Fixed
+
+- Removed retired OpenAI Codex sign-in code from startup and securely clears its old tokens, along with obsolete cloud-embedding keys, on upgrade.
+- Removed duplicate webview startup work and restored `.rooignore` compatibility when a project has not yet migrated to `.kitpilotignore`.
+- Release packages can no longer opt past secret scanning or include `.env` and source-map files. Pull requests and releases now run quality gates and validate the exact VSIX before it is published.
+- Corrected the documented minimum VS Code version to 1.107.
+- Hardened hook execution against a harmless broken-pipe error that could surface when a hook command exits before KitPilot finishes sending it input.
+
 ## 0.2.0
 
 KitPilot can now run commands in the background and keep working — the milestone this version number was waiting for.

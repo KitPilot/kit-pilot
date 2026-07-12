@@ -8,11 +8,14 @@ what choices you have. It is a plain-language summary, not a legal contract.
 ## Short version
 
 KitPilot is a VS Code extension that runs locally on your machine. It does
-not have its own backend. It does not collect telemetry. It does not have
-your API keys or credentials. The only outbound network traffic the extension
+not have its own backend. It does not collect telemetry. It never sees your
+Copilot credentials, and it holds no LLM-provider API keys (the only secret
+it can store is an optional Qdrant API key for code indexing, kept in VS
+Code's SecretStorage). The only outbound network traffic the extension
 itself initiates is to **GitHub Copilot** via VS Code's Language Model API
-(`vscode.lm`), and optionally to a **local Ollama instance** you configure
-yourself for codebase indexing.
+(`vscode.lm`), and — only if you enable code indexing — to the **Ollama and
+Qdrant endpoints you configure yourself** (typically local, but you may point
+them at any host you control).
 
 ## What data is processed and where it goes
 
@@ -32,12 +35,15 @@ not by us. See:
 KitPilot itself does not receive, log, or store these messages anywhere
 outside your local VS Code session.
 
-### Code embeddings → local Ollama (optional, off by default)
+### Code embeddings → your Ollama + Qdrant (optional, off by default)
 
 If you enable code indexing in settings, KitPilot computes embeddings of
-your workspace files using a local Ollama instance you configure. This
-traffic stays on `localhost`. Embedding vectors are stored in a local Qdrant
-database, also on your machine. Nothing is sent to a third party.
+your workspace files using an Ollama instance you configure, and stores the
+vectors in a Qdrant database you configure. Both endpoints default to
+`localhost`; if you point them at a remote host, embedding traffic goes to
+that host — you choose where. An optional Qdrant API key, if you set one, is
+stored in VS Code's SecretStorage on your machine and sent only to your
+configured Qdrant endpoint. KitPilot offers no cloud embedding providers.
 
 ### Commands and terminal output → local only
 
@@ -51,9 +57,10 @@ model can react to it), per the same path as your prompts above.
   machine.
 - Chat history is stored on disk in VS Code's per-extension storage
   directory.
-- API keys: KitPilot does **not** ask for or store any API keys. Copilot
+- API keys: KitPilot does **not** request LLM-provider API keys. Copilot
   authentication is handled by VS Code and the GitHub Copilot extension; we
-  never see your credentials.
+  never see your credentials. The one optional secret KitPilot stores (in VS
+  Code's SecretStorage) is a Qdrant API key for code indexing, if you use one.
 
 ### Telemetry → none
 

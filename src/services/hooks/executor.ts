@@ -91,6 +91,19 @@ export async function executeHook(
 			stderr += chunk.toString("utf-8")
 		})
 
+		// A hook child can exit before we finish writing its stdin payload,
+		// which Node surfaces as an ASYNC "write EPIPE" error event on the
+		// stdin pipe (the synchronous try/catch around the write below does not
+		// catch it). Without a listener this escalates to an unhandled
+		// exception and crashes the process. It's harmless here — the close /
+		// error handlers already resolve the result — so swallow benign pipe
+		// errors instead of letting them bubble up.
+		child.stdin?.on("error", (err: NodeJS.ErrnoException) => {
+			if (err.code !== "EPIPE" && err.code !== "ERR_STREAM_DESTROYED") {
+				stderr += `stdin error: ${err.message}\n`
+			}
+		})
+
 		child.on("error", (err) => {
 			if (settled) return
 			settled = true

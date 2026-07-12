@@ -12,8 +12,9 @@
  *   - lint/type/test failures discovered after tagging
  *   - malformed vsix (wrong manifest version, missing bundles)
  *
- * It deliberately does NOT publish — publishing needs the marketplace PAT
- * and stays a human step. It prints the exact next steps instead.
+ * It deliberately does NOT publish or tag. After merge, a human verifies the
+ * marketplace credential and pushes the release tag; the release workflow is
+ * the sole Marketplace publisher and publishes its own validated artifact.
  *
  * Usage:
  *   node scripts/release.mjs                       # preflight + build current version
@@ -52,10 +53,12 @@ function parseArgs(argv) {
 		const arg = argv[i]
 		if (arg === "--bump") {
 			args.bump = argv[++i]
-			if (!["patch", "minor", "major"].includes(args.bump)) die(`--bump must be patch|minor|major, got "${args.bump}"`)
+			if (!["patch", "minor", "major"].includes(args.bump))
+				die(`--bump must be patch|minor|major, got "${args.bump}"`)
 		} else if (arg === "--set-version") {
 			args.setVersion = argv[++i]
-			if (!/^\d+\.\d+\.\d+$/.test(args.setVersion ?? "")) die(`--set-version must be X.Y.Z, got "${args.setVersion}"`)
+			if (!/^\d+\.\d+\.\d+$/.test(args.setVersion ?? ""))
+				die(`--set-version must be X.Y.Z, got "${args.setVersion}"`)
 		} else if (arg === "--skip-tests") {
 			args.skipTests = true
 		} else if (arg === "--check-only") {
@@ -127,7 +130,7 @@ ok(`CHANGELOG.md has "## ${version}" with ${bullets} bullet(s)`)
 
 step("Marketplace version check")
 try {
-	const json = execFileSync("npx", ["vsce", "show", `${pkg.publisher}.${pkg.name}`, "--json"], {
+	const json = execFileSync("pnpm", ["exec", "vsce", "show", `${pkg.publisher}.${pkg.name}`, "--json"], {
 		cwd: path.join(ROOT, "src"),
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
@@ -159,7 +162,9 @@ try {
 step("Git")
 const branch = execSync("git rev-parse --abbrev-ref HEAD", { cwd: ROOT, encoding: "utf8" }).trim()
 if (branch === "main") {
-	warn(`You are on "main". Release flow is branch + PR (git checkout -b release/${version}) — the pre-commit hook will refuse direct commits to main.`)
+	warn(
+		`You are on "main". Release flow is branch + PR (git checkout -b release/${version}) — the pre-commit hook will refuse direct commits to main.`,
+	)
 } else {
 	ok(`On branch "${branch}"`)
 }
@@ -177,7 +182,9 @@ if (args.skipTests) {
 ok("Gates passed")
 
 if (args.checkOnly) {
-	console.log(`\n${BOLD}${GREEN}Preflight passed for ${version}.${RESET} Re-run without --check-only to build the vsix.`)
+	console.log(
+		`\n${BOLD}${GREEN}Preflight passed for ${version}.${RESET} Re-run without --check-only to build the vsix.`,
+	)
 	process.exit(0)
 }
 
@@ -193,31 +200,13 @@ step("Artifact smoke check")
 const vsixPath = path.join(ROOT, "bin", `${pkg.name}-${version}.vsix`)
 if (!fs.existsSync(vsixPath)) die(`Expected artifact not found: ${vsixPath}`)
 
-const manifestRaw = execFileSync("unzip", ["-p", vsixPath, "extension/package.json"], { encoding: "utf8" })
-const manifest = JSON.parse(manifestRaw)
-if (manifest.version !== version) {
-	die(`Packaged manifest version is ${manifest.version}, expected ${version} — stale build?`)
-}
-ok(`Manifest version matches (${version})`)
+// Shared validator: single source of truth for required bundles, forbidden
+// files (maps/.env/keys/nested vsix), and the size ceiling. Also used by CI
+// and the tag-publish workflow, so what ships is exactly what passes here.
+run(`node scripts/validate-vsix.mjs "${vsixPath}" --expect-version ${version}`)
 
-const listing = execFileSync("unzip", ["-Z1", vsixPath], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
-const files = listing.split("\n")
-const required = ["extension/dist/extension.js", "extension/webview-ui/build/assets/index.js", "extension/changelog.md"]
-for (const requiredFile of required) {
-	if (!files.includes(requiredFile)) die(`vsix is missing ${requiredFile}`)
-}
-ok("Extension bundle, webview bundle, and changelog are packaged")
-
-// Files that have no business inside the package — and raise the odds of
-// another marketplace virus-scanner rejection.
-const suspicious = files.filter((f) => /\.(vsix|env|pem|key|p12)$|(^|\/)\.env(\..+)?$/.test(f))
-if (suspicious.length > 0) {
-	die(`Suspicious files inside the vsix (fix .vscodeignore):\n  ${suspicious.join("\n  ")}`)
-}
-ok("No suspicious files in the package")
-
-const sizeMb = (fs.statSync(vsixPath).size / (1024 * 1024)).toFixed(1)
-ok(`Artifact: ${path.relative(ROOT, vsixPath)} (${sizeMb} MB, ${files.filter(Boolean).length} files)`)
+const sizeMiB = (fs.statSync(vsixPath).size / (1024 * 1024)).toFixed(1)
+ok(`Artifact: ${path.relative(ROOT, vsixPath)} (${sizeMiB} MiB)`)
 
 // --- 8. Next steps -------------------------------------------------------------
 
@@ -228,9 +217,8 @@ ${BOLD}${GREEN}Release ${version} is built and verified.${RESET} Remaining (huma
        git checkout -b release/${version}   # if not already on one
        git add -A && git commit             # never --no-verify
        gh pr create
-  2. After merge, publish to the VS Code Marketplace:
-       VSCE_PAT="$(security find-generic-password -s 'vscode-vsce' -a 'KitPilot' -w)" \\
-         npx vsce publish --no-dependencies --packagePath ${path.relative(ROOT, vsixPath)} -p "$VSCE_PAT"
-  3. Optional OpenVSX:
-       npx ovsx publish --no-dependencies ${path.relative(ROOT, vsixPath)}
+  2. After merge, refresh the repository's VSCE_PAT secret and run the
+     "Credential preflight" workflow against main. Do not tag until it passes.
+  3. Push tag v${version}. The Release workflow will rerun every gate, publish
+     its exact validated artifact, and attach that same file to the GitHub Release.
 `)
