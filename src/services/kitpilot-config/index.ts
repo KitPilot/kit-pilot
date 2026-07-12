@@ -28,14 +28,6 @@ export function getGlobalKitPilotDirectory(): string {
 }
 
 /**
- * Always returns the canonical `.kitpilot` global directory path, regardless of which dirs exist on disk.
- * Use this at write sites that should always create the new-name directory.
- */
-export function getGlobalKitpilotDirectory(): string {
-	return path.join(os.homedir(), ".kitpilot")
-}
-
-/**
  * Gets the global .agents directory path based on the current platform.
  * This is a shared directory for agent skills across different AI coding tools.
  *
@@ -109,13 +101,6 @@ export function getProjectAgentsDirectoryForCwd(cwd: string): string {
  * ```
  */
 export function getProjectKitPilotDirectoryForCwd(cwd: string): string {
-	return path.join(cwd, ".kitpilot")
-}
-
-/**
- * Always returns the canonical `.kitpilot` project directory path. Use this at write sites that should always create the new-name directory.
- */
-export function getProjectKitpilotDirectoryForCwd(cwd: string): string {
 	return path.join(cwd, ".kitpilot")
 }
 
@@ -210,13 +195,11 @@ export async function discoverSubfolderKitPilotDirectories(cwd: string): Promise
 		// available in the webview context
 		const { executeRipgrep } = await import("../search/file-search")
 
-		// Use ripgrep to find any file inside any .kitpilot or .kitpilot directory
+		// Use ripgrep to find any file inside a .kitpilot directory
 		const args = [
 			"--files",
 			"--hidden",
 			"--follow",
-			"-g",
-			"**/.kitpilot/**",
 			"-g",
 			"**/.kitpilot/**",
 			"-g",

@@ -54,7 +54,43 @@ export class ContextProxy {
 		return this._isInitialized
 	}
 
+	/**
+	 * Secrets from retired integrations, purged on every activation (idempotent
+	 * — also cleans up after a downgrade/re-upgrade cycle). Runs BEFORE the
+	 * secret cache hydrates so retired values never enter memory:
+	 * - the retired cloud embedding providers (Ollama is the only embedder in
+	 *   this vscode-lm-only build), and
+	 * - the retired OpenAI Codex OAuth integration's stored tokens.
+	 */
+	private static readonly RETIRED_SECRET_KEYS = [
+		"codeIndexOpenAiKey",
+		"codebaseIndexOpenAiCompatibleApiKey",
+		"codebaseIndexGeminiApiKey",
+		"codebaseIndexMistralApiKey",
+		"codebaseIndexVercelAiGatewayApiKey",
+		"codebaseIndexOpenRouterApiKey",
+		"openai-codex-oauth-credentials",
+	] as const
+
+	private async purgeRetiredSecrets() {
+		await Promise.all(
+			ContextProxy.RETIRED_SECRET_KEYS.map(async (key) => {
+				try {
+					await this.originalContext.secrets.delete(key)
+				} catch (error) {
+					logger.error(
+						`Error purging retired secret ${key}: ${error instanceof Error ? error.message : String(error)}`,
+					)
+				}
+			}),
+		)
+	}
+
 	public async initialize() {
+		// Purge retired-integration secrets BEFORE hydrating the secret cache,
+		// so stale credentials (e.g. a Codex refresh token) never enter memory.
+		await this.purgeRetiredSecrets()
+
 		for (const key of GLOBAL_STATE_KEYS) {
 			try {
 				// Revert to original assignment

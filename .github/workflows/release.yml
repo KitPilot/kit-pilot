@@ -7,10 +7,17 @@ name: Release
 # manual "Run workflow" button via workflow_dispatch — useful for
 # republishing.
 #
-# The flow: checkout the tagged commit, build everything, package the .vsix,
-# publish to the VS Code Marketplace (with --pre-release when the tag has a
-# -pre.N suffix), and create a GitHub Release with the .vsix attached. The
-# CHANGELOG.md section for the matching version is used as the release body.
+# Two jobs, so the published artifact is EXACTLY the one that passed the
+# gates:
+#   verify  — quality gates (lint/types/tests), build, package, validate,
+#             upload the .vsix (read-only permissions).
+#   publish — downloads that artifact, verifies the marketplace PAT,
+#             publishes it via --packagePath, and attaches the same file to
+#             the GitHub Release.
+#
+# Tags and manual dispatch can bypass PR branch protection, which is why the
+# gates run here as well as in PR CI. Manual local publishing is a
+# break-glass path only (see release-workflow docs/memory).
 
 on:
     push:
@@ -24,12 +31,15 @@ on:
                 required: true
 
 permissions:
-    contents: write # required so the workflow can create GitHub Releases
+    contents: read
 
 jobs:
-    release:
+    verify:
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        timeout-minutes: 45
+        outputs:
+            tag: ${{ steps.version.outputs.tag }}
+            version: ${{ steps.version.outputs.version }}
 
         steps:
             - name: Checkout tagged commit
@@ -37,6 +47,16 @@ jobs:
               with:
                   ref: ${{ github.event.inputs.tag || github.ref }}
                   fetch-depth: 0
+
+            - name: Resolve release version
+              id: version
+              run: |
+                  TAG="${GITHUB_REF#refs/tags/}"
+                  if [ -n "${{ github.event.inputs.tag }}" ]; then
+                      TAG="${{ github.event.inputs.tag }}"
+                  fi
+                  echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+                  echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
@@ -52,6 +72,15 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
+            - name: Lint
+              run: pnpm lint
+
+            - name: Type check
+              run: pnpm check-types
+
+            - name: Tests
+              run: pnpm test
+
             - name: Build workspace build package
               run: pnpm --filter @kit-pilot/build run build
 
@@ -61,29 +90,83 @@ jobs:
             - name: Bundle extension
               run: pnpm --filter kit-pilot run bundle
 
-            - name: Install vsce
-              run: npm install -g @vscode/vsce@latest
-
             - name: Package extension (.vsix)
+              # pnpm exec uses the repository-pinned @vscode/vsce version.
               working-directory: src
-              run: vsce package --no-dependencies --allow-package-all-secrets
+              run: pnpm exec vsce package --no-dependencies --out kit-pilot.vsix
+
+            - name: Validate VSIX contents
+              run: node scripts/validate-vsix.mjs src/kit-pilot.vsix --expect-version "${{ steps.version.outputs.version }}"
+
+            - name: Upload validated artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: kit-pilot-vsix
+                  path: src/kit-pilot.vsix
+                  if-no-files-found: error
+                  retention-days: 30
+
+    publish:
+        needs: verify
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        permissions:
+            contents: write # create the GitHub Release
+
+        steps:
+            - name: Checkout tagged commit
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.inputs.tag || github.ref }}
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10.8.1
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.19.2
+                  cache: pnpm
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Download validated artifact
+              uses: actions/download-artifact@v4
+              with:
+                  name: kit-pilot-vsix
+                  path: src
+
+            - name: Check marketplace version
+              id: marketplace
+              working-directory: src
+              run: |
+                  VERSION="${{ needs.verify.outputs.version }}"
+                  if pnpm exec vsce show KitPilot.kit-pilot --json 2>/dev/null \
+                      | jq -e --arg v "$VERSION" '.versions | map(.version) | index($v) != null' > /dev/null; then
+                      echo "Version $VERSION is already on the Marketplace — publishing will be skipped."
+                      echo "already_published=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "already_published=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Verify marketplace credential
+              if: steps.marketplace.outputs.already_published != 'true'
+              working-directory: src
+              env:
+                  VSCE_PAT: ${{ secrets.VSCE_PAT }}
+              run: pnpm exec vsce verify-pat KitPilot
 
             - name: Publish to VS Code Marketplace
+              if: steps.marketplace.outputs.already_published != 'true'
               working-directory: src
               env:
                   VSCE_PAT: ${{ secrets.VSCE_PAT }}
                   REF: ${{ github.event.inputs.tag || github.ref }}
+                  VERSION: ${{ needs.verify.outputs.version }}
               run: |
-                  # Idempotency guard: a version can only ever be published once, so
-                  # re-tagging an already-published version (e.g. tagging retroactively
-                  # after a manual publish) skips the publish instead of failing the run.
-                  # The GitHub Release step below still runs either way.
-                  LOCAL_VERSION=$(node -p "require('./package.json').version")
-                  if vsce show KitPilot.kit-pilot --json 2>/dev/null \
-                      | jq -e --arg v "$LOCAL_VERSION" '.versions | map(.version) | index($v) != null' > /dev/null; then
-                      echo "Version $LOCAL_VERSION is already on the Marketplace — skipping publish."
-                      exit 0
-                  fi
                   # Second net for the propagation race: the Marketplace read API
                   # can lag a fresh publish by several minutes, so the pre-check
                   # above may miss a version that IS already live. If the publish
@@ -97,32 +180,22 @@ jobs:
                       echo "Publishing to stable channel."
                   fi
                   set +e
-                  OUTPUT=$(vsce publish --no-dependencies --allow-package-all-secrets $EXTRA_FLAGS 2>&1)
+                  # Publish the exact artifact that passed validation in the verify job.
+                  OUTPUT=$(pnpm exec vsce publish --no-dependencies --packagePath kit-pilot.vsix $EXTRA_FLAGS 2>&1)
                   STATUS=$?
                   set -e
                   echo "$OUTPUT"
                   if [ $STATUS -ne 0 ]; then
                       if echo "$OUTPUT" | grep -q "already exists"; then
-                          echo "Version $LOCAL_VERSION is already on the Marketplace (read API lagged) — treating as published."
+                          echo "Version $VERSION is already on the Marketplace (read API lagged) — treating as published."
                           exit 0
                       fi
                       exit $STATUS
                   fi
 
-            - name: Extract version from tag
-              id: version
-              run: |
-                  TAG="${GITHUB_REF#refs/tags/}"
-                  # Honor manual dispatch input if present
-                  if [ -n "${{ github.event.inputs.tag }}" ]; then
-                      TAG="${{ github.event.inputs.tag }}"
-                  fi
-                  echo "tag=$TAG" >> $GITHUB_OUTPUT
-                  echo "version=${TAG#v}" >> $GITHUB_OUTPUT
-
             - name: Extract release notes from CHANGELOG.md
               run: |
-                  version="${{ steps.version.outputs.version }}"
+                  version="${{ needs.verify.outputs.version }}"
                   awk -v ver="## $version" '
                       $0 == ver { capture=1; next }
                       /^## / && capture { exit }
@@ -138,7 +211,8 @@ jobs:
             - name: Create GitHub Release
               uses: softprops/action-gh-release@v2
               with:
-                  tag_name: ${{ steps.version.outputs.tag }}
-                  name: KitPilot ${{ steps.version.outputs.tag }}
+                  tag_name: ${{ needs.verify.outputs.tag }}
+                  name: KitPilot ${{ needs.verify.outputs.tag }}
                   body_path: release-notes.md
-                  files: src/kit-pilot-*.vsix
+                  files: src/kit-pilot.vsix
+                  fail_on_unmatched_files: true

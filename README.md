@@ -10,7 +10,7 @@ Most agentic coding extensions ship with 20+ provider integrations (Anthropic, O
 
 KitPilot strips all of that out:
 
-- **One provider, by design.** Only `vscode-lm` (Copilot). No third-party SDKs, no API key prompts.
+- **One provider, by design.** Only `vscode-lm` (Copilot). No direct LLM-provider API-key setup — Copilot auth is handled entirely by VS Code.
 - **Smaller install.** ~50 npm packages removed vs. the upstream extension; bundle is leaner.
 - **Lower token cost per turn.** Delta-only environment injection and trimmed-history sends mean roughly 3× fewer tokens vs. base KitPilot for the same conversation.
 - **Same agent depth.** Full multi-mode chat, tool use, MCP, custom modes — all of it works through Copilot.
@@ -40,7 +40,7 @@ Semantic `codebase_search` is supported via local [Ollama](https://ollama.ai/) e
 
 ## Requirements
 
-- VS Code 1.84 or later
+- VS Code 1.107 or later
 - An active [GitHub Copilot](https://github.com/features/copilot) subscription
 - (Optional, for semantic search) Local Ollama install
 

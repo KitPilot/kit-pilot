@@ -103,6 +103,34 @@ describe("KitPilotIgnoreController", () => {
 		})
 
 		/**
+		 * Legacy compatibility: an upstream Roo-Code workspace with only a
+		 * .rooignore file must still be honored.
+		 */
+		it("falls back to .rooignore when no .kitpilotignore exists", async () => {
+			mockFileExists.mockImplementation(async (p: string) => p.endsWith(".rooignore"))
+			mockReadFile.mockResolvedValue("legacy-secret/")
+
+			await controller.initialize()
+
+			expect(mockReadFile).toHaveBeenCalledWith(path.join(TEST_CWD, ".rooignore"), "utf8")
+			expect(controller.validateAccess("legacy-secret/data.txt")).toBe(false)
+		})
+
+		/**
+		 * Precedence: when both files exist, .kitpilotignore wins and the
+		 * legacy file is ignored.
+		 */
+		it("prefers .kitpilotignore over .rooignore when both exist", async () => {
+			mockFileExists.mockResolvedValue(true)
+			mockReadFile.mockResolvedValue("new-rules/")
+
+			await controller.initialize()
+
+			expect(mockReadFile).toHaveBeenCalledWith(path.join(TEST_CWD, ".kitpilotignore"), "utf8")
+			expect(mockReadFile).not.toHaveBeenCalledWith(path.join(TEST_CWD, ".rooignore"), "utf8")
+		})
+
+		/**
 		 * Tests the controller behavior when .kitpilotignore doesn't exist
 		 */
 		it("should allow all access when .kitpilotignore doesn't exist", async () => {

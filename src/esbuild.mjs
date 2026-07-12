@@ -33,7 +33,9 @@ async function main() {
 	const production = process.argv.includes("--production")
 	const watch = process.argv.includes("--watch")
 	const minify = production
-	const sourcemap = true // Always generate source maps for error handling.
+	// Dev-only source maps: release VSIXes must not ship maps (download size,
+	// source disclosure); runtime symbolication degrades gracefully without them.
+	const sourcemap = !production
 
 	/**
 	 * @type {import('esbuild').BuildOptions}
@@ -70,7 +72,6 @@ async function main() {
 							["../README.md", "README.md"],
 							["../CHANGELOG.md", "CHANGELOG.md"],
 							["../LICENSE", "LICENSE"],
-							["../.env", ".env", { optional: true }],
 							["node_modules/vscode-material-icons/generated", "assets/vscode-material-icons"],
 							["../webview-ui/audio", "webview-ui/audio"],
 						],

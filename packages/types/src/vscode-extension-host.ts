@@ -12,10 +12,6 @@ import type { SerializedCustomToolDefinition } from "./custom-tool.js"
 import type { GitCommit } from "./git.js"
 import type { McpServer } from "./mcp.js"
 import type { ModelInfo, ModelRecord, RouterModels } from "./model.js"
-// vscode-lm-only build: OpenAI Codex rate limit info is no longer used at
-// runtime. Kept as an opaque alias so message shapes still type-check for
-// any stale persisted state.
-type OpenAiCodexRateLimitInfo = Record<string, never>
 import type { SkillMetadata } from "./skills.js"
 import type { WorktreeIncludeStatus } from "./worktree.js"
 
@@ -84,7 +80,6 @@ export interface ExtensionMessage {
 		| "customToolsResult"
 		| "modes"
 		| "taskWithAggregatedCosts"
-		| "openAiCodexRateLimits"
 		// Worktree response types
 		| "worktreeList"
 		| "worktreeResult"
@@ -226,12 +221,6 @@ export interface ExtensionMessage {
 	path?: string
 }
 
-export interface OpenAiCodexRateLimitsMessage {
-	type: "openAiCodexRateLimits"
-	values?: OpenAiCodexRateLimitInfo
-	error?: string
-}
-
 export type ExtensionState = Pick<
 	GlobalSettings,
 	| "currentApiConfigName"
@@ -344,7 +333,6 @@ export type ExtensionState = Pick<
 	lastShownAnnouncementId?: string
 	apiModelId?: string
 	mcpServers?: McpServer[]
-	openAiCodexIsAuthenticated?: boolean
 	debug?: boolean
 
 	/**
@@ -467,8 +455,6 @@ export interface WebviewMessage {
 		| "toggleApiConfigPin"
 		| "hasOpenedModeSelector"
 		| "lockApiConfigAcrossModes"
-		| "openAiCodexSignIn"
-		| "openAiCodexSignOut"
 		| "condenseTaskContextRequest"
 		| "requestIndexingStatus"
 		| "startIndexing"
@@ -509,7 +495,6 @@ export interface WebviewMessage {
 		| "openDebugApiHistory"
 		| "openDebugUiHistory"
 		| "downloadErrorDiagnostics"
-		| "requestOpenAiCodexRateLimits"
 		| "refreshCustomTools"
 		| "requestModes"
 		| "switchMode"
@@ -599,33 +584,16 @@ export interface WebviewMessage {
 		// Global state settings
 		codebaseIndexEnabled: boolean
 		codebaseIndexQdrantUrl: string
-		codebaseIndexEmbedderProvider:
-			| "openai"
-			| "ollama"
-			| "openai-compatible"
-			| "gemini"
-			| "mistral"
-			| "vercel-ai-gateway"
-			| "bedrock"
-			| "openrouter"
+		// vscode-lm-only build: Ollama is the only supported embedder.
+		codebaseIndexEmbedderProvider: "ollama"
 		codebaseIndexEmbedderBaseUrl?: string
 		codebaseIndexEmbedderModelId: string
-		codebaseIndexEmbedderModelDimension?: number // Generic dimension for all providers
-		codebaseIndexOpenAiCompatibleBaseUrl?: string
-		codebaseIndexBedrockRegion?: string
-		codebaseIndexBedrockProfile?: string
+		codebaseIndexEmbedderModelDimension?: number
 		codebaseIndexSearchMaxResults?: number
 		codebaseIndexSearchMinScore?: number
-		codebaseIndexOpenRouterSpecificProvider?: string // OpenRouter provider routing
 
-		// Secret settings
-		codeIndexOpenAiKey?: string
+		// Secret settings (Qdrant is the only indexing secret)
 		codeIndexQdrantApiKey?: string
-		codebaseIndexOpenAiCompatibleApiKey?: string
-		codebaseIndexGeminiApiKey?: string
-		codebaseIndexMistralApiKey?: string
-		codebaseIndexVercelAiGatewayApiKey?: string
-		codebaseIndexOpenRouterApiKey?: string
 	}
 	updatedSettings?: KitPilotSettings
 	/** Task configuration applied via `createTask()`. */
@@ -638,10 +606,6 @@ export interface WebviewMessage {
 	worktreeForce?: boolean
 	worktreeNewWindow?: boolean
 	worktreeIncludeContent?: string
-}
-
-export interface RequestOpenAiCodexRateLimitsMessage {
-	type: "requestOpenAiCodexRateLimits"
 }
 
 export const checkoutDiffPayloadSchema = z.object({

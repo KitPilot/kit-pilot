@@ -8,7 +8,8 @@ import * as vscode from "vscode"
 export const LOCK_TEXT_SYMBOL = "\u{1F512}"
 
 const KITPILOT_IGNORE_FILENAME = ".kitpilotignore"
-const LEGACY_IGNORE_FILENAME = ".kitpilotignore"
+// Upstream Roo-Code compatibility: still honored when no .kitpilotignore exists.
+const LEGACY_IGNORE_FILENAME = ".rooignore"
 
 /**
  * Controls LLM access to files by enforcing ignore patterns.
