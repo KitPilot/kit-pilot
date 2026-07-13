@@ -8,16 +8,10 @@ import type { Mock } from "vitest"
 import { ProviderSettings, vscodeLlmDefaultModelId, vscodeLlmModels } from "@kit-pilot/types"
 
 import { useSelectedModel } from "../useSelectedModel"
-import { useRouterModels } from "../useRouterModels"
-import { useOpenRouterModelProviders } from "../useOpenRouterModelProviders"
 import { useVsCodeLmModels } from "../useVsCodeLmModels"
 
-vi.mock("../useRouterModels")
-vi.mock("../useOpenRouterModelProviders")
 vi.mock("../useVsCodeLmModels")
 
-const mockUseRouterModels = useRouterModels as Mock<typeof useRouterModels>
-const mockUseOpenRouterModelProviders = useOpenRouterModelProviders as Mock<typeof useOpenRouterModelProviders>
 const mockUseVsCodeLmModels = useVsCodeLmModels as Mock<typeof useVsCodeLmModels>
 
 const createWrapper = () => {
@@ -37,20 +31,6 @@ const createWrapper = () => {
 // to the vscode-lm default with no model info.
 describe("useSelectedModel", () => {
 	beforeEach(() => {
-		// The hook always instantiates these query hooks even though vscode-lm
-		// doesn't depend on them; return inert data so nothing tries to fetch.
-		mockUseRouterModels.mockReturnValue({
-			data: undefined,
-			isLoading: false,
-			isError: false,
-		} as any)
-
-		mockUseOpenRouterModelProviders.mockReturnValue({
-			data: undefined,
-			isLoading: false,
-			isError: false,
-		} as any)
-
 		// Default to no runtime data so tests exercise the static-registry
 		// fallback; individual tests override this to assert runtime precedence.
 		mockUseVsCodeLmModels.mockReturnValue({

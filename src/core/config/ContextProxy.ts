@@ -5,8 +5,9 @@ import {
 	PROVIDER_SETTINGS_KEYS,
 	GLOBAL_SETTINGS_KEYS,
 	SECRET_STATE_KEYS,
+	RETIRED_SECRET_STATE_KEYS,
+	RETIRED_PROVIDER_STATE_KEYS,
 	GLOBAL_STATE_KEYS,
-	GLOBAL_SECRET_KEYS,
 	type ProviderSettings,
 	type GlobalSettings,
 	type SecretState,
@@ -15,8 +16,9 @@ import {
 	providerSettingsSchema,
 	globalSettingsSchema,
 	isSecretStateKey,
-	isProviderName,
-	isRetiredProvider,
+	isRetiredSecretStateKey,
+	isRetiredProviderStateKey,
+	isGlobalStateKey,
 } from "@kit-pilot/types"
 
 import { logger } from "../../utils/logging"
@@ -63,12 +65,14 @@ export class ContextProxy {
 	 * - the retired OpenAI Codex OAuth integration's stored tokens.
 	 */
 	private static readonly RETIRED_SECRET_KEYS = [
+		...RETIRED_SECRET_STATE_KEYS,
 		"codeIndexOpenAiKey",
 		"codebaseIndexOpenAiCompatibleApiKey",
 		"codebaseIndexGeminiApiKey",
 		"codebaseIndexMistralApiKey",
 		"codebaseIndexVercelAiGatewayApiKey",
 		"codebaseIndexOpenRouterApiKey",
+		"openRouterImageApiKey",
 		"openai-codex-oauth-credentials",
 	] as const
 
@@ -90,6 +94,7 @@ export class ContextProxy {
 		// Purge retired-integration secrets BEFORE hydrating the secret cache,
 		// so stale credentials (e.g. a Codex refresh token) never enter memory.
 		await this.purgeRetiredSecrets()
+		await this.purgeRetiredProviderState()
 
 		for (const key of GLOBAL_STATE_KEYS) {
 			try {
@@ -110,23 +115,16 @@ export class ContextProxy {
 					)
 				}
 			}),
-			...GLOBAL_SECRET_KEYS.map(async (key) => {
-				try {
-					this.secretCache[key] = await this.originalContext.secrets.get(key)
-				} catch (error) {
-					logger.error(
-						`Error loading global secret ${key}: ${error instanceof Error ? error.message : String(error)}`,
-					)
-				}
-			}),
 		]
 
 		await Promise.all(promises)
 
-		// Migration: Check for old nested image generation settings and migrate them
-		await this.migrateImageGenerationSettings()
+		// Migrations for permanently retired integrations. These deliberately run
+		// before the provider state is exposed to the rest of the extension.
+		await this.purgeLegacyImageGenerationState()
+		await this.migrateLegacyCodeIndexConfig()
 
-		// Migration: Sanitize invalid/removed API providers
+		// Migration: Normalize invalid/retired API providers to vscode-lm.
 		await this.migrateInvalidApiProvider()
 
 		// Migration: Move legacy customCondensingPrompt to customSupportPrompts
@@ -259,20 +257,16 @@ export class ContextProxy {
 	}
 
 	/**
-	 * Migrates unknown apiProvider values by clearing them from storage.
-	 * Retired providers are preserved so users can keep historical configuration.
+	 * Normalizes unknown and retired providers to the only runtime provider.
 	 */
 	private async migrateInvalidApiProvider() {
 		try {
 			const apiProvider = this.stateCache.apiProvider
-			const isKnownProvider =
-				typeof apiProvider === "string" && (isProviderName(apiProvider) || isRetiredProvider(apiProvider))
 
-			if (apiProvider !== undefined && !isKnownProvider) {
-				logger.info(`[ContextProxy] Found invalid provider "${apiProvider}" in storage - clearing it`)
-				// Clear the invalid provider from both cache and storage
-				this.stateCache.apiProvider = undefined
-				await this.originalContext.globalState.update("apiProvider", undefined)
+			if (apiProvider !== undefined && apiProvider !== "vscode-lm") {
+				logger.info(`[ContextProxy] Replacing retired provider "${String(apiProvider)}" with vscode-lm`)
+				this.stateCache.apiProvider = "vscode-lm"
+				await this.originalContext.globalState.update("apiProvider", "vscode-lm")
 			}
 		} catch (error) {
 			logger.error(
@@ -282,43 +276,78 @@ export class ContextProxy {
 	}
 
 	/**
-	 * Migrates old nested openRouterImageGenerationSettings to the new flattened structure
+	 * Removes all persisted state from the retired OpenRouter image experiment.
 	 */
-	private async migrateImageGenerationSettings() {
+	private async purgeLegacyImageGenerationState() {
 		try {
-			// Check if there's an old nested structure
-			const oldNestedSettings = this.originalContext.globalState.get<any>("openRouterImageGenerationSettings")
+			await Promise.all(
+				[
+					"imageGenerationProvider",
+					"openRouterImageGenerationSelectedModel",
+					"openRouterImageGenerationSettings",
+				].map(async (key) => {
+					if (this.originalContext.globalState.get(key) !== undefined) {
+						await this.originalContext.globalState.update(key, undefined)
+					}
+				}),
+			)
 
-			if (oldNestedSettings && typeof oldNestedSettings === "object") {
-				logger.info("Migrating old nested image generation settings to flattened structure")
-
-				// Migrate the API key if it exists and we don't already have one
-				if (oldNestedSettings.openRouterApiKey && !this.secretCache.openRouterImageApiKey) {
-					await this.originalContext.secrets.store(
-						"openRouterImageApiKey",
-						oldNestedSettings.openRouterApiKey,
-					)
-					this.secretCache.openRouterImageApiKey = oldNestedSettings.openRouterApiKey
-					logger.info("Migrated openRouterImageApiKey to secrets")
-				}
-
-				// Migrate the selected model if it exists and we don't already have one
-				if (oldNestedSettings.selectedModel && !this.stateCache.openRouterImageGenerationSelectedModel) {
-					await this.originalContext.globalState.update(
-						"openRouterImageGenerationSelectedModel",
-						oldNestedSettings.selectedModel,
-					)
-					this.stateCache.openRouterImageGenerationSelectedModel = oldNestedSettings.selectedModel
-					logger.info("Migrated openRouterImageGenerationSelectedModel to global state")
-				}
-
-				// Clean up the old nested structure
-				await this.originalContext.globalState.update("openRouterImageGenerationSettings", undefined)
-				logger.info("Removed old nested openRouterImageGenerationSettings")
+			const storedExperiments = this.originalContext.globalState.get<Record<string, boolean>>("experiments")
+			if (storedExperiments && "imageGeneration" in storedExperiments) {
+				const { imageGeneration: _, ...activeExperiments } = storedExperiments
+				await this.originalContext.globalState.update("experiments", activeExperiments)
+				this.stateCache.experiments = activeExperiments
 			}
 		} catch (error) {
 			logger.error(
-				`Error during image generation settings migration: ${error instanceof Error ? error.message : String(error)}`,
+				`Error purging legacy image generation state: ${error instanceof Error ? error.message : String(error)}`,
+			)
+		}
+	}
+
+	private async purgeRetiredProviderState() {
+		await Promise.all(
+			RETIRED_PROVIDER_STATE_KEYS.map(async (key) => {
+				try {
+					if (this.originalContext.globalState.get(key) !== undefined) {
+						await this.originalContext.globalState.update(key, undefined)
+					}
+				} catch (error) {
+					logger.error(
+						`Error purging retired provider state ${String(key)}: ${error instanceof Error ? error.message : String(error)}`,
+					)
+				}
+			}),
+		)
+	}
+
+	/**
+	 * A legacy cloud embedder's URL/model must never be reinterpreted as an
+	 * Ollama configuration. Preserve only Qdrant/search preferences, disable
+	 * indexing, and reset the embedder to a known-local default.
+	 */
+	private async migrateLegacyCodeIndexConfig() {
+		try {
+			const config = this.stateCache.codebaseIndexConfig
+			if (!config?.codebaseIndexEmbedderProvider || config.codebaseIndexEmbedderProvider === "ollama") {
+				return
+			}
+
+			const normalized = {
+				codebaseIndexEnabled: false,
+				codebaseIndexQdrantUrl: config.codebaseIndexQdrantUrl,
+				codebaseIndexEmbedderProvider: "ollama" as const,
+				codebaseIndexEmbedderBaseUrl: "http://localhost:11434",
+				codebaseIndexSearchMinScore: config.codebaseIndexSearchMinScore,
+				codebaseIndexSearchMaxResults: config.codebaseIndexSearchMaxResults,
+			}
+
+			this.stateCache.codebaseIndexConfig = normalized
+			await this.originalContext.globalState.update("codebaseIndexConfig", normalized)
+			logger.info("Reset retired cloud code-index settings to a disabled Ollama configuration")
+		} catch (error) {
+			logger.error(
+				`Error normalizing legacy code-index settings: ${error instanceof Error ? error.message : String(error)}`,
 			)
 		}
 	}
@@ -387,6 +416,11 @@ export class ContextProxy {
 	}
 
 	storeSecret(key: SecretStateKey, value?: string) {
+		if (isRetiredSecretStateKey(key)) {
+			this.secretCache[key] = undefined
+			return this.originalContext.secrets.delete(key)
+		}
+
 		// Update cache.
 		this.secretCache[key] = value
 
@@ -411,24 +445,12 @@ export class ContextProxy {
 					)
 				}
 			}),
-			...GLOBAL_SECRET_KEYS.map(async (key) => {
-				try {
-					this.secretCache[key] = await this.originalContext.secrets.get(key)
-				} catch (error) {
-					logger.error(
-						`Error refreshing global secret ${key}: ${error instanceof Error ? error.message : String(error)}`,
-					)
-				}
-			}),
 		]
 		await Promise.all(promises)
 	}
 
 	private getAllSecretState(): SecretState {
-		return Object.fromEntries([
-			...SECRET_STATE_KEYS.map((key) => [key, this.getSecret(key as SecretStateKey)]),
-			...GLOBAL_SECRET_KEYS.map((key) => [key, this.getSecret(key as SecretStateKey)]),
-		])
+		return Object.fromEntries(SECRET_STATE_KEYS.map((key) => [key, this.getSecret(key as SecretStateKey)]))
 	}
 
 	/**
@@ -470,7 +492,7 @@ export class ContextProxy {
 
 	/**
 	 * Sanitizes provider values by resetting unknown apiProvider values.
-	 * Active and retired providers are preserved.
+	 * Unknown or retired providers are removed before values reach runtime.
 	 */
 	private sanitizeProviderValues(values: KitPilotSettings): KitPilotSettings {
 		// Remove legacy Claude Code CLI wrapper keys that may still exist in global state.
@@ -486,15 +508,9 @@ export class ContextProxy {
 			}
 		}
 
-		const isKnownProvider =
-			typeof values.apiProvider === "string" &&
-			(isProviderName(values.apiProvider) || isRetiredProvider(values.apiProvider))
-
-		if (values.apiProvider !== undefined && !isKnownProvider) {
-			logger.info(`[ContextProxy] Sanitizing invalid provider "${values.apiProvider}" - resetting to undefined`)
-			// Return a new values object without the invalid apiProvider
-			const { apiProvider, ...restValues } = sanitizedValues
-			return restValues as KitPilotSettings
+		if (values.apiProvider !== undefined && values.apiProvider !== "vscode-lm") {
+			logger.info(`[ContextProxy] Replacing runtime provider "${String(values.apiProvider)}" with vscode-lm`)
+			return { ...sanitizedValues, apiProvider: "vscode-lm" }
 		}
 		return sanitizedValues
 	}
@@ -506,18 +522,9 @@ export class ContextProxy {
 		// that the setting's value should be `undefined` and therefore we
 		// need to remove it from the state cache if it exists.
 
-		// Ensure openAiHeaders is always an object even when empty
-		// This is critical for proper serialization/deserialization through IPC
-		if (values.openAiHeaders !== undefined) {
-			// Check if it's empty or null
-			if (!values.openAiHeaders || Object.keys(values.openAiHeaders).length === 0) {
-				values.openAiHeaders = {}
-			}
-		}
-
 		await this.setValues({
-			...PROVIDER_SETTINGS_KEYS.filter((key) => !isSecretStateKey(key))
-				.filter((key) => !!this.stateCache[key])
+			...PROVIDER_SETTINGS_KEYS.filter((key) => isGlobalStateKey(key))
+				.filter((key) => !!(this.stateCache as Record<string, unknown>)[key])
 				.reduce((acc, key) => ({ ...acc, [key]: undefined }), {} as ProviderSettings),
 			...values,
 		})
@@ -528,15 +535,30 @@ export class ContextProxy {
 	 */
 
 	public async setValue<K extends KitPilotSettingsKey>(key: K, value: KitPilotSettings[K]) {
-		return isSecretStateKey(key)
-			? this.storeSecret(key as SecretStateKey, value as string)
-			: this.updateGlobalState(key as GlobalStateKey, value)
+		if (key === "apiProvider" && value !== undefined && value !== "vscode-lm") {
+			return this.updateGlobalState("apiProvider", "vscode-lm")
+		}
+
+		if (isSecretStateKey(key)) {
+			return this.storeSecret(key as SecretStateKey, value as string)
+		}
+
+		if (isRetiredProviderStateKey(key)) {
+			delete (this.stateCache as Record<string, unknown>)[key]
+			return this.originalContext.globalState.update(key, undefined)
+		}
+
+		return this.updateGlobalState(key as GlobalStateKey, value as GlobalState[GlobalStateKey])
 	}
 
 	public getValue<K extends KitPilotSettingsKey>(key: K): KitPilotSettings[K] {
-		return isSecretStateKey(key)
-			? (this.getSecret(key as SecretStateKey) as KitPilotSettings[K])
-			: (this.getGlobalState(key as GlobalStateKey) as KitPilotSettings[K])
+		if (isSecretStateKey(key)) {
+			return this.getSecret(key as SecretStateKey) as KitPilotSettings[K]
+		}
+		if (isRetiredProviderStateKey(key)) {
+			return undefined as KitPilotSettings[K]
+		}
+		return this.getGlobalState(key as GlobalStateKey) as KitPilotSettings[K]
 	}
 
 	public getValues(): KitPilotSettings {
@@ -581,8 +603,9 @@ export class ContextProxy {
 
 		await Promise.all([
 			...GLOBAL_STATE_KEYS.map((key) => this.originalContext.globalState.update(key, undefined)),
+			...RETIRED_PROVIDER_STATE_KEYS.map((key) => this.originalContext.globalState.update(key, undefined)),
 			...SECRET_STATE_KEYS.map((key) => this.originalContext.secrets.delete(key)),
-			...GLOBAL_SECRET_KEYS.map((key) => this.originalContext.secrets.delete(key)),
+			...RETIRED_SECRET_STATE_KEYS.map((key) => this.originalContext.secrets.delete(key)),
 		])
 
 		await this.initialize()

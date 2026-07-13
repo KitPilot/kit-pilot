@@ -1,7 +1,6 @@
 import type { AssertEqual, Equals, Keys, Values, ExperimentId, Experiments } from "@kit-pilot/types"
 
 export const EXPERIMENT_IDS = {
-	IMAGE_GENERATION: "imageGeneration",
 	CUSTOM_TOOLS: "customTools",
 } as const satisfies Record<string, ExperimentId>
 
@@ -14,7 +13,6 @@ interface ExperimentConfig {
 }
 
 export const experimentConfigsMap: Record<ExperimentKey, ExperimentConfig> = {
-	IMAGE_GENERATION: { enabled: false },
 	CUSTOM_TOOLS: { enabled: false },
 }
 

@@ -1,7 +1,6 @@
 // npx vitest src/components/welcome/__tests__/WelcomeViewProvider.spec.tsx
 
 import { render, screen, fireEvent } from "@/utils/test-utils"
-import { openRouterDefaultModelId } from "@kit-pilot/types"
 
 import * as ExtensionStateContext from "@src/context/ExtensionStateContext"
 const { ExtensionStateContextProvider } = ExtensionStateContext
@@ -102,17 +101,16 @@ describe("WelcomeViewProvider", () => {
 		fireEvent.click(screen.getByTestId("button-primary"))
 
 		expect(screen.getByTestId("api-options")).toBeInTheDocument()
-		expect(screen.getByTestId("api-options")).toHaveAttribute("data-provider", "openrouter")
-		expect(screen.getByTestId("api-options")).toHaveAttribute("data-model", openRouterDefaultModelId)
+		expect(screen.getByTestId("api-options")).toHaveAttribute("data-provider", "vscode-lm")
+		expect(screen.getByTestId("api-options")).not.toHaveAttribute("data-model")
 		expect(setApiConfiguration).toHaveBeenCalledWith({
-			apiProvider: "openrouter",
-			openRouterModelId: openRouterDefaultModelId,
+			apiProvider: "vscode-lm",
 		})
 		expect(screen.getByTestId("trans-welcome:providerSignup.chooseProvider")).toBeInTheDocument()
 		expect(vscode.postMessage).not.toHaveBeenCalledWith(expect.objectContaining({ type: "upsertApiConfiguration" }))
 	})
 
-	it("treats the built-in Anthropic default as empty onboarding config", () => {
+	it("normalizes a retired provider during onboarding", () => {
 		const { setApiConfiguration } = renderWelcomeViewProvider({
 			apiConfiguration: {
 				apiProvider: "anthropic",
@@ -122,11 +120,10 @@ describe("WelcomeViewProvider", () => {
 
 		fireEvent.click(screen.getByTestId("button-primary"))
 
-		expect(screen.getByTestId("api-options")).toHaveAttribute("data-provider", "openrouter")
-		expect(screen.getByTestId("api-options")).toHaveAttribute("data-model", openRouterDefaultModelId)
+		expect(screen.getByTestId("api-options")).toHaveAttribute("data-provider", "vscode-lm")
+		expect(screen.getByTestId("api-options")).not.toHaveAttribute("data-model")
 		expect(setApiConfiguration).toHaveBeenCalledWith({
-			apiProvider: "openrouter",
-			openRouterModelId: openRouterDefaultModelId,
+			apiProvider: "vscode-lm",
 		})
 	})
 
@@ -140,7 +137,7 @@ describe("WelcomeViewProvider", () => {
 			type: "upsertApiConfiguration",
 			text: "default",
 			apiConfiguration: {
-				apiProvider: "openrouter",
+				apiProvider: "vscode-lm",
 			},
 		})
 	})

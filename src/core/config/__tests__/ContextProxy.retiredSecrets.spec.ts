@@ -8,19 +8,23 @@ vi.mock("vscode", () => ({
 }))
 
 import { ContextProxy } from "../ContextProxy"
+import { RETIRED_SECRET_STATE_KEYS } from "@kit-pilot/types"
 
 const RETIRED = [
+	...RETIRED_SECRET_STATE_KEYS,
 	"codeIndexOpenAiKey",
 	"codebaseIndexOpenAiCompatibleApiKey",
 	"codebaseIndexGeminiApiKey",
 	"codebaseIndexMistralApiKey",
 	"codebaseIndexVercelAiGatewayApiKey",
 	"codebaseIndexOpenRouterApiKey",
+	"openRouterImageApiKey",
 	"openai-codex-oauth-credentials",
 ]
 
-const makeContext = (stored: Record<string, string> = {}) => {
+const makeContext = (stored: Record<string, string> = {}, storedGlobal: Record<string, unknown> = {}) => {
 	const store = new Map(Object.entries(stored))
+	const globalStore = new Map(Object.entries(storedGlobal))
 	const secrets = {
 		get: vi.fn(async (key: string) => store.get(key)),
 		store: vi.fn(async (key: string, value: string) => void store.set(key, value)),
@@ -28,7 +32,12 @@ const makeContext = (stored: Record<string, string> = {}) => {
 	}
 	return {
 		context: {
-			globalState: { get: vi.fn(), update: vi.fn() },
+			globalState: {
+				get: vi.fn((key: string) => globalStore.get(key)),
+				update: vi.fn(async (key: string, value: unknown) =>
+					value === undefined ? void globalStore.delete(key) : void globalStore.set(key, value),
+				),
+			},
 			secrets,
 			extensionUri: { fsPath: "/ext" },
 			extensionMode: 3,
@@ -36,6 +45,7 @@ const makeContext = (stored: Record<string, string> = {}) => {
 		} as unknown as vscode.ExtensionContext,
 		secrets,
 		store,
+		globalStore,
 	}
 }
 
@@ -82,5 +92,90 @@ describe("ContextProxy retired-secret purge", () => {
 		await proxy.initialize()
 
 		expect(store.get("codeIndexQdrantApiKey")).toBe("still-needed")
+	})
+
+	it("rejects attempts to write a retired provider secret", async () => {
+		const { context, secrets, store, globalStore } = makeContext()
+		const proxy = new ContextProxy(context)
+		await proxy.initialize()
+		vi.clearAllMocks()
+
+		await proxy.setValue("openRouterApiKey", "must-not-persist")
+
+		expect(secrets.store).not.toHaveBeenCalled()
+		expect(secrets.delete).toHaveBeenCalledWith("openRouterApiKey")
+		expect(store.has("openRouterApiKey")).toBe(false)
+
+		await proxy.setValue("apiProvider", "openrouter")
+		expect(globalStore.get("apiProvider")).toBe("vscode-lm")
+	})
+
+	it("purges plaintext retired provider state and normalizes the provider", async () => {
+		const { context, globalStore } = makeContext(
+			{},
+			{
+				apiProvider: "openrouter",
+				openAiBaseUrl: "https://legacy.example/v1",
+				openAiHeaders: { Authorization: "Bearer stale" },
+			},
+		)
+
+		const proxy = new ContextProxy(context)
+		await proxy.initialize()
+
+		expect(globalStore.get("apiProvider")).toBe("vscode-lm")
+		expect(globalStore.has("openAiBaseUrl")).toBe(false)
+		expect(globalStore.has("openAiHeaders")).toBe(false)
+		expect(proxy.getProviderSettings()).toMatchObject({ apiProvider: "vscode-lm" })
+		expect(proxy.getProviderSettings().openAiBaseUrl).toBeUndefined()
+	})
+
+	it("disables and resets a legacy cloud code-index configuration", async () => {
+		const { context, globalStore } = makeContext(
+			{},
+			{
+				codebaseIndexConfig: {
+					codebaseIndexEnabled: true,
+					codebaseIndexQdrantUrl: "http://localhost:6333",
+					codebaseIndexEmbedderProvider: "openai",
+					codebaseIndexEmbedderBaseUrl: "https://api.openai.com/v1",
+					codebaseIndexEmbedderModelId: "text-embedding-3-small",
+					codebaseIndexEmbedderModelDimension: 1536,
+					codebaseIndexSearchMaxResults: 75,
+				},
+			},
+		)
+
+		const proxy = new ContextProxy(context)
+		await proxy.initialize()
+
+		expect(globalStore.get("codebaseIndexConfig")).toEqual({
+			codebaseIndexEnabled: false,
+			codebaseIndexQdrantUrl: "http://localhost:6333",
+			codebaseIndexEmbedderProvider: "ollama",
+			codebaseIndexEmbedderBaseUrl: "http://localhost:11434",
+			codebaseIndexSearchMinScore: undefined,
+			codebaseIndexSearchMaxResults: 75,
+		})
+	})
+
+	it("removes the retired image experiment and its legacy state", async () => {
+		const { context, globalStore } = makeContext(
+			{ openRouterImageApiKey: "stale-image-key" },
+			{
+				imageGenerationProvider: "openrouter",
+				openRouterImageGenerationSelectedModel: "legacy-model",
+				openRouterImageGenerationSettings: { openRouterApiKey: "nested-key" },
+				experiments: { imageGeneration: true, customTools: true },
+			},
+		)
+
+		const proxy = new ContextProxy(context)
+		await proxy.initialize()
+
+		expect(globalStore.has("imageGenerationProvider")).toBe(false)
+		expect(globalStore.has("openRouterImageGenerationSelectedModel")).toBe(false)
+		expect(globalStore.has("openRouterImageGenerationSettings")).toBe(false)
+		expect(globalStore.get("experiments")).toEqual({ customTools: true })
 	})
 })

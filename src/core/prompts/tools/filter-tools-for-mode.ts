@@ -281,10 +281,8 @@ export function filterNativeToolsForMode(
 		allowedToolNames.delete("update_todo_list")
 	}
 
-	// Conditionally exclude generate_image if experiment is not enabled
-	if (!experiments?.imageGeneration) {
-		allowedToolNames.delete("generate_image")
-	}
+	// Legacy mode data can still name this retired tool; never offer it.
+	allowedToolNames.delete("generate_image")
 
 	// Remove tools that are explicitly disabled via the disabledTools setting
 	if (settings?.disabledTools?.length) {
@@ -368,9 +366,7 @@ export function isToolAllowedInMode(
 		if (toolName === "update_todo_list") {
 			return settings?.todoListEnabled !== false
 		}
-		if (toolName === "generate_image") {
-			return experiments?.imageGeneration === true
-		}
+		if (toolName === "generate_image") return false
 		return true
 	}
 

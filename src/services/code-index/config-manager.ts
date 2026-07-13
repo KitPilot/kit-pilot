@@ -61,18 +61,21 @@ export class CodeIndexConfigManager {
 			codebaseIndexSearchMinScore,
 			codebaseIndexSearchMaxResults,
 		} = codebaseIndexConfig
+		const hasRetiredProvider =
+			codebaseIndexConfig.codebaseIndexEmbedderProvider !== undefined &&
+			codebaseIndexConfig.codebaseIndexEmbedderProvider !== "ollama"
 
 		const qdrantApiKey = this.contextProxy?.getSecret("codeIndexQdrantApiKey") ?? ""
 
 		// Update instance variables with configuration
-		this.codebaseIndexEnabled = codebaseIndexEnabled ?? false
+		this.codebaseIndexEnabled = hasRetiredProvider ? false : (codebaseIndexEnabled ?? false)
 		this.qdrantUrl = codebaseIndexQdrantUrl
 		this.qdrantApiKey = qdrantApiKey ?? ""
 		this.searchMinScore = codebaseIndexSearchMinScore
 		this.searchMaxResults = codebaseIndexSearchMaxResults
 
 		// Validate and set model dimension
-		const rawDimension = codebaseIndexConfig.codebaseIndexEmbedderModelDimension
+		const rawDimension = hasRetiredProvider ? undefined : codebaseIndexConfig.codebaseIndexEmbedderModelDimension
 		if (rawDimension !== undefined && rawDimension !== null) {
 			const dimension = Number(rawDimension)
 			if (!isNaN(dimension) && dimension > 0) {
@@ -92,10 +95,10 @@ export class CodeIndexConfigManager {
 		// erroring at index time. Their secrets are intentionally not read.
 		this.embedderProvider = "ollama"
 
-		this.modelId = codebaseIndexEmbedderModelId || undefined
+		this.modelId = hasRetiredProvider ? undefined : codebaseIndexEmbedderModelId || undefined
 
 		this.ollamaOptions = {
-			ollamaBaseUrl: codebaseIndexEmbedderBaseUrl,
+			ollamaBaseUrl: hasRetiredProvider ? "http://localhost:11434" : codebaseIndexEmbedderBaseUrl,
 		}
 	}
 

@@ -55,7 +55,7 @@ describe("ProviderSettingsManager", () => {
 					currentApiConfigName: "default",
 					apiConfigs: {
 						default: {
-							config: {},
+							apiProvider: "vscode-lm",
 							id: "default",
 						},
 					},
@@ -234,6 +234,21 @@ describe("ProviderSettingsManager", () => {
 	})
 
 	describe("ListConfig", () => {
+		it("uses vscode-lm for the fresh-install default profile", async () => {
+			mockSecrets.get.mockResolvedValue(null)
+
+			const configs = await providerSettingsManager.listConfig()
+
+			expect(configs).toEqual([
+				{
+					name: "default",
+					id: expect.any(String),
+					apiProvider: "vscode-lm",
+					modelId: undefined,
+				},
+			])
+		})
+
 		it("should list all available configs", async () => {
 			const existingConfig: ProviderProfiles = {
 				currentApiConfigName: "default",
@@ -260,8 +275,8 @@ describe("ProviderSettingsManager", () => {
 
 			const configs = await providerSettingsManager.listConfig()
 			expect(configs).toEqual([
-				{ name: "default", id: "default", apiProvider: undefined },
-				{ name: "test", id: "test-id", apiProvider: "anthropic" },
+				{ name: "default", id: "default", apiProvider: "vscode-lm", modelId: undefined },
+				{ name: "test", id: "test-id", apiProvider: "vscode-lm", modelId: undefined },
 			])
 		})
 
@@ -295,7 +310,7 @@ describe("ProviderSettingsManager", () => {
 	})
 
 	describe("SaveConfig", () => {
-		it("should save new config", async () => {
+		it("should normalize a new retired-provider config to vscode-lm", async () => {
 			mockSecrets.get.mockResolvedValue(
 				JSON.stringify({
 					currentApiConfigName: "default",
@@ -325,9 +340,9 @@ describe("ProviderSettingsManager", () => {
 			const expectedConfig = {
 				currentApiConfigName: "default",
 				apiConfigs: {
-					default: {},
+					default: { apiProvider: "vscode-lm" },
 					test: {
-						...newConfig,
+						apiProvider: "vscode-lm",
 						id: testConfigId,
 					},
 				},
@@ -376,7 +391,7 @@ describe("ProviderSettingsManager", () => {
 			const expectedConfig = {
 				currentApiConfigName: "default",
 				apiConfigs: {
-					default: {},
+					default: { apiProvider: "vscode-lm" },
 					test: {
 						...newConfig,
 						id: testConfigId,
@@ -393,7 +408,7 @@ describe("ProviderSettingsManager", () => {
 			expect(storedConfig).toEqual(expectedConfig)
 		})
 
-		it("should preserve all fields when saving a retired-provider profile", async () => {
+		it("should purge provider fields when saving a retired-provider profile", async () => {
 			mockSecrets.get.mockResolvedValue(
 				JSON.stringify({
 					currentApiConfigName: "default",
@@ -401,8 +416,6 @@ describe("ProviderSettingsManager", () => {
 				}),
 			)
 
-			// Retired providers are stored via passthrough so legacy fields are
-			// not lost when an old profile is re-saved.
 			const legacyConfig: ProviderSettings = {
 				apiProvider: "anthropic",
 				apiKey: "test-key",
@@ -413,7 +426,7 @@ describe("ProviderSettingsManager", () => {
 
 			const storedConfig = JSON.parse(mockSecrets.store.mock.calls[mockSecrets.store.mock.calls.length - 1][1])
 			expect(storedConfig.apiConfigs.legacy).toEqual({
-				...legacyConfig,
+				apiProvider: "vscode-lm",
 				id: storedConfig.apiConfigs.legacy.id,
 			})
 		})
@@ -446,8 +459,7 @@ describe("ProviderSettingsManager", () => {
 				currentApiConfigName: "default",
 				apiConfigs: {
 					test: {
-						apiProvider: "anthropic",
-						apiKey: "new-key",
+						apiProvider: "vscode-lm",
 						id: "test-id",
 					},
 				},
@@ -481,7 +493,7 @@ describe("ProviderSettingsManager", () => {
 			)
 		})
 
-		it("should preserve full fields including legacy provider-specific keys when saving retired provider profiles", async () => {
+		it("should strip credentials and endpoints when saving retired provider profiles", async () => {
 			mockSecrets.get.mockResolvedValue(
 				JSON.stringify({
 					currentApiConfigName: "default",
@@ -496,8 +508,6 @@ describe("ProviderSettingsManager", () => {
 				}),
 			)
 
-			// Include a legacy provider-specific field (groqApiKey) that is no
-			// longer in the schema — passthrough() must keep it.
 			const retiredConfig = {
 				apiProvider: "groq",
 				apiKey: "legacy-key",
@@ -511,15 +521,11 @@ describe("ProviderSettingsManager", () => {
 			await providerSettingsManager.saveConfig("retired", retiredConfig)
 
 			const storedConfig = JSON.parse(mockSecrets.store.mock.calls[mockSecrets.store.mock.calls.length - 1][1])
-			expect(storedConfig.apiConfigs.retired.apiProvider).toBe("groq")
-			expect(storedConfig.apiConfigs.retired.apiKey).toBe("legacy-key")
-			expect(storedConfig.apiConfigs.retired.apiModelId).toBe("legacy-model")
-			expect(storedConfig.apiConfigs.retired.openAiBaseUrl).toBe("https://legacy.example/v1")
-			expect(storedConfig.apiConfigs.retired.openAiApiKey).toBe("legacy-openai-key")
-			expect(storedConfig.apiConfigs.retired.modelMaxTokens).toBe(4096)
-			// Verify legacy provider-specific field is preserved via passthrough
-			expect(storedConfig.apiConfigs.retired.groqApiKey).toBe("legacy-groq-specific-key")
-			expect(storedConfig.apiConfigs.retired.id).toBeTruthy()
+			expect(storedConfig.apiConfigs.retired).toEqual({
+				apiProvider: "vscode-lm",
+				modelMaxTokens: 4096,
+				id: storedConfig.apiConfigs.retired.id,
+			})
 		})
 	})
 
@@ -584,7 +590,7 @@ describe("ProviderSettingsManager", () => {
 	})
 
 	describe("LoadConfig", () => {
-		it("preserves KitPilot Router configs as retired providers", async () => {
+		it("normalizes retired KitPilot Router configs", async () => {
 			const existingConfig = {
 				currentApiConfigName: "default",
 				apiConfigs: {
@@ -609,7 +615,7 @@ describe("ProviderSettingsManager", () => {
 			const { name, ...providerSettings } = await providerSettingsManager.getProfile({ name: "default" })
 
 			expect(name).toBe("default")
-			expect(providerSettings).toEqual(existingConfig.apiConfigs.default)
+			expect(providerSettings).toEqual({ apiProvider: "vscode-lm", id: "default-id" })
 		})
 
 		it("should load config and update current config name", async () => {
@@ -633,7 +639,7 @@ describe("ProviderSettingsManager", () => {
 			const { name, ...providerSettings } = await providerSettingsManager.activateProfile({ name: "test" })
 
 			expect(name).toBe("test")
-			expect(providerSettings).toEqual({ apiProvider: "anthropic", apiKey: "test-key", id: "test-id" })
+			expect(providerSettings).toEqual({ apiProvider: "vscode-lm", id: "test-id" })
 
 			// Get the stored config to check the structure.
 			const calls = mockSecrets.store.mock.calls
@@ -641,8 +647,7 @@ describe("ProviderSettingsManager", () => {
 			expect(storedConfig.currentApiConfigName).toBe("test")
 
 			expect(storedConfig.apiConfigs.test).toEqual({
-				apiProvider: "anthropic",
-				apiKey: "test-key",
+				apiProvider: "vscode-lm",
 				id: "test-id",
 			})
 		})
@@ -678,7 +683,7 @@ describe("ProviderSettingsManager", () => {
 			)
 		})
 
-		it("should sanitize unknown providers by resetting apiProvider to undefined", async () => {
+		it("should normalize both retired and unknown providers to vscode-lm", async () => {
 			// This tests the fix for the infinite loop issue when a provider is removed
 			const configWithUnknownProvider = {
 				currentApiConfigName: "valid",
@@ -714,18 +719,18 @@ describe("ProviderSettingsManager", () => {
 			const finalStoredConfigJson = storeCalls[storeCalls.length - 1][1]
 
 			const storedConfig = JSON.parse(finalStoredConfigJson)
-			// The valid provider should be untouched
+			// Both profiles are retained, but their providers and credentials are normalized.
 			expect(storedConfig.apiConfigs.valid).toBeDefined()
-			expect(storedConfig.apiConfigs.valid.apiProvider).toBe("anthropic")
+			expect(storedConfig.apiConfigs.valid.apiProvider).toBe("vscode-lm")
+			expect(storedConfig.apiConfigs.valid.apiKey).toBeUndefined()
 
-			// The config with the unknown provider should have its apiProvider reset to undefined
-			// but still be present (not filtered out entirely)
 			expect(storedConfig.apiConfigs.unknownProvider).toBeDefined()
-			expect(storedConfig.apiConfigs.unknownProvider.apiProvider).toBeUndefined()
+			expect(storedConfig.apiConfigs.unknownProvider.apiProvider).toBe("vscode-lm")
+			expect(storedConfig.apiConfigs.unknownProvider.apiKey).toBeUndefined()
 			expect(storedConfig.apiConfigs.unknownProvider.id).toBe("removed-id")
 		})
 
-		it("should preserve retired providers and their fields including legacy provider-specific keys during initialize", async () => {
+		it("should purge retired provider fields during initialize", async () => {
 			const configWithRetiredProvider = {
 				currentApiConfigName: "retiredProvider",
 				apiConfigs: {
@@ -760,13 +765,12 @@ describe("ProviderSettingsManager", () => {
 			const storedConfig = JSON.parse(finalStoredConfigJson)
 
 			expect(storedConfig.apiConfigs.retiredProvider).toBeDefined()
-			expect(storedConfig.apiConfigs.retiredProvider.apiProvider).toBe("groq")
-			expect(storedConfig.apiConfigs.retiredProvider.apiKey).toBe("legacy-key")
-			expect(storedConfig.apiConfigs.retiredProvider.apiModelId).toBe("legacy-model")
-			expect(storedConfig.apiConfigs.retiredProvider.openAiBaseUrl).toBe("https://legacy.example/v1")
-			expect(storedConfig.apiConfigs.retiredProvider.modelMaxTokens).toBe(1024)
-			// Verify legacy provider-specific field is preserved via passthrough
-			expect(storedConfig.apiConfigs.retiredProvider.groqApiKey).toBe("legacy-groq-key")
+			expect(storedConfig.apiConfigs.retiredProvider).toEqual({
+				apiProvider: "vscode-lm",
+				id: "retired-id",
+				modelMaxTokens: 1024,
+				rateLimitSeconds: 0,
+			})
 		})
 
 		it("should sanitize invalid providers and remove non-object profiles during load", async () => {
@@ -801,13 +805,13 @@ describe("ProviderSettingsManager", () => {
 			const finalStoredConfigJson = storeCalls[storeCalls.length - 1][1]
 
 			const storedConfig = JSON.parse(finalStoredConfigJson)
-			// Valid config should be untouched
+			// Object profiles are retained and normalized to the only provider.
 			expect(storedConfig.apiConfigs.valid).toBeDefined()
-			expect(storedConfig.apiConfigs.valid.apiProvider).toBe("anthropic")
+			expect(storedConfig.apiConfigs.valid.apiProvider).toBe("vscode-lm")
+			expect(storedConfig.apiConfigs.valid.apiKey).toBeUndefined()
 
-			// Invalid provider config should be sanitized - kept but apiProvider reset to undefined
 			expect(storedConfig.apiConfigs.invalidProvider).toBeDefined()
-			expect(storedConfig.apiConfigs.invalidProvider.apiProvider).toBeUndefined()
+			expect(storedConfig.apiConfigs.invalidProvider.apiProvider).toBe("vscode-lm")
 			expect(storedConfig.apiConfigs.invalidProvider.id).toBe("x.ai")
 
 			// Non-object config should be completely removed
@@ -819,7 +823,7 @@ describe("ProviderSettingsManager", () => {
 	})
 
 	describe("Export", () => {
-		it("should preserve retired provider profiles with full fields", async () => {
+		it("should export retired profiles without retired credentials or endpoints", async () => {
 			const existingConfig: ProviderProfiles = {
 				currentApiConfigName: "retired",
 				apiConfigs: {
@@ -839,10 +843,10 @@ describe("ProviderSettingsManager", () => {
 
 			const exported = await providerSettingsManager.export()
 
-			expect(exported.apiConfigs.retired.apiProvider).toBe("groq")
-			expect(exported.apiConfigs.retired.apiKey).toBe("legacy-key")
-			expect(exported.apiConfigs.retired.apiModelId).toBe("legacy-model")
-			expect(exported.apiConfigs.retired.openAiBaseUrl).toBe("https://legacy.example/v1")
+			expect(exported.apiConfigs.retired.apiProvider).toBe("vscode-lm")
+			expect(exported.apiConfigs.retired.apiKey).toBeUndefined()
+			expect(exported.apiConfigs.retired.apiModelId).toBeUndefined()
+			expect(exported.apiConfigs.retired.openAiBaseUrl).toBeUndefined()
 			expect(exported.apiConfigs.retired.modelMaxTokens).toBe(4096)
 			expect(exported.apiConfigs.retired.modelMaxThinkingTokens).toBe(2048)
 		})

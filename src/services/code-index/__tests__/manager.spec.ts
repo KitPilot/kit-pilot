@@ -563,9 +563,10 @@ describe("CodeIndexManager - handleSettingsChange regression", () => {
 				getGlobalState: vi.fn().mockReturnValue({
 					codebaseIndexEnabled: true,
 					codebaseIndexQdrantUrl: "http://localhost:6333",
-					codebaseIndexEmbedderProvider: "openai",
-					codebaseIndexEmbedderModelId: "text-embedding-3-small",
-					codebaseIndexEmbedderModelDimension: 1536,
+					codebaseIndexEmbedderProvider: "ollama",
+					codebaseIndexEmbedderBaseUrl: "http://localhost:11434",
+					codebaseIndexEmbedderModelId: "nomic-embed-text",
+					codebaseIndexEmbedderModelDimension: 768,
 					codebaseIndexSearchMaxResults: 10,
 					codebaseIndexSearchMinScore: 0.4,
 				}),

@@ -87,11 +87,6 @@ export const globalSettingsSchema = z.object({
 	taskHistory: z.array(historyItemSchema).optional(),
 	dismissedUpsells: z.array(z.string()).optional(),
 
-	// Image generation settings (experimental) - flattened for simplicity
-	imageGenerationProvider: z.enum(["openrouter"]).optional(),
-	openRouterImageApiKey: z.string().optional(),
-	openRouterImageGenerationSelectedModel: z.string().optional(),
-
 	customCondensingPrompt: z.string().optional(),
 
 	autoApprovalEnabled: z.boolean().optional(),
@@ -222,7 +217,6 @@ export const globalSettingsSchema = z.object({
 	lastSettingsExportPath: z.string().optional(),
 	lastTaskExportPath: z.string().optional(),
 	lastImageSavePath: z.string().optional(),
-
 	/**
 	 * Path to worktree to auto-open after switching workspaces.
 	 * Used by the worktree feature to open the KitPilot sidebar in a new window.
@@ -256,8 +250,16 @@ export type KitPilotSettings = GlobalSettings & ProviderSettings
 /**
  * SecretState
  */
-export const SECRET_STATE_KEYS = [
+export const SECRET_STATE_KEYS = ["codeIndexQdrantApiKey"] as const
+
+/**
+ * Secrets accepted by older KitPilot builds but permanently retired by the
+ * vscode-lm-only build. They remain classified as secrets so stale settings
+ * can never fall through into plaintext globalState.
+ */
+export const RETIRED_SECRET_STATE_KEYS = [
 	"apiKey",
+	"anthropicApiKey",
 	"openRouterApiKey",
 	"awsAccessKey",
 	"awsApiKey",
@@ -275,39 +277,62 @@ export const SECRET_STATE_KEYS = [
 	"unboundApiKey",
 	"xaiApiKey",
 	"litellmApiKey",
-	"codeIndexQdrantApiKey",
 	"sambaNovaApiKey",
 	"zaiApiKey",
 	"fireworksApiKey",
 	"vercelAiGatewayApiKey",
 	"basetenApiKey",
-] as const
-
-// Global secrets that are part of GlobalSettings (not ProviderSettings)
-export const GLOBAL_SECRET_KEYS = [
-	"openRouterImageApiKey", // For image generation
+	"poeApiKey",
+	"vertexJsonCredentials",
 ] as const
 
 // Type for the actual secret storage keys
-type ProviderSecretKey = (typeof SECRET_STATE_KEYS)[number]
-type GlobalSecretKey = (typeof GLOBAL_SECRET_KEYS)[number]
+type ActiveProviderSecretKey = (typeof SECRET_STATE_KEYS)[number]
+type RetiredProviderSecretKey = (typeof RETIRED_SECRET_STATE_KEYS)[number]
+type ProviderSecretKey = ActiveProviderSecretKey | RetiredProviderSecretKey
 
 // Type representing all secrets that can be stored
-export type SecretState = Pick<ProviderSettings, Extract<ProviderSecretKey, keyof ProviderSettings>> & {
-	[K in GlobalSecretKey]?: string
-}
+export type SecretState = Pick<ProviderSettings, Extract<ProviderSecretKey, keyof ProviderSettings>>
+
+export const isRetiredSecretStateKey = (key: string): key is RetiredProviderSecretKey =>
+	RETIRED_SECRET_STATE_KEYS.includes(key as RetiredProviderSecretKey)
 
 export const isSecretStateKey = (key: string): key is Keys<SecretState> =>
-	SECRET_STATE_KEYS.includes(key as ProviderSecretKey) || GLOBAL_SECRET_KEYS.includes(key as GlobalSecretKey)
+	SECRET_STATE_KEYS.includes(key as ActiveProviderSecretKey) || isRetiredSecretStateKey(key)
+
+/** Provider fields that can still affect runtime behavior in this build. */
+export const ACTIVE_PROVIDER_STATE_KEYS = [
+	"apiProvider",
+	"includeMaxTokens",
+	"todoListEnabled",
+	"modelTemperature",
+	"rateLimitSeconds",
+	"consecutiveMistakeLimit",
+	"enableReasoningEffort",
+	"reasoningEffort",
+	"modelMaxTokens",
+	"modelMaxThinkingTokens",
+	"verbosity",
+	"vsCodeLmModelSelector",
+	"codeIndexQdrantApiKey",
+] as const satisfies readonly (keyof ProviderSettings)[]
+
+type ActiveProviderStateKey = (typeof ACTIVE_PROVIDER_STATE_KEYS)[number]
+export const RETIRED_PROVIDER_STATE_KEYS = PROVIDER_SETTINGS_KEYS.filter(
+	(key) => !ACTIVE_PROVIDER_STATE_KEYS.includes(key as ActiveProviderStateKey),
+) as Exclude<keyof ProviderSettings, ActiveProviderStateKey>[]
+
+export const isRetiredProviderStateKey = (key: string): key is (typeof RETIRED_PROVIDER_STATE_KEYS)[number] =>
+	RETIRED_PROVIDER_STATE_KEYS.includes(key as (typeof RETIRED_PROVIDER_STATE_KEYS)[number])
 
 /**
  * GlobalState
  */
 
-export type GlobalState = Omit<KitPilotSettings, Keys<SecretState>>
+export type GlobalState = Omit<KitPilotSettings, Keys<SecretState> | (typeof RETIRED_PROVIDER_STATE_KEYS)[number]>
 
 export const GLOBAL_STATE_KEYS = [...GLOBAL_SETTINGS_KEYS, ...PROVIDER_SETTINGS_KEYS].filter(
-	(key: Keys<KitPilotSettings>) => !isSecretStateKey(key),
+	(key: Keys<KitPilotSettings>) => !isSecretStateKey(key) && !isRetiredProviderStateKey(key),
 ) as Keys<GlobalState>[]
 
 export const isGlobalStateKey = (key: string): key is Keys<GlobalState> =>

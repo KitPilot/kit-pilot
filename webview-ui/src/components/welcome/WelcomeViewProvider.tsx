@@ -2,7 +2,7 @@ import { useCallback, useState } from "react"
 import { Trans } from "react-i18next"
 import { ArrowLeft, Brain } from "lucide-react"
 
-import { openRouterDefaultModelId, type ProviderSettings } from "@kit-pilot/types"
+import type { ProviderSettings } from "@kit-pilot/types"
 
 import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { validateApiConfiguration } from "@src/utils/validate"
@@ -16,16 +16,11 @@ import { Tab, TabContent } from "../common/Tab"
 import KitPilotHero from "./KitPilotHero"
 
 const DEFAULT_WELCOME_API_CONFIGURATION: ProviderSettings = {
-	apiProvider: "openrouter",
-	openRouterModelId: openRouterDefaultModelId,
+	apiProvider: "vscode-lm",
 }
 
 const getWelcomeApiConfiguration = (apiConfiguration?: ProviderSettings): ProviderSettings => {
-	if (!apiConfiguration?.apiProvider) {
-		return DEFAULT_WELCOME_API_CONFIGURATION
-	}
-
-	if (apiConfiguration.apiProvider === "anthropic" && !apiConfiguration.apiKey) {
+	if (apiConfiguration?.apiProvider !== "vscode-lm") {
 		return DEFAULT_WELCOME_API_CONFIGURATION
 	}
 

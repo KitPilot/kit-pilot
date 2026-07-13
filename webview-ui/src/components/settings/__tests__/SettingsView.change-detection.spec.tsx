@@ -298,8 +298,6 @@ describe("SettingsView - Change Detection Fix", () => {
 		includeDiagnosticMessages: false,
 		maxDiagnosticMessages: 50,
 		includeTaskHistoryInEnhance: true,
-		openRouterImageApiKey: undefined,
-		openRouterImageGenerationSelectedModel: undefined,
 		reasoningBlockCollapsed: true,
 		...overrides,
 	})

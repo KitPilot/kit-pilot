@@ -26,7 +26,6 @@
 	"clineMessages": [],
 	"codebaseIndexConfig": {
 		"codebaseIndexEmbedderBaseUrl": "",
-		"codebaseIndexEmbedderModelDimension": 1536,
 		"codebaseIndexEmbedderModelId": "",
 		"codebaseIndexEmbedderProvider": "ollama",
 		"codebaseIndexEnabled": false,
@@ -224,8 +223,7 @@
 	"enableSubfolderRules": false,
 	"enterBehavior": "send",
 	"experiments": {
-		"customTools": false,
-		"imageGeneration": false
+		"customTools": false
 	},
 	"followupAutoApproveTimeoutMs": 60000,
 	"hasOpenedModeSelector": false,

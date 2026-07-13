@@ -69,6 +69,9 @@ describe("CodeIndexConfigManager (Ollama-only)", () => {
 				})
 				const manager = new CodeIndexConfigManager(proxy)
 				expect(manager.currentEmbedderProvider).toBe("ollama")
+				expect(manager.isFeatureEnabled).toBe(false)
+				expect(manager.currentModelId).toBeUndefined()
+				expect(manager.getConfig().ollamaOptions?.ollamaBaseUrl).toBe("http://localhost:11434")
 			},
 		)
 

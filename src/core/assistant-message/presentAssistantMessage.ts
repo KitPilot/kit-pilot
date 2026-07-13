@@ -35,7 +35,6 @@ import { rememberThisTool } from "../tools/RememberThisTool"
 import { forgetThisTool } from "../tools/ForgetThisTool"
 import { runSlashCommandTool } from "../tools/RunSlashCommandTool"
 import { skillTool } from "../tools/SkillTool"
-import { generateImageTool } from "../tools/GenerateImageTool"
 import { applyDiffTool as applyDiffToolClass } from "../tools/ApplyDiffTool"
 import { isValidToolName, validateToolUse } from "../tools/validateToolUse"
 import { codebaseSearchTool } from "../tools/CodebaseSearchTool"
@@ -390,8 +389,6 @@ export async function presentAssistantMessage(cline: Task) {
 						return `[${block.name} for '${block.params.command}'${block.params.args ? ` with args: ${block.params.args}` : ""}]`
 					case "skill":
 						return `[${block.name} for '${block.params.skill}'${block.params.args ? ` with args: ${block.params.args}` : ""}]`
-					case "generate_image":
-						return `[${block.name} for '${block.params.path}']`
 					default:
 						return `[${block.name}]`
 				}
@@ -926,12 +923,7 @@ export async function presentAssistantMessage(cline: Task) {
 					})
 					break
 				case "generate_image":
-					await checkpointSaveAndMark(cline)
-					await generateImageTool.handle(cline, block as ToolUse<"generate_image">, {
-						askApproval,
-						handleError,
-						pushToolResult,
-					})
+					pushToolResult("The generate_image tool has been retired from this build.")
 					break
 				default: {
 					// Handle unknown/invalid tool names OR custom tools
