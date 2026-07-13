@@ -512,10 +512,10 @@ describe("ClineProvider", () => {
 
 		expect(mockWebviewView.webview.html).toContain("<!DOCTYPE html>")
 
-		// Verify Content Security Policy contains the necessary API domains
-		expect(mockWebviewView.webview.html).toContain(
-			"connect-src vscode-webview://test-csp-source https://openrouter.ai https://api.requesty.ai",
-		)
+		// The production webview cannot connect directly to retired providers.
+		expect(mockWebviewView.webview.html).toContain("connect-src vscode-webview://test-csp-source;")
+		expect(mockWebviewView.webview.html).not.toContain("https://openrouter.ai")
+		expect(mockWebviewView.webview.html).not.toContain("https://api.requesty.ai")
 
 		// Extract the script-src directive section and verify required security elements
 		const html = mockWebviewView.webview.html
@@ -573,8 +573,6 @@ describe("ClineProvider", () => {
 			profileThresholds: {},
 			hasOpenedModeSelector: false,
 			diagnosticsEnabled: true,
-			openRouterImageApiKey: undefined,
-			openRouterImageGenerationSelectedModel: undefined,
 			checkpointTimeout: DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
 		}
 

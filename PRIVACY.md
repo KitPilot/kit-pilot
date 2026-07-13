@@ -61,6 +61,8 @@ model can react to it), per the same path as your prompts above.
   authentication is handled by VS Code and the GitHub Copilot extension; we
   never see your credentials. The one optional secret KitPilot stores (in VS
   Code's SecretStorage) is a Qdrant API key for code indexing, if you use one.
+  On upgrade, KitPilot deletes credentials and profile fields left by retired
+  provider integrations rather than loading or re-exporting them.
 
 ### Telemetry → none
 

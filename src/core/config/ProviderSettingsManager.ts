@@ -8,7 +8,6 @@ import {
 	ProviderSettingsEntry,
 	DEFAULT_CONSECUTIVE_MISTAKE_LIMIT,
 	getModelId,
-	openRouterDefaultModelId,
 	type ProviderName,
 	isProviderName,
 	isRetiredProvider,
@@ -54,8 +53,7 @@ export class ProviderSettingsManager {
 		apiConfigs: {
 			default: {
 				id: this.defaultConfigId,
-				apiProvider: "openrouter",
-				openRouterModelId: openRouterDefaultModelId,
+				apiProvider: "vscode-lm",
 			},
 		},
 		modeApiConfigs: this.defaultModeApiConfigs,
@@ -95,7 +93,7 @@ export class ProviderSettingsManager {
 	public async initialize() {
 		try {
 			return await this.lock(async () => {
-				const providerProfiles = await this.load()
+				const providerProfiles = await this.load(false)
 
 				if (!providerProfiles) {
 					await this.store(this.defaultProviderProfiles)
@@ -183,6 +181,13 @@ export class ProviderSettingsManager {
 					}
 
 					providerProfiles.migrations.claudeCodeLegacySettingsMigrated = true
+					isDirty = true
+				}
+
+				// This build can execute only vscode-lm. Normalize every stored
+				// profile so retired provider credentials and endpoints are removed
+				// from the encrypted profile blob as well as from individual secrets.
+				if (this.normalizeProviderProfiles(providerProfiles)) {
 					isDirty = true
 				}
 
@@ -353,14 +358,7 @@ export class ProviderSettingsManager {
 				const existingId = providerProfiles.apiConfigs[name]?.id
 				const id = config.id || existingId || this.generateId()
 
-				// For active providers, filter out settings from other providers.
-				// For retired providers, preserve full profile fields (including legacy
-				// provider-specific keys) to avoid data loss — passthrough() keeps
-				// unknown keys that strict parse() would strip.
-				const filteredConfig =
-					typeof config.apiProvider === "string" && isRetiredProvider(config.apiProvider)
-						? providerSettingsWithIdSchema.passthrough().parse(config)
-						: discriminatedProviderSettingsWithIdSchema.parse(config)
+				const filteredConfig = this.normalizeProviderConfig(config)
 				providerProfiles.apiConfigs[name] = { ...filteredConfig, id }
 				await this.store(providerProfiles)
 				return id
@@ -505,15 +503,9 @@ export class ProviderSettingsManager {
 		try {
 			return await this.lock(async () => {
 				const profiles = providerProfilesSchema.parse(await this.load())
+				this.normalizeProviderProfiles(profiles)
 				const configs = profiles.apiConfigs
 				for (const name in configs) {
-					const apiProvider = configs[name].apiProvider
-
-					if (typeof apiProvider === "string" && isRetiredProvider(apiProvider)) {
-						// Preserve retired-provider profiles as-is to prevent dropping legacy fields.
-						continue
-					}
-
 					// Avoid leaking properties from other active providers.
 					configs[name] = discriminatedProviderSettingsWithIdSchema.parse(configs[name])
 
@@ -551,7 +543,11 @@ export class ProviderSettingsManager {
 
 	public async import(providerProfiles: ProviderProfiles) {
 		try {
-			return await this.lock(() => this.store(providerProfiles))
+			return await this.lock(async () => {
+				const normalized = providerProfilesSchema.parse(providerProfiles)
+				this.normalizeProviderProfiles(normalized)
+				await this.store(normalized)
+			})
 		} catch (error) {
 			throw new Error(`Failed to import provider profiles: ${error}`)
 		}
@@ -570,12 +566,12 @@ export class ProviderSettingsManager {
 		return `${ProviderSettingsManager.SCOPE_PREFIX}api_config`
 	}
 
-	private async load(): Promise<ProviderProfiles> {
+	private async load(normalize = true): Promise<ProviderProfiles> {
 		try {
 			const content = await this.context.secrets.get(this.secretsKey)
 
 			if (!content) {
-				return this.defaultProviderProfiles
+				return providerProfilesSchema.parse(this.defaultProviderProfiles)
 			}
 
 			const providerProfiles = providerProfilesSchema
@@ -609,12 +605,16 @@ export class ProviderSettingsManager {
 				{} as Record<string, ProviderSettingsWithId>,
 			)
 
-			return {
+			const loadedProfiles = {
 				...providerProfiles,
 				apiConfigs: Object.fromEntries(
 					Object.entries(apiConfigs).filter(([_, apiConfig]) => apiConfig !== null),
 				),
 			}
+			if (normalize) {
+				this.normalizeProviderProfiles(loadedProfiles)
+			}
+			return loadedProfiles
 		} catch (error) {
 			throw new Error(`Failed to read provider profiles from secrets: ${error}`)
 		}
@@ -652,8 +652,30 @@ export class ProviderSettingsManager {
 		return apiConfig
 	}
 
+	private normalizeProviderConfig(config: ProviderSettingsWithId): ProviderSettingsWithId {
+		return discriminatedProviderSettingsWithIdSchema.parse({
+			...config,
+			apiProvider: "vscode-lm",
+		})
+	}
+
+	private normalizeProviderProfiles(providerProfiles: ProviderProfiles): boolean {
+		let changed = false
+
+		for (const [name, config] of Object.entries(providerProfiles.apiConfigs)) {
+			const normalized = this.normalizeProviderConfig(config)
+			if (JSON.stringify(config) !== JSON.stringify(normalized)) {
+				providerProfiles.apiConfigs[name] = normalized
+				changed = true
+			}
+		}
+
+		return changed
+	}
+
 	private async store(providerProfiles: ProviderProfiles) {
 		try {
+			this.normalizeProviderProfiles(providerProfiles)
 			await this.context.secrets.store(this.secretsKey, JSON.stringify(providerProfiles, null, 2))
 		} catch (error) {
 			throw new Error(`Failed to write provider profiles to secrets: ${error}`)

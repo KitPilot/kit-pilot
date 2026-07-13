@@ -303,8 +303,6 @@ describe("SettingsView - Unsaved Changes Detection", () => {
 		includeDiagnosticMessages: false,
 		maxDiagnosticMessages: 50,
 		includeTaskHistoryInEnhance: true,
-		openRouterImageApiKey: undefined,
-		openRouterImageGenerationSelectedModel: undefined,
 		reasoningBlockCollapsed: true,
 	}
 

@@ -239,8 +239,6 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		codebaseIndexModels: { ollama: {} },
 		includeDiagnosticMessages: true,
 		maxDiagnosticMessages: 50,
-		openRouterImageApiKey: "",
-		openRouterImageGenerationSelectedModel: "",
 		includeCurrentTime: true,
 		includeCurrentCost: true,
 		lockApiConfigAcrossModes: false,

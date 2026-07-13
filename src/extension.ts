@@ -20,13 +20,7 @@ import { maybePromptLegacyRooMigration } from "./utils/migrateLegacyRooConfig"
 import { autoImportSettings } from "./utils/autoImportSettings"
 import { API } from "./extension/api"
 
-import {
-	handleUri,
-	registerCommands,
-	registerCodeActions,
-	registerTerminalActions,
-	CodeActionProvider,
-} from "./activate"
+import { registerCommands, registerCodeActions, registerTerminalActions, CodeActionProvider } from "./activate"
 import { initializeI18n } from "./i18n"
 import { initializeModelCacheRefresh } from "./api/providers/fetchers/modelCache"
 import { flushUsageMetrics, initUsageMetricsPersistence } from "./api/usageMetrics"
@@ -209,8 +203,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.workspace.registerTextDocumentContentProvider(DIFF_VIEW_URI_SCHEME, diffContentProvider),
 	)
-
-	context.subscriptions.push(vscode.window.registerUriHandler({ handleUri }))
 
 	// Register code actions provider.
 	context.subscriptions.push(

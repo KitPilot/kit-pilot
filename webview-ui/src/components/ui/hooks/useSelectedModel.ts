@@ -29,15 +29,10 @@ import {
 	lMStudioDefaultModelInfo,
 	BEDROCK_1M_CONTEXT_MODEL_IDS,
 	VERTEX_1M_CONTEXT_MODEL_IDS,
-	isDynamicProvider,
 	isRetiredProvider,
 	getProviderDefaultModelId,
 } from "@kit-pilot/types"
 
-import { useRouterModels } from "./useRouterModels"
-import { useOpenRouterModelProviders } from "./useOpenRouterModelProviders"
-import { useLmStudioModels } from "./useLmStudioModels"
-import { useOllamaModels } from "./useOllamaModels"
 import { useVsCodeLmModels } from "./useVsCodeLmModels"
 
 /**
@@ -58,22 +53,6 @@ export const useSelectedModel = (apiConfiguration?: ProviderSettings) => {
 	// against them as strings for the (now-unreachable) legacy branches.
 	const provider = apiConfiguration?.apiProvider || "vscode-lm"
 	const activeProvider: ProviderName | undefined = isRetiredProvider(provider) ? undefined : provider
-	const dynamicProvider = activeProvider && isDynamicProvider(activeProvider) ? activeProvider : undefined
-	const openRouterModelId =
-		(activeProvider as string) === "openrouter" ? apiConfiguration?.openRouterModelId : undefined
-	const lmStudioModelId = (activeProvider as string) === "lmstudio" ? apiConfiguration?.lmStudioModelId : undefined
-	const ollamaModelId = (activeProvider as string) === "ollama" ? apiConfiguration?.ollamaModelId : undefined
-
-	// Only fetch router models for dynamic providers
-	const shouldFetchRouterModels = !!dynamicProvider
-	const routerModels = useRouterModels({
-		provider: dynamicProvider,
-		enabled: shouldFetchRouterModels,
-	})
-
-	const openRouterModelProviders = useOpenRouterModelProviders(openRouterModelId)
-	const lmStudioModels = useLmStudioModels(lmStudioModelId)
-	const ollamaModels = useOllamaModels(ollamaModelId)
 
 	// Runtime ModelInfo for vscode-lm, built extension-side from live handles.
 	// Best-effort: if it hasn't loaded the vscode-lm case falls back to the
@@ -81,35 +60,15 @@ export const useSelectedModel = (apiConfiguration?: ProviderSettings) => {
 	const isVsCodeLm = (activeProvider as string) === "vscode-lm"
 	const vsCodeLmModels = useVsCodeLmModels(isVsCodeLm)
 
-	// Compute readiness only for the data actually needed for the selected provider
-	const needRouterModels = shouldFetchRouterModels
-	const needOpenRouterProviders = (activeProvider as string) === "openrouter"
-	const needLmStudio = typeof lmStudioModelId !== "undefined"
-	const needOllama = typeof ollamaModelId !== "undefined"
-
-	const hasValidRouterData =
-		needRouterModels && dynamicProvider
-			? routerModels.data &&
-				routerModels.data[dynamicProvider] !== undefined &&
-				typeof routerModels.data[dynamicProvider] === "object" &&
-				!routerModels.isLoading
-			: true
-
-	const isReady =
-		(!needLmStudio || typeof lmStudioModels.data !== "undefined") &&
-		(!needOllama || typeof ollamaModels.data !== "undefined") &&
-		hasValidRouterData &&
-		(!needOpenRouterProviders || typeof openRouterModelProviders.data !== "undefined")
-
 	const { id, info } =
-		apiConfiguration && isReady && activeProvider
+		apiConfiguration && activeProvider
 			? getSelectedModel({
 					provider: activeProvider,
 					apiConfiguration,
-					routerModels: (routerModels.data || {}) as RouterModels,
-					openRouterModelProviders: (openRouterModelProviders.data || {}) as Record<string, ModelInfo>,
-					lmStudioModels: (lmStudioModels.data || undefined) as ModelRecord | undefined,
-					ollamaModels: (ollamaModels.data || undefined) as ModelRecord | undefined,
+					routerModels: {} as RouterModels,
+					openRouterModelProviders: {},
+					lmStudioModels: undefined,
+					ollamaModels: undefined,
 					vsCodeLmModels: (vsCodeLmModels.data || undefined) as ModelRecord | undefined,
 				})
 			: { id: getProviderDefaultModelId(activeProvider ?? "vscode-lm"), info: undefined }
@@ -118,16 +77,8 @@ export const useSelectedModel = (apiConfiguration?: ProviderSettings) => {
 		provider,
 		id,
 		info,
-		isLoading:
-			(needRouterModels && routerModels.isLoading) ||
-			(needOpenRouterProviders && openRouterModelProviders.isLoading) ||
-			(needLmStudio && lmStudioModels!.isLoading) ||
-			(needOllama && ollamaModels!.isLoading),
-		isError:
-			(needRouterModels && routerModels.isError) ||
-			(needOpenRouterProviders && openRouterModelProviders.isError) ||
-			(needLmStudio && lmStudioModels!.isError) ||
-			(needOllama && ollamaModels!.isError),
+		isLoading: false,
+		isError: false,
 	}
 }
 

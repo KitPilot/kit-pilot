@@ -9,8 +9,6 @@ import editTool from "./edit"
 import executeCommand from "./execute_command"
 import checkTask from "./check_task"
 import stopTask from "./stop_task"
-// vscode-lm-only build: generate_image is unregistered (no image-gen provider).
-// import generateImage from "./generate_image"
 import listFiles from "./list_files"
 import newTask from "./new_task"
 import readCommandOutput from "./read_command_output"
@@ -61,7 +59,6 @@ export function getNativeTools(options: NativeToolsOptions = {}): OpenAI.Chat.Ch
 		executeCommand,
 		checkTask,
 		stopTask,
-		// generate_image is unregistered in this vscode-lm-only build
 		listFiles,
 		newTask,
 		readCommandOutput,

@@ -26,8 +26,6 @@ vi.mock("../diagnosticsHandler", () => ({
 	generateErrorDiagnostics: vi.fn().mockResolvedValue({ success: true, filePath: "/tmp/diagnostics.json" }),
 }))
 
-import type { ModelRecord } from "@kit-pilot/types"
-
 import { webviewMessageHandler } from "../webviewMessageHandler"
 import type { ClineProvider } from "../ClineProvider"
 import { getModels } from "../../../api/providers/fetchers/modelCache"
@@ -158,33 +156,15 @@ describe("webviewMessageHandler - requestLmStudioModels", () => {
 		})
 	})
 
-	it("successfully fetches models from LMStudio", async () => {
-		const mockModels: ModelRecord = {
-			"model-1": {
-				maxTokens: 4096,
-				contextWindow: 8192,
-				supportsPromptCache: false,
-				description: "Test model 1",
-			},
-			"model-2": {
-				maxTokens: 8192,
-				contextWindow: 16384,
-				supportsPromptCache: false,
-				description: "Test model 2",
-			},
-		}
-
-		mockGetModels.mockResolvedValue(mockModels)
-
+	it("returns an empty payload without contacting LM Studio", async () => {
 		await webviewMessageHandler(mockClineProvider, {
 			type: "requestLmStudioModels",
 		})
 
-		expect(mockGetModels).toHaveBeenCalledWith({ provider: "lmstudio", baseUrl: "http://localhost:1234" })
-
+		expect(mockGetModels).not.toHaveBeenCalled()
 		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
 			type: "lmStudioModels",
-			lmStudioModels: mockModels,
+			lmStudioModels: {},
 		})
 	})
 })
@@ -231,33 +211,15 @@ describe("webviewMessageHandler - requestOllamaModels", () => {
 		})
 	})
 
-	it("successfully fetches models from Ollama", async () => {
-		const mockModels: ModelRecord = {
-			"model-1": {
-				maxTokens: 4096,
-				contextWindow: 8192,
-				supportsPromptCache: false,
-				description: "Test model 1",
-			},
-			"model-2": {
-				maxTokens: 8192,
-				contextWindow: 16384,
-				supportsPromptCache: false,
-				description: "Test model 2",
-			},
-		}
-
-		mockGetModels.mockResolvedValue(mockModels)
-
+	it("returns an empty payload without contacting the retired chat provider", async () => {
 		await webviewMessageHandler(mockClineProvider, {
 			type: "requestOllamaModels",
 		})
 
-		expect(mockGetModels).toHaveBeenCalledWith({ provider: "ollama", baseUrl: "http://localhost:1234" })
-
+		expect(mockGetModels).not.toHaveBeenCalled()
 		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
 			type: "ollamaModels",
-			ollamaModels: mockModels,
+			ollamaModels: {},
 		})
 	})
 })
