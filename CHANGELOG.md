@@ -1,5 +1,19 @@
 # KitPilot Changelog
 
+## 0.2.2
+
+This release closes the remaining upgrade-time trust gaps after KitPilot became a Copilot-only extension.
+
+### Security
+
+- Existing installs now delete credentials and saved profile fields from every retired direct provider, including old Codex OAuth, cloud-embedding, router, and image-generation integrations. Unsupported provider values are normalized to VS Code LM and cannot be written back into extension state.
+- Removed the remaining reachable OpenRouter and Requesty sign-in callbacks, provider model lookups, image-generation execution paths, and external-provider webview network permissions.
+
+### Fixed
+
+- Legacy cloud code-index settings are now disabled and reset to a known localhost Ollama configuration instead of carrying an old cloud URL, model, or embedding size into the local embedder.
+- Old task histories that mention the retired image-generation tool still load safely and now return a clear retired-tool result if replayed.
+
 ## 0.2.1
 
 This release makes KitPilot's package, indexing settings, and privacy promises agree with what actually runs.
