@@ -84,6 +84,14 @@ export function parseVsCodeLmUsage(decoded: unknown): VsCodeLmReportedUsage | un
 	const cacheReadTokens = details ? pick(details, ["cached_tokens", "cache_read_input_tokens"]) : undefined
 	const cacheWriteTokens = details ? pick(details, ["cache_creation_input_tokens", "cache_write_tokens"]) : undefined
 
+	// TODO(cost-telemetry): A 2026-07-07–2026-07-28 production sample (381 calls)
+	// contained token usage but no total_nano_aiu, so per-purpose Diagnostics
+	// accumulated $0 exact cost. Known models still get an estimated request cost
+	// from ModelInfo rates in Task.updateApiReqMsg(), which keeps the budget
+	// governor functional. Investigate a reliable exact-charge signal, or make
+	// Diagnostics distinguish "unavailable" from zero instead of silently
+	// treating an absent field as $0.
+	//
 	// total_nano_aiu is Copilot's exact charge: nano-AIU → AIU (/1e9) → USD (×$0.01).
 	const totalNanoAiu = pick(usage, ["total_nano_aiu"]) ?? pick(root, ["total_nano_aiu"])
 	const totalCost = totalNanoAiu !== undefined ? totalNanoAiu / 1e11 : undefined
