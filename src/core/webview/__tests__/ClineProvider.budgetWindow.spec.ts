@@ -11,21 +11,27 @@ import type { Task } from "../../task/Task"
  * none of it is what's under test: tree cost resolution reads the task history
  * store, the live task's own metrics, and the per-tree reset baseline.
  */
-function makeProvider(history: HistoryItem[]) {
-	const provider = Object.create(ClineProvider.prototype) as ClineProvider & {
-		taskHistoryStore: unknown
-		budgetWindowBaselines: Map<string, number>
-		getGlobalState: (key: string) => unknown
-		log: (message: string) => void
-	}
+interface ProviderInternals {
+	taskHistoryStore: unknown
+	budgetWindowBaselines: Map<string, number>
+	getGlobalState: (key: string) => unknown
+	log: (message: string) => void
+}
 
-	provider.taskHistoryStore = {
+function makeProvider(history: HistoryItem[]) {
+	const provider = Object.create(ClineProvider.prototype) as ClineProvider
+
+	// Assign through a separate view rather than an intersection type:
+	// intersecting ClineProvider with a type that redeclares its private
+	// members collapses to `never`.
+	const internals = provider as unknown as ProviderInternals
+	internals.taskHistoryStore = {
 		initialized: Promise.resolve(),
 		get: (id: string) => history.find((item) => item.id === id),
 	}
-	provider.budgetWindowBaselines = new Map()
-	provider.getGlobalState = () => []
-	provider.log = () => {}
+	internals.budgetWindowBaselines = new Map()
+	internals.getGlobalState = () => []
+	internals.log = () => {}
 
 	return provider
 }
