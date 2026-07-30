@@ -67,6 +67,7 @@ import { openMention } from "../mentions"
 import { resolveImageMentions } from "../mentions/resolveImageMentions"
 import { KitPilotIgnoreController } from "../ignore/KitPilotIgnoreController"
 import { getWorkspacePath } from "../../utils/path"
+import { openExternalUrl } from "../../utils/external-links"
 import { isPathOutsideWorkspace } from "../../utils/pathUtils"
 import { Mode, defaultModeSlug } from "../../shared/modes"
 import { generateSystemPrompt } from "./generateSystemPrompt"
@@ -1060,7 +1061,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 		case "openExternal":
 			if (message.url) {
-				vscode.env.openExternal(vscode.Uri.parse(message.url))
+				void openExternalUrl(message.url)
 			}
 			break
 		case "checkpointDiff":
