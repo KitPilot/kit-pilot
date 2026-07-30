@@ -979,6 +979,11 @@ describe("Cline", () => {
 					postStateToWebviewWithoutTaskHistory: vi.fn().mockResolvedValue(undefined),
 					postMessageToWebview: vi.fn().mockResolvedValue(undefined),
 					updateTaskHistory: vi.fn().mockResolvedValue(undefined),
+					// Resolved before every auto-approval check; undefined means
+					// "no delegation tree", so the cost cap falls back to this
+					// task's own messages.
+					getBudgetWindowTreeCost: vi.fn().mockResolvedValue(undefined),
+					rebaselineBudgetWindow: vi.fn().mockResolvedValue(undefined),
 				}
 
 				// Get the mocked delay function

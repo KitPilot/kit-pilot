@@ -332,4 +332,68 @@ describe("AutoApprovalHandler", () => {
 			expect(state.currentCost).toBe(8.0)
 		})
 	})
+
+	describe("tree-wide cost window", () => {
+		const messages: ClineMessage[] = []
+
+		beforeEach(() => {
+			mockState.allowedMaxCost = 10
+		})
+
+		it("uses the supplied tree cost instead of this task's own messages", async () => {
+			// This task has spent almost nothing; its tree has spent past the cap.
+			mockGetApiMetrics.mockReturnValue({ totalCost: 0.5 })
+			mockAskForApproval.mockResolvedValue({ response: "yesButtonClicked" })
+
+			const result = await handler.checkAutoApprovalLimits(mockState, messages, mockAskForApproval, 12.0)
+
+			expect(mockAskForApproval).toHaveBeenCalledWith(
+				"auto_approval_max_req_reached",
+				expect.stringContaining('"type":"cost"'),
+			)
+			expect(result.approvalType).toBe("cost")
+			expect(handler.getApprovalState().currentCost).toBe(12.0)
+		})
+
+		it("does not prompt when the tree total is under the cap", async () => {
+			// Own messages would have tripped it; the tree total is what counts.
+			mockGetApiMetrics.mockReturnValue({ totalCost: 99.0 })
+
+			const result = await handler.checkAutoApprovalLimits(mockState, messages, mockAskForApproval, 4.0)
+
+			expect(mockAskForApproval).not.toHaveBeenCalled()
+			expect(result.shouldProceed).toBe(true)
+			expect(result.requiresApproval).toBe(false)
+		})
+
+		it("aborts when the user declines a tree-wide overage", async () => {
+			mockGetApiMetrics.mockReturnValue({ totalCost: 0 })
+			mockAskForApproval.mockResolvedValue({ response: "noButtonClicked" })
+
+			const result = await handler.checkAutoApprovalLimits(mockState, messages, mockAskForApproval, 25.0)
+
+			expect(result.shouldProceed).toBe(false)
+			expect(result.approvalType).toBe("cost")
+		})
+
+		it("falls back to per-task cost when no tree cost is supplied", async () => {
+			mockGetApiMetrics.mockReturnValue({ totalCost: 11.0 })
+			mockAskForApproval.mockResolvedValue({ response: "yesButtonClicked" })
+
+			await handler.checkAutoApprovalLimits(mockState, messages, mockAskForApproval)
+
+			expect(mockAskForApproval).toHaveBeenCalled()
+			expect(handler.getApprovalState().currentCost).toBe(11.0)
+		})
+
+		it("treats a zero tree cost as a real value, not a missing one", async () => {
+			mockGetApiMetrics.mockReturnValue({ totalCost: 50.0 })
+
+			const result = await handler.checkAutoApprovalLimits(mockState, messages, mockAskForApproval, 0)
+
+			expect(mockAskForApproval).not.toHaveBeenCalled()
+			expect(result.shouldProceed).toBe(true)
+			expect(handler.getApprovalState().currentCost).toBe(0)
+		})
+	})
 })

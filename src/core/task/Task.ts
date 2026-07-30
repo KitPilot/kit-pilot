@@ -4037,16 +4037,28 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		const messagesWithoutImages = maybeRemoveImageBlocks(mergedForApi, this.api)
 		const cleanConversationHistory = this.buildCleanConversationHistory(messagesWithoutImages as ApiMessage[])
 
-		// Check auto-approval limits
+		// Check auto-approval limits. The cost cap covers the whole delegation
+		// tree, so resolve the tree-wide window cost first — otherwise each
+		// delegated subtask would restart the budget from zero.
+		const provider = this.providerRef.deref()
+		const treeWindowCost = await provider?.getBudgetWindowTreeCost(this)
+
 		const approvalResult = await this.autoApprovalHandler.checkAutoApprovalLimits(
 			state,
 			this.combineMessages(this.clineMessages.slice(1)),
 			async (type, data) => this.ask(type, data),
+			treeWindowCost,
 		)
 
 		if (!approvalResult.shouldProceed) {
 			// User did not approve, task should be aborted
 			throw new Error("Auto-approval limit reached and user did not approve continuation")
+		}
+
+		// The user approved continuing past a limit — start a new budget window
+		// for the whole tree, mirroring the handler's own per-task reset.
+		if (approvalResult.requiresApproval && approvalResult.approvalType === "cost") {
+			await provider?.rebaselineBudgetWindow(this)
 		}
 
 		// Whether we include tools is determined by whether we have any tools to send.
