@@ -142,6 +142,22 @@ describe("ClineProvider budget window (delegation tree)", () => {
 		expect(await provider.getBudgetWindowTreeCost(makeTask("root", 1.0))).toBe(0)
 	})
 
+	it("rebaselines on a request-limit approval too, not just a cost one", async () => {
+		// The handler keeps ONE reset point shared by both checks, so approving
+		// a request prompt already restarts its cost window. If the tree
+		// baseline didn't move with it, the next request would still see the
+		// full pre-approval tree total and trip the cost cap immediately.
+		const provider = makeProvider([item("root", 6.0, ["child"]), item("child", 3.0)])
+		const task = makeTask("child", 3.0, "root")
+
+		expect(await provider.getBudgetWindowTreeCost(task)).toBeCloseTo(9.0)
+
+		// Task.attemptApiRequest rebaselines on any approved limit.
+		await provider.rebaselineBudgetWindow(task)
+
+		expect(await provider.getBudgetWindowTreeCost(task)).toBeCloseTo(0)
+	})
+
 	it("returns undefined when resolution fails, so enforcement falls back", async () => {
 		const provider = makeProvider([item("root", 1.0)])
 		;(provider as any).taskHistoryStore = {

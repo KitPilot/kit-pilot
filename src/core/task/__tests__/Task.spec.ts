@@ -311,6 +311,86 @@ describe("Cline", () => {
 		}))
 	})
 
+	describe("delegation lineage", () => {
+		// createTask() reads rootTask from clineStack[0], but
+		// delegateParentAndOpenChild() disposes the parent — emptying the stack —
+		// before creating the child. So a real delegated child arrives with a
+		// parentTask and NO rootTask. These construct tasks that way on purpose:
+		// passing rootTask explicitly would hide the case that matters.
+		const child = (parentTask: Task) =>
+			new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "child task",
+				startTask: false,
+				parentTask,
+			})
+
+		it("treats a task with no lineage as its own root", () => {
+			const root = new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "root task",
+				startTask: false,
+			})
+
+			expect(root.rootTaskId).toBeUndefined()
+			expect(root.parentTaskId).toBeUndefined()
+		})
+
+		it("points a delegated child at its parent as root, even without rootTask", () => {
+			const root = new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "root task",
+				startTask: false,
+			})
+
+			const first = child(root)
+
+			expect(first.parentTaskId).toBe(root.taskId)
+			expect(first.rootTaskId).toBe(root.taskId)
+		})
+
+		it("carries the same root down to a grandchild", () => {
+			const root = new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "root task",
+				startTask: false,
+			})
+
+			const first = child(root)
+			const second = child(first)
+
+			// Not `first.taskId` — every task in one delegation tree must resolve
+			// to the same root, or the budget window fragments per level.
+			expect(second.rootTaskId).toBe(root.taskId)
+			expect(second.parentTaskId).toBe(first.taskId)
+		})
+
+		it("prefers an explicit rootTask when one is supplied", () => {
+			const root = new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "root task",
+				startTask: false,
+			})
+			const middle = child(root)
+
+			const explicit = new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "child task",
+				startTask: false,
+				rootTask: root,
+				parentTask: middle,
+			})
+
+			expect(explicit.rootTaskId).toBe(root.taskId)
+		})
+	})
+
 	describe("constructor", () => {
 		it("should always have diff strategy defined", async () => {
 			const cline = new Task({

@@ -418,7 +418,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		this.taskId = historyItem ? historyItem.id : (taskId ?? uuidv7())
-		this.rootTaskId = historyItem ? historyItem.rootTaskId : rootTask?.taskId
+		// Derive the root from the parent when no rootTask was passed.
+		// delegateParentAndOpenChild() disposes the parent (emptying clineStack)
+		// *before* createTask() runs, and createTask reads rootTask from
+		// clineStack[0] — so a delegated child would otherwise be handed
+		// rootTask: undefined and record itself as its own root.
+		this.rootTaskId = historyItem
+			? historyItem.rootTaskId
+			: (rootTask?.taskId ?? parentTask?.rootTaskId ?? parentTask?.taskId)
 		this.parentTaskId = historyItem ? historyItem.parentTaskId : parentTask?.taskId
 		this.childTaskId = undefined
 
@@ -4057,7 +4064,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		// The user approved continuing past a limit — start a new budget window
 		// for the whole tree, mirroring the handler's own per-task reset.
-		if (approvalResult.requiresApproval && approvalResult.approvalType === "cost") {
+		//
+		// Rebaseline on *either* limit, not just the cost one: the handler keeps
+		// a single reset point shared by both checks, so approving a request
+		// prompt already restarts its cost window. Rebaselining only on "cost"
+		// would leave the tree baseline behind, and the very next request would
+		// still see the pre-approval tree total.
+		if (approvalResult.requiresApproval) {
 			await provider?.rebaselineBudgetWindow(this)
 		}
 
