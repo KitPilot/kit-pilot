@@ -46,18 +46,29 @@ export function parseExternalUri(url: string): vscode.Uri | undefined {
 }
 
 /**
+ * Scheme of a URL for logging, without the rest of it.
+ *
+ * A rejected URL can carry credentials, query tokens, a fragment, or whatever
+ * the user typed, so the log records why it was refused and nothing more.
+ */
+function describeForLog(url: string): string {
+	const scheme = /^([A-Za-z][A-Za-z0-9+.\-]*):/.exec(url)?.[1]
+	return scheme ? `scheme "${scheme.toLowerCase()}"` : "no parseable scheme"
+}
+
+/**
  * Open a URL externally when it passes {@link parseExternalUri}.
  *
- * @returns whether the URL was opened.
+ * @returns whether the URL was opened — `false` when it was refused, and
+ * whatever the platform reports when it was handed over.
  */
 export async function openExternalUrl(url: string): Promise<boolean> {
 	const uri = parseExternalUri(url)
 
 	if (!uri) {
-		console.warn(`KitPilot: refused to open external URL with disallowed scheme or missing host: ${url}`)
+		console.warn(`KitPilot: refused to open external URL (${describeForLog(url)}); only http/https with a host`)
 		return false
 	}
 
-	await vscode.env.openExternal(uri)
-	return true
+	return await vscode.env.openExternal(uri)
 }

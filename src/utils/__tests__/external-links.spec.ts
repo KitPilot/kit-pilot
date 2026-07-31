@@ -115,4 +115,33 @@ describe("openExternalUrl", () => {
 		await expect(openExternalUrl("https:evil")).resolves.toBe(false)
 		expect(vscode.env.openExternal).not.toHaveBeenCalled()
 	})
+
+	it("reports what the platform returned rather than assuming success", async () => {
+		vi.mocked(vscode.env.openExternal).mockResolvedValueOnce(false)
+
+		await expect(openExternalUrl("https://example.com")).resolves.toBe(false)
+	})
+
+	it("never logs the rejected URL itself", async () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+		await openExternalUrl("javascript:steal('sk-secret-token')")
+
+		expect(warn).toHaveBeenCalledTimes(1)
+		const logged = warn.mock.calls[0].join(" ")
+		expect(logged).toContain('scheme "javascript"')
+		expect(logged).not.toContain("sk-secret-token")
+
+		warn.mockRestore()
+	})
+
+	it("describes an unparseable URL without echoing it", async () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+		await openExternalUrl("not a url with ?token=abc123")
+
+		expect(warn.mock.calls[0].join(" ")).not.toContain("abc123")
+
+		warn.mockRestore()
+	})
 })
