@@ -1710,16 +1710,6 @@ export class ClineProvider
 	}
 
 	/**
-	 * Total cost of a task's entire delegation tree — its root plus every
-	 * descendant.
-	 *
-	 * The running task's own spend is read live from its messages rather than
-	 * from history: a `HistoryItem`'s `totalCost` is only as fresh as the last
-	 * save, so mid-turn it lags. Everything else comes from persisted history
-	 * via `aggregateTaskCostsRecursive`, which is a pure recompute — so this is
-	 * idempotent and cannot double-count a retried child completion.
-	 */
-	/**
 	 * Look a HistoryItem up without touching disk.
 	 *
 	 * `getTaskWithId()` would also read and JSON.parse the task's whole
@@ -1772,6 +1762,16 @@ export class ClineProvider
 		return rootId
 	}
 
+	/**
+	 * Total cost of a task's entire delegation tree — its root plus every
+	 * descendant.
+	 *
+	 * The running task's own spend is read live from its messages rather than
+	 * from history: a `HistoryItem`'s `totalCost` is only as fresh as the last
+	 * save, so mid-turn it lags. Everything else comes from persisted history
+	 * via `aggregateTaskCostsRecursive`, which is a pure recompute — so this is
+	 * idempotent and cannot double-count a retried child completion.
+	 */
 	private async getDelegationTreeCost(task: Task): Promise<number> {
 		const rootTaskId = await this.resolveRootTaskId(task)
 		const liveCost = task.getTokenUsage().totalCost ?? 0
