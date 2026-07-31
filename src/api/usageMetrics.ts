@@ -1,13 +1,17 @@
 /**
  * Lightweight instrumentation to measure the **auxiliary-vs-main token
- * share** — the decision gate for TODO #3 (auxiliary-call model routing).
+ * share**. The original decision gate for TODO #3 (auxiliary-call model
+ * routing) was resolved as "do not build" on 2026-07-28 after condensation
+ * measured 0.5% across 46.89M tokens. See
+ * `docs/decisions/2026-07-28-auxiliary-call-routing.md`.
  *
  * Every LLM call tags itself with a `UsagePurpose` (via
  * ApiHandlerCreateMessageMetadata.purpose; defaults to "main"). When a call
  * reports usage we accumulate per-purpose totals and log a running breakdown,
  * so over real usage we can see what fraction of tokens (≈ cost, since today
  * everything runs on one model) goes to condense / enhance / etc. rather than
- * the agent's coding loop.
+ * the agent's coding loop. The metrics remain useful as local diagnostics and
+ * regression evidence.
  *
  * Totals persist to `~/.kitpilot/usage-metrics.json` (debounced after each
  * sample, additively merged back on activation) so the measurement window

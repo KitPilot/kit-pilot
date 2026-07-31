@@ -23,8 +23,9 @@ export interface ApiHandlerCreateMessageMetadata {
 	 * What this LLM call is for, used only for cost/token instrumentation
 	 * (see usageMetrics). Defaults to "main" (the agent's coding loop) when
 	 * unset; auxiliary calls tag themselves ("condense", "error-analysis", …)
-	 * so we can measure the auxiliary-vs-main token share before deciding
-	 * whether auxiliary-call model routing (TODO #3) is worth building.
+	 * so we can measure the auxiliary-vs-main token share. TODO #3 was rejected
+	 * from measured usage on 2026-07-28; purpose tags remain useful for local
+	 * diagnostics and regression evidence.
 	 */
 	purpose?: UsagePurpose
 	/**
