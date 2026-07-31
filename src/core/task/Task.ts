@@ -418,7 +418,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		this.taskId = historyItem ? historyItem.id : (taskId ?? uuidv7())
-		this.rootTaskId = historyItem ? historyItem.rootTaskId : rootTask?.taskId
+		// Derive the root from the parent when no rootTask was passed.
+		// delegateParentAndOpenChild() disposes the parent (emptying clineStack)
+		// *before* createTask() runs, and createTask reads rootTask from
+		// clineStack[0] — so a delegated child would otherwise be handed
+		// rootTask: undefined and record itself as its own root.
+		this.rootTaskId = historyItem
+			? historyItem.rootTaskId
+			: (rootTask?.taskId ?? parentTask?.rootTaskId ?? parentTask?.taskId)
 		this.parentTaskId = historyItem ? historyItem.parentTaskId : parentTask?.taskId
 		this.childTaskId = undefined
 
@@ -4037,16 +4044,34 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		const messagesWithoutImages = maybeRemoveImageBlocks(mergedForApi, this.api)
 		const cleanConversationHistory = this.buildCleanConversationHistory(messagesWithoutImages as ApiMessage[])
 
-		// Check auto-approval limits
+		// Check auto-approval limits. The cost cap covers the whole delegation
+		// tree, so resolve the tree-wide window cost first — otherwise each
+		// delegated subtask would restart the budget from zero.
+		const provider = this.providerRef.deref()
+		const treeWindowCost = await provider?.getBudgetWindowTreeCost(this)
+
 		const approvalResult = await this.autoApprovalHandler.checkAutoApprovalLimits(
 			state,
 			this.combineMessages(this.clineMessages.slice(1)),
 			async (type, data) => this.ask(type, data),
+			treeWindowCost,
 		)
 
 		if (!approvalResult.shouldProceed) {
 			// User did not approve, task should be aborted
 			throw new Error("Auto-approval limit reached and user did not approve continuation")
+		}
+
+		// The user approved continuing past a limit — start a new budget window
+		// for the whole tree, mirroring the handler's own per-task reset.
+		//
+		// Rebaseline on *either* limit, not just the cost one: the handler keeps
+		// a single reset point shared by both checks, so approving a request
+		// prompt already restarts its cost window. Rebaselining only on "cost"
+		// would leave the tree baseline behind, and the very next request would
+		// still see the pre-approval tree total.
+		if (approvalResult.requiresApproval) {
+			await provider?.rebaselineBudgetWindow(this)
 		}
 
 		// Whether we include tools is determined by whether we have any tools to send.

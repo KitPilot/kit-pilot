@@ -311,6 +311,86 @@ describe("Cline", () => {
 		}))
 	})
 
+	describe("delegation lineage", () => {
+		// createTask() reads rootTask from clineStack[0], but
+		// delegateParentAndOpenChild() disposes the parent — emptying the stack —
+		// before creating the child. So a real delegated child arrives with a
+		// parentTask and NO rootTask. These construct tasks that way on purpose:
+		// passing rootTask explicitly would hide the case that matters.
+		const child = (parentTask: Task) =>
+			new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "child task",
+				startTask: false,
+				parentTask,
+			})
+
+		it("treats a task with no lineage as its own root", () => {
+			const root = new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "root task",
+				startTask: false,
+			})
+
+			expect(root.rootTaskId).toBeUndefined()
+			expect(root.parentTaskId).toBeUndefined()
+		})
+
+		it("points a delegated child at its parent as root, even without rootTask", () => {
+			const root = new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "root task",
+				startTask: false,
+			})
+
+			const first = child(root)
+
+			expect(first.parentTaskId).toBe(root.taskId)
+			expect(first.rootTaskId).toBe(root.taskId)
+		})
+
+		it("carries the same root down to a grandchild", () => {
+			const root = new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "root task",
+				startTask: false,
+			})
+
+			const first = child(root)
+			const second = child(first)
+
+			// Not `first.taskId` — every task in one delegation tree must resolve
+			// to the same root, or the budget window fragments per level.
+			expect(second.rootTaskId).toBe(root.taskId)
+			expect(second.parentTaskId).toBe(first.taskId)
+		})
+
+		it("prefers an explicit rootTask when one is supplied", () => {
+			const root = new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "root task",
+				startTask: false,
+			})
+			const middle = child(root)
+
+			const explicit = new Task({
+				provider: mockProvider,
+				apiConfiguration: mockApiConfig,
+				task: "child task",
+				startTask: false,
+				rootTask: root,
+				parentTask: middle,
+			})
+
+			expect(explicit.rootTaskId).toBe(root.taskId)
+		})
+	})
+
 	describe("constructor", () => {
 		it("should always have diff strategy defined", async () => {
 			const cline = new Task({
@@ -979,6 +1059,11 @@ describe("Cline", () => {
 					postStateToWebviewWithoutTaskHistory: vi.fn().mockResolvedValue(undefined),
 					postMessageToWebview: vi.fn().mockResolvedValue(undefined),
 					updateTaskHistory: vi.fn().mockResolvedValue(undefined),
+					// Resolved before every auto-approval check; undefined means
+					// "no delegation tree", so the cost cap falls back to this
+					// task's own messages.
+					getBudgetWindowTreeCost: vi.fn().mockResolvedValue(undefined),
+					rebaselineBudgetWindow: vi.fn().mockResolvedValue(undefined),
 				}
 
 				// Get the mocked delay function
@@ -1321,6 +1406,82 @@ describe("Cline", () => {
 				const globalTimestamp = (Task as any).lastGlobalApiRequestTime
 				expect(globalTimestamp).toBeDefined()
 				expect(globalTimestamp).toBeGreaterThan(0)
+			})
+
+			// Wiring, not just the provider method in isolation: a spec that calls
+			// rebaselineBudgetWindow() directly still passes if someone narrows the
+			// condition back to approvalType === "cost". These drive the real
+			// attemptApiRequest path so that regression fails here.
+			describe("budget window rebaselining", () => {
+				const streamOnce = () =>
+					({
+						async *[Symbol.asyncIterator]() {
+							yield { type: "text", text: "response" }
+						},
+						async next() {
+							return { done: true, value: { type: "text", text: "response" } }
+						},
+						async return() {
+							return { done: true, value: undefined }
+						},
+						async throw(e: any) {
+							throw e
+						},
+						[Symbol.asyncDispose]: async () => {},
+					}) as AsyncGenerator<ApiStreamChunk>
+
+				async function runWithApproval(approvalType: "requests" | "cost") {
+					const task = new Task({
+						provider: mockProvider,
+						apiConfiguration: mockApiConfig,
+						task: "test task",
+						startTask: false,
+					})
+					vi.spyOn(task as any, "getSystemPrompt").mockResolvedValue("mock system prompt")
+					vi.spyOn(task.api, "createMessage").mockReturnValue(streamOnce())
+					vi.spyOn((task as any).autoApprovalHandler, "checkAutoApprovalLimits").mockResolvedValue({
+						shouldProceed: true,
+						requiresApproval: true,
+						approvalType,
+						approvalCount: approvalType === "cost" ? "5.00" : 5,
+					})
+
+					await task.attemptApiRequest(0).next()
+					return task
+				}
+
+				it("rebaselines after an approved request limit", async () => {
+					await runWithApproval("requests")
+
+					expect(mockProvider.rebaselineBudgetWindow).toHaveBeenCalledTimes(1)
+				})
+
+				it("rebaselines after an approved cost limit", async () => {
+					await runWithApproval("cost")
+
+					expect(mockProvider.rebaselineBudgetWindow).toHaveBeenCalledTimes(1)
+				})
+
+				it("does not rebaseline when no limit was hit", async () => {
+					const task = new Task({
+						provider: mockProvider,
+						apiConfiguration: mockApiConfig,
+						task: "test task",
+						startTask: false,
+					})
+					vi.spyOn(task as any, "getSystemPrompt").mockResolvedValue("mock system prompt")
+					vi.spyOn(task.api, "createMessage").mockReturnValue(streamOnce())
+
+					await task.attemptApiRequest(0).next()
+
+					expect(mockProvider.rebaselineBudgetWindow).not.toHaveBeenCalled()
+				})
+
+				it("resolves the tree cost before checking limits", async () => {
+					await runWithApproval("cost")
+
+					expect(mockProvider.getBudgetWindowTreeCost).toHaveBeenCalled()
+				})
 			})
 		})
 

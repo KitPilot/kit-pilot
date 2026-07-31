@@ -76,6 +76,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		clineMessages: messages,
 		currentTaskItem,
 		currentTaskTodos,
+		budgetWindowTreeCost,
 		taskHistory,
 		apiConfiguration,
 		organizationAllowList,
@@ -132,7 +133,22 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	// Cost of the current auto-approval budget window (resets after each
 	// approved limit ask) — what the budget meter and warn banner track.
-	const budgetWindow = useMemo(() => getBudgetWindowMetrics(modifiedMessages), [modifiedMessages])
+	//
+	// The cap is enforced across a whole delegation tree, so when the extension
+	// resolves that figure (`budgetWindowTreeCost`) prefer it: computing locally
+	// from this task's messages alone would show less than the cap is actually
+	// measuring. Standalone tasks don't get the field and keep the local value.
+	const localBudgetWindow = useMemo(() => getBudgetWindowMetrics(modifiedMessages), [modifiedMessages])
+	const budgetWindow = useMemo(
+		() =>
+			budgetWindowTreeCost === undefined
+				? localBudgetWindow
+				: {
+						...localBudgetWindow,
+						metrics: { ...localBudgetWindow.metrics, totalCost: budgetWindowTreeCost },
+					},
+		[localBudgetWindow, budgetWindowTreeCost],
+	)
 
 	const [inputValue, setInputValue] = useState("")
 	const inputValueRef = useRef(inputValue)

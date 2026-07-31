@@ -289,6 +289,14 @@ export type ExtensionState = Pick<
 	currentTaskId?: string
 	currentTaskItem?: HistoryItem
 	currentTaskTodos?: TodoItem[] // Initial todos for the current task
+	/**
+	 * Cost of the current budget window across the whole delegation tree (root
+	 * task plus descendants), net of the window's reset baseline — the figure
+	 * `allowedMaxCost` is actually enforced against. The webview prefers this
+	 * over its own per-task computation so the meter and the cap agree.
+	 * Undefined when it could not be resolved; the webview then falls back.
+	 */
+	budgetWindowTreeCost?: number
 	apiConfiguration: ProviderSettings
 	uriScheme?: string
 	shouldShowAnnouncement: boolean

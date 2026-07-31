@@ -169,6 +169,19 @@ export class ClineProvider
 	private static readonly GLOBAL_STATE_WRITE_THROUGH_DEBOUNCE_MS = 5000 // 5 seconds
 	private pendingOperations: Map<string, PendingEditOperation> = new Map()
 	private static readonly PENDING_OPERATION_TIMEOUT_MS = 30000 // 30 seconds
+	/**
+	 * Per delegation tree (keyed by root task id), the tree's total cost at the
+	 * moment the user last approved continuing past the budget cap. The current
+	 * window's cost is the tree total minus this.
+	 *
+	 * In-memory only, and deliberately so. After a reload the map is empty, the
+	 * baseline reads as zero, and the tree's whole persisted lifetime cost
+	 * counts against the cap — so a resumed run may prompt straight away for
+	 * spend the user already approved. That is the *stricter* direction: were
+	 * the window zeroed on rehydration instead, reloading the window would
+	 * silently clear the budget and become a way around the cap.
+	 */
+	private budgetWindowBaselines: Map<string, number> = new Map()
 
 	/**
 	 * Monotonically increasing sequence number for clineMessages state pushes.
@@ -1696,6 +1709,150 @@ export class ClineProvider
 		return { historyItem, aggregatedCosts }
 	}
 
+	/**
+	 * Look a HistoryItem up without touching disk.
+	 *
+	 * `getTaskWithId()` would also read and JSON.parse the task's whole
+	 * conversation file, far too heavy for a per-request check that only needs
+	 * lineage and `totalCost`.
+	 */
+	private findHistoryItem(id: string): HistoryItem | undefined {
+		return (
+			this.taskHistoryStore.get(id) ?? (this.getGlobalState("taskHistory") ?? []).find((item) => item.id === id)
+		)
+	}
+
+	/**
+	 * The id of the task at the top of a task's delegation tree.
+	 *
+	 * Prefers the task's own `rootTaskId`, but falls back to walking persisted
+	 * `parentTaskId` links. Histories written before lineage was recorded
+	 * correctly store `parentTaskId` with `rootTaskId: undefined`, so a legacy
+	 * child reopened after upgrading would otherwise be treated as its own root
+	 * and have only its own spend enforced.
+	 */
+	private async resolveRootTaskId(task: Task): Promise<string> {
+		if (task.rootTaskId) {
+			return task.rootTaskId
+		}
+
+		await this.taskHistoryStore.initialized
+
+		let rootId = task.taskId
+		let nextId = task.parentTaskId
+		const seen = new Set<string>([task.taskId])
+
+		while (nextId && !seen.has(nextId)) {
+			seen.add(nextId)
+
+			const ancestor = this.findHistoryItem(nextId)
+			if (!ancestor) {
+				// Chain breaks at a pruned task; the furthest one we reached is
+				// the best root available.
+				break
+			}
+			if (ancestor.rootTaskId) {
+				return ancestor.rootTaskId
+			}
+
+			rootId = nextId
+			nextId = ancestor.parentTaskId
+		}
+
+		return rootId
+	}
+
+	/**
+	 * Total cost of a task's entire delegation tree — its root plus every
+	 * descendant.
+	 *
+	 * The running task's own spend is read live from its messages rather than
+	 * from history: a `HistoryItem`'s `totalCost` is only as fresh as the last
+	 * save, so mid-turn it lags. Everything else comes from persisted history
+	 * via `aggregateTaskCostsRecursive`, which is a pure recompute — so this is
+	 * idempotent and cannot double-count a retried child completion.
+	 */
+	private async getDelegationTreeCost(task: Task): Promise<number> {
+		const rootTaskId = await this.resolveRootTaskId(task)
+		const liveCost = task.getTokenUsage().totalCost ?? 0
+
+		await this.taskHistoryStore.initialized
+
+		const aggregated = await aggregateTaskCostsRecursive(rootTaskId, async (id: string) => {
+			const historyItem = this.findHistoryItem(id)
+
+			if (!historyItem) {
+				// A task missing from history contributes nothing rather than
+				// breaking the turn.
+				return undefined
+			}
+
+			// Substitute the running task's live total for its stale persisted one.
+			return id === task.taskId ? { ...historyItem, totalCost: liveCost } : historyItem
+		})
+
+		return aggregated.totalCost
+	}
+
+	/**
+	 * Cost of the current auto-approval budget window across a task's whole
+	 * delegation tree.
+	 *
+	 * `AutoApprovalHandler` restarts its window whenever the user approves past
+	 * a limit. Tree-wide, that reset is a baseline: the tree total at the moment
+	 * of approval, recorded per root task. Returns `undefined` when the tree
+	 * cost cannot be resolved, so enforcement falls back to per-task behaviour
+	 * rather than failing open on a zero.
+	 */
+	public async getBudgetWindowTreeCost(task: Task): Promise<number | undefined> {
+		try {
+			const rootTaskId = await this.resolveRootTaskId(task)
+			const treeCost = await this.getDelegationTreeCost(task)
+			const baseline = this.budgetWindowBaselines.get(rootTaskId) ?? 0
+
+			return Math.max(0, treeCost - baseline)
+		} catch (error) {
+			this.log(
+				`[getBudgetWindowTreeCost] Failed to resolve tree cost for ${task.taskId} (non-fatal): ${
+					error instanceof Error ? error.message : String(error)
+				}`,
+			)
+			return undefined
+		}
+	}
+
+	/**
+	 * Tree-wide window cost for the state push, or `undefined` when the webview
+	 * should keep using its own per-task computation.
+	 *
+	 * Skipped for a task with no lineage and no children: its tree is itself, so
+	 * the webview's local figure already matches enforcement and there is no
+	 * reason to pay for the aggregation on every state push.
+	 */
+	private async getBudgetWindowTreeCostForState(task: Task): Promise<number | undefined> {
+		const historyItem = this.taskHistoryStore.get(task.taskId)
+		const hasDelegationTree = Boolean(task.rootTaskId || task.parentTaskId || historyItem?.childIds?.length)
+
+		return hasDelegationTree ? this.getBudgetWindowTreeCost(task) : undefined
+	}
+
+	/**
+	 * Start a new budget window for a task's delegation tree, after the user
+	 * approved continuing past the cap.
+	 */
+	public async rebaselineBudgetWindow(task: Task): Promise<void> {
+		try {
+			const rootTaskId = await this.resolveRootTaskId(task)
+			this.budgetWindowBaselines.set(rootTaskId, await this.getDelegationTreeCost(task))
+		} catch (error) {
+			this.log(
+				`[rebaselineBudgetWindow] Failed to rebaseline ${task.taskId} (non-fatal): ${
+					error instanceof Error ? error.message : String(error)
+				}`,
+			)
+		}
+	}
+
 	async showTaskWithId(id: string) {
 		// If a switch to this same task is already running, ride it out rather
 		// than starting a second one (debounces double-clicks).
@@ -2061,6 +2218,7 @@ export class ClineProvider
 			currentTaskItem: currentTask?.taskId ? this.taskHistoryStore.get(currentTask.taskId) : undefined,
 			clineMessages: currentTask?.clineMessages || [],
 			currentTaskTodos: currentTask?.todoList || [],
+			budgetWindowTreeCost: currentTask ? await this.getBudgetWindowTreeCostForState(currentTask) : undefined,
 			messageQueue: currentTask?.messageQueueService?.messages,
 			taskHistory: this.taskHistoryStore.getAll().filter((item: HistoryItem) => item.ts && item.task),
 			soundEnabled: soundEnabled ?? false,

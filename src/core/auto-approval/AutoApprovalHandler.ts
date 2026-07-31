@@ -17,6 +17,13 @@ export class AutoApprovalHandler {
 
 	/**
 	 * Check if auto-approval limits have been reached and handle user approval if needed
+	 *
+	 * @param treeWindowCost Cost of the current budget window across the whole
+	 * delegation tree (root task plus every descendant), already net of the
+	 * window's reset baseline. When supplied it replaces this task's own message
+	 * total for the cost check, so a delegated subtask cannot restart the budget
+	 * at zero. Omitted for standalone tasks, which fall back to their own
+	 * messages.
 	 */
 	async checkAutoApprovalLimits(
 		state: GlobalState | undefined,
@@ -25,6 +32,7 @@ export class AutoApprovalHandler {
 			type: ClineAsk,
 			data: string,
 		) => Promise<{ response: ClineAskResponse; text?: string; images?: string[] }>,
+		treeWindowCost?: number,
 	): Promise<AutoApprovalResult> {
 		// Check request count limit
 		const requestResult = await this.checkRequestLimit(state, messages, askForApproval)
@@ -33,7 +41,7 @@ export class AutoApprovalHandler {
 		}
 
 		// Check cost limit
-		const costResult = await this.checkCostLimit(state, messages, askForApproval)
+		const costResult = await this.checkCostLimit(state, messages, askForApproval, treeWindowCost)
 		return costResult
 	}
 
@@ -95,12 +103,19 @@ export class AutoApprovalHandler {
 			type: ClineAsk,
 			data: string,
 		) => Promise<{ response: ClineAskResponse; text?: string; images?: string[] }>,
+		treeWindowCost?: number,
 	): Promise<AutoApprovalResult> {
 		const maxCost = state?.allowedMaxCost || Infinity
 
-		// Calculate total cost from messages after the last reset point
-		const messagesAfterReset = messages.slice(this.lastResetMessageIndex)
-		this.consecutiveAutoApprovedCost = getApiMetrics(messagesAfterReset).totalCost
+		// Prefer the delegation-tree total when the caller resolved one: the cap
+		// covers a whole orchestration run, not each task in it. Fall back to
+		// this task's own messages after the last reset point.
+		if (treeWindowCost !== undefined) {
+			this.consecutiveAutoApprovedCost = treeWindowCost
+		} else {
+			const messagesAfterReset = messages.slice(this.lastResetMessageIndex)
+			this.consecutiveAutoApprovedCost = getApiMetrics(messagesAfterReset).totalCost
+		}
 
 		// Use epsilon for floating-point comparison to avoid precision issues
 		const EPSILON = 0.0001
