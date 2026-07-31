@@ -158,6 +158,73 @@ describe("ClineProvider budget window (delegation tree)", () => {
 		expect(await provider.getBudgetWindowTreeCost(task)).toBeCloseTo(0)
 	})
 
+	describe("legacy histories written before lineage was recorded", () => {
+		// Those tasks persist parentTaskId but leave rootTaskId undefined. If the
+		// root isn't recovered by walking the parent chain, reopening one after
+		// upgrading enforces only that child's own spend — the original defect,
+		// surviving the upgrade.
+		function legacy(id: string, totalCost: number, parentTaskId?: string, childIds?: string[]): HistoryItem {
+			return { id, ts: 1, task: id, tokensIn: 0, totalCost, parentTaskId, childIds } as HistoryItem
+		}
+
+		function legacyTask(taskId: string, liveCost: number, parentTaskId?: string): Task {
+			return {
+				taskId,
+				rootTaskId: undefined,
+				parentTaskId,
+				getTokenUsage: () => ({ totalCost: liveCost }),
+			} as unknown as Task
+		}
+
+		it("recovers the root of a rehydrated child via parentTaskId", async () => {
+			const provider = makeProvider([legacy("root", 4.0, undefined, ["child"]), legacy("child", 1.0, "root")])
+
+			const cost = await provider.getBudgetWindowTreeCost(legacyTask("child", 1.0, "root"))
+
+			expect(cost).toBeCloseTo(5.0) // not 1.0
+		})
+
+		it("walks more than one level for a rehydrated grandchild", async () => {
+			const provider = makeProvider([
+				legacy("root", 4.0, undefined, ["child"]),
+				legacy("child", 2.0, "root", ["grandchild"]),
+				legacy("grandchild", 1.0, "child"),
+			])
+
+			const cost = await provider.getBudgetWindowTreeCost(legacyTask("grandchild", 1.0, "child"))
+
+			expect(cost).toBeCloseTo(7.0)
+		})
+
+		it("short-circuits on an ancestor that does know its root", async () => {
+			const mixed = [
+				legacy("root", 4.0, undefined, ["child"]),
+				{ ...legacy("child", 2.0, "root", ["grandchild"]), rootTaskId: "root" } as HistoryItem,
+				legacy("grandchild", 1.0, "child"),
+			]
+			const provider = makeProvider(mixed)
+
+			expect(await provider.getBudgetWindowTreeCost(legacyTask("grandchild", 1.0, "child"))).toBeCloseTo(7.0)
+		})
+
+		it("stops at a pruned ancestor instead of looping", async () => {
+			// Parent no longer in history: fall back to the furthest task reached.
+			const provider = makeProvider([legacy("child", 3.0, "deleted-parent")])
+
+			const cost = await provider.getBudgetWindowTreeCost(legacyTask("child", 3.0, "deleted-parent"))
+
+			expect(cost).toBeCloseTo(3.0)
+		})
+
+		it("does not loop forever on a cyclic parent chain", async () => {
+			const provider = makeProvider([legacy("a", 1.0, "b"), legacy("b", 2.0, "a")])
+
+			const cost = await provider.getBudgetWindowTreeCost(legacyTask("a", 1.0, "b"))
+
+			expect(typeof cost).toBe("number")
+		})
+	})
+
 	it("returns undefined when resolution fails, so enforcement falls back", async () => {
 		const provider = makeProvider([item("root", 1.0)])
 		;(provider as any).taskHistoryStore = {

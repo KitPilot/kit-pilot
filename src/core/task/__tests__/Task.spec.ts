@@ -1407,6 +1407,82 @@ describe("Cline", () => {
 				expect(globalTimestamp).toBeDefined()
 				expect(globalTimestamp).toBeGreaterThan(0)
 			})
+
+			// Wiring, not just the provider method in isolation: a spec that calls
+			// rebaselineBudgetWindow() directly still passes if someone narrows the
+			// condition back to approvalType === "cost". These drive the real
+			// attemptApiRequest path so that regression fails here.
+			describe("budget window rebaselining", () => {
+				const streamOnce = () =>
+					({
+						async *[Symbol.asyncIterator]() {
+							yield { type: "text", text: "response" }
+						},
+						async next() {
+							return { done: true, value: { type: "text", text: "response" } }
+						},
+						async return() {
+							return { done: true, value: undefined }
+						},
+						async throw(e: any) {
+							throw e
+						},
+						[Symbol.asyncDispose]: async () => {},
+					}) as AsyncGenerator<ApiStreamChunk>
+
+				async function runWithApproval(approvalType: "requests" | "cost") {
+					const task = new Task({
+						provider: mockProvider,
+						apiConfiguration: mockApiConfig,
+						task: "test task",
+						startTask: false,
+					})
+					vi.spyOn(task as any, "getSystemPrompt").mockResolvedValue("mock system prompt")
+					vi.spyOn(task.api, "createMessage").mockReturnValue(streamOnce())
+					vi.spyOn((task as any).autoApprovalHandler, "checkAutoApprovalLimits").mockResolvedValue({
+						shouldProceed: true,
+						requiresApproval: true,
+						approvalType,
+						approvalCount: approvalType === "cost" ? "5.00" : 5,
+					})
+
+					await task.attemptApiRequest(0).next()
+					return task
+				}
+
+				it("rebaselines after an approved request limit", async () => {
+					await runWithApproval("requests")
+
+					expect(mockProvider.rebaselineBudgetWindow).toHaveBeenCalledTimes(1)
+				})
+
+				it("rebaselines after an approved cost limit", async () => {
+					await runWithApproval("cost")
+
+					expect(mockProvider.rebaselineBudgetWindow).toHaveBeenCalledTimes(1)
+				})
+
+				it("does not rebaseline when no limit was hit", async () => {
+					const task = new Task({
+						provider: mockProvider,
+						apiConfiguration: mockApiConfig,
+						task: "test task",
+						startTask: false,
+					})
+					vi.spyOn(task as any, "getSystemPrompt").mockResolvedValue("mock system prompt")
+					vi.spyOn(task.api, "createMessage").mockReturnValue(streamOnce())
+
+					await task.attemptApiRequest(0).next()
+
+					expect(mockProvider.rebaselineBudgetWindow).not.toHaveBeenCalled()
+				})
+
+				it("resolves the tree cost before checking limits", async () => {
+					await runWithApproval("cost")
+
+					expect(mockProvider.getBudgetWindowTreeCost).toHaveBeenCalled()
+				})
+			})
 		})
 
 		describe("Dynamic Strategy Selection", () => {

@@ -172,8 +172,14 @@ export class ClineProvider
 	/**
 	 * Per delegation tree (keyed by root task id), the tree's total cost at the
 	 * moment the user last approved continuing past the budget cap. The current
-	 * window's cost is the tree total minus this. In-memory only: a tree resumed
-	 * after a reload starts a fresh window.
+	 * window's cost is the tree total minus this.
+	 *
+	 * In-memory only, and deliberately so. After a reload the map is empty, the
+	 * baseline reads as zero, and the tree's whole persisted lifetime cost
+	 * counts against the cap — so a resumed run may prompt straight away for
+	 * spend the user already approved. That is the *stricter* direction: were
+	 * the window zeroed on rehydration instead, reloading the window would
+	 * silently clear the budget and become a way around the cap.
 	 */
 	private budgetWindowBaselines: Map<string, number> = new Map()
 
@@ -1713,19 +1719,67 @@ export class ClineProvider
 	 * via `aggregateTaskCostsRecursive`, which is a pure recompute — so this is
 	 * idempotent and cannot double-count a retried child completion.
 	 */
+	/**
+	 * Look a HistoryItem up without touching disk.
+	 *
+	 * `getTaskWithId()` would also read and JSON.parse the task's whole
+	 * conversation file, far too heavy for a per-request check that only needs
+	 * lineage and `totalCost`.
+	 */
+	private findHistoryItem(id: string): HistoryItem | undefined {
+		return (
+			this.taskHistoryStore.get(id) ?? (this.getGlobalState("taskHistory") ?? []).find((item) => item.id === id)
+		)
+	}
+
+	/**
+	 * The id of the task at the top of a task's delegation tree.
+	 *
+	 * Prefers the task's own `rootTaskId`, but falls back to walking persisted
+	 * `parentTaskId` links. Histories written before lineage was recorded
+	 * correctly store `parentTaskId` with `rootTaskId: undefined`, so a legacy
+	 * child reopened after upgrading would otherwise be treated as its own root
+	 * and have only its own spend enforced.
+	 */
+	private async resolveRootTaskId(task: Task): Promise<string> {
+		if (task.rootTaskId) {
+			return task.rootTaskId
+		}
+
+		await this.taskHistoryStore.initialized
+
+		let rootId = task.taskId
+		let nextId = task.parentTaskId
+		const seen = new Set<string>([task.taskId])
+
+		while (nextId && !seen.has(nextId)) {
+			seen.add(nextId)
+
+			const ancestor = this.findHistoryItem(nextId)
+			if (!ancestor) {
+				// Chain breaks at a pruned task; the furthest one we reached is
+				// the best root available.
+				break
+			}
+			if (ancestor.rootTaskId) {
+				return ancestor.rootTaskId
+			}
+
+			rootId = nextId
+			nextId = ancestor.parentTaskId
+		}
+
+		return rootId
+	}
+
 	private async getDelegationTreeCost(task: Task): Promise<number> {
-		const rootTaskId = task.rootTaskId ?? task.taskId
+		const rootTaskId = await this.resolveRootTaskId(task)
 		const liveCost = task.getTokenUsage().totalCost ?? 0
 
-		// Read HistoryItems straight from the in-memory store. getTaskWithId()
-		// would also read and JSON.parse each task's whole conversation file
-		// from disk, which is far too heavy for a per-request check.
 		await this.taskHistoryStore.initialized
 
 		const aggregated = await aggregateTaskCostsRecursive(rootTaskId, async (id: string) => {
-			const historyItem =
-				this.taskHistoryStore.get(id) ??
-				(this.getGlobalState("taskHistory") ?? []).find((item) => item.id === id)
+			const historyItem = this.findHistoryItem(id)
 
 			if (!historyItem) {
 				// A task missing from history contributes nothing rather than
@@ -1752,7 +1806,7 @@ export class ClineProvider
 	 */
 	public async getBudgetWindowTreeCost(task: Task): Promise<number | undefined> {
 		try {
-			const rootTaskId = task.rootTaskId ?? task.taskId
+			const rootTaskId = await this.resolveRootTaskId(task)
 			const treeCost = await this.getDelegationTreeCost(task)
 			const baseline = this.budgetWindowBaselines.get(rootTaskId) ?? 0
 
@@ -1788,7 +1842,7 @@ export class ClineProvider
 	 */
 	public async rebaselineBudgetWindow(task: Task): Promise<void> {
 		try {
-			const rootTaskId = task.rootTaskId ?? task.taskId
+			const rootTaskId = await this.resolveRootTaskId(task)
 			this.budgetWindowBaselines.set(rootTaskId, await this.getDelegationTreeCost(task))
 		} catch (error) {
 			this.log(
