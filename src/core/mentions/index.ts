@@ -7,6 +7,7 @@ import { isBinaryFile } from "isbinaryfile"
 import { mentionRegexGlobal, commandRegexGlobal, unescapeSpaces } from "../../shared/context-mentions"
 
 import { getCommitInfo, getWorkingState } from "../../utils/git"
+import { openExternalUrl } from "../../utils/external-links"
 
 import { openFile } from "../../integrations/misc/open-file"
 import { extractTextFromFileWithMetadata, type ExtractTextResult } from "../../integrations/misc/extract-text"
@@ -39,7 +40,9 @@ export async function openMention(cwd: string, mention?: string): Promise<void> 
 	} else if (mention === "terminal") {
 		vscode.commands.executeCommand("workbench.action.terminal.focus")
 	} else if (mention.startsWith("http")) {
-		vscode.env.openExternal(vscode.Uri.parse(mention))
+		// startsWith("http") also admits things like "httpfoo://"; the helper is
+		// the actual gate.
+		await openExternalUrl(mention)
 	}
 }
 
