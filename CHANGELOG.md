@@ -4,7 +4,7 @@
 
 ### Changed
 
-- **The spending limit now covers a whole run, not each task separately.** If you set a cost limit and KitPilot broke your work into subtasks, every subtask used to start its own budget from zero — so a job could quietly spend several times the limit before asking you. The limit now counts everything one run spends, including all of its subtasks, so it stops where you told it to. If you have a limit set, expect it to be reached sooner on larger jobs than it used to be. The cost shown in the task header now matches the number the limit is checked against.
+- **The spending limit now covers a whole run, not each task separately.** If you set a cost limit and KitPilot broke your work into subtasks, every subtask used to start its own budget from zero — so a job could quietly spend several times the limit before asking you. The limit now counts the entire run, including subtasks, and asks before continuing once the limit is crossed. If you have a limit set, expect to be asked sooner on larger jobs than before. The cost shown in the task header now matches the number the limit is checked against.
 
 ### Fixed
 
