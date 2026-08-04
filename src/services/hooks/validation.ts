@@ -9,7 +9,7 @@
  * makes that silent fallback visible to the user.
  */
 
-import { SUPPORTED_EVENT_TYPES } from "./types"
+import { DISPATCHED_EVENT_TYPES, SUPPORTED_EVENT_TYPES } from "./types"
 
 export interface HooksFileValidation {
 	/** False when the file does not exist (text was null). */
@@ -78,6 +78,17 @@ export function validateHooksText(text: string | null): HooksFileValidation {
 			continue
 		}
 		groupCounts.push(`${eventType}×${groups.length}`)
+
+		// Declared, parsed and loaded — but never dispatched, so these hooks sit
+		// there silently. Only worth saying when hooks are actually configured:
+		// `"Stop": []` affects nothing, and a warning about it would be noise
+		// that teaches people to skip the report.
+		if (groups.length > 0 && !DISPATCHED_EVENT_TYPES.includes(eventType)) {
+			problems.push(
+				`"${eventType}" is accepted but not yet dispatched — its hooks load and never fire. Currently dispatched: ${DISPATCHED_EVENT_TYPES.join(", ")}.`,
+			)
+		}
+
 		groups.forEach((group: HookGroupLike, groupIndex) => {
 			const where = `${eventType}[${groupIndex}]`
 			if (!group || typeof group !== "object") {

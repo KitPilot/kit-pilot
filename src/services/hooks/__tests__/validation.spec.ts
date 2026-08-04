@@ -73,4 +73,51 @@ describe("hooks/validateHooksText", () => {
 		expect(result.problems).toEqual([])
 		expect(result.groupCounts).toEqual([])
 	})
+
+	describe("events that are accepted but never dispatched", () => {
+		// A Stop hook used to validate completely clean and then do nothing,
+		// because all nine event types are in SUPPORTED_EVENT_TYPES while only
+		// three have a fire site.
+		it("reports a configured hook on an undispatched event", () => {
+			const result = validateHooksText(
+				JSON.stringify({ Stop: [{ matcher: "*", hooks: [{ command: "notify-send done" }] }] }),
+			)
+
+			expect(result.parseError).toBeUndefined()
+			expect(result.problems.join("\n")).toContain('"Stop" is accepted but not yet dispatched')
+		})
+
+		it("stays valid and loaded — the hook is reported, not rejected", () => {
+			const result = validateHooksText(
+				JSON.stringify({ SubagentStop: [{ matcher: "*", hooks: [{ command: "echo hi" }] }] }),
+			)
+
+			// Counted like any other group: the config parses and the registry
+			// will load it. The message explains the silence, it does not
+			// invalidate the file.
+			expect(result.groupCounts).toEqual(["SubagentStop×1"])
+			expect(result.problems).toHaveLength(1)
+		})
+
+		it("says nothing about a declared-but-empty event", () => {
+			// `"Stop": []` configures no hook and affects nothing. Warning here
+			// would be noise that trains people to skip the report.
+			const result = validateHooksText(JSON.stringify({ Stop: [], SessionStart: [] }))
+
+			expect(result.problems).toEqual([])
+			expect(result.groupCounts).toEqual(["SessionStart×0", "Stop×0"])
+		})
+
+		it("says nothing about dispatched events", () => {
+			const result = validateHooksText(
+				JSON.stringify({
+					PreToolUse: [{ matcher: "*", hooks: [{ command: "exit 0" }] }],
+					PostToolUse: [{ matcher: "*", hooks: [{ command: "exit 0" }] }],
+					UserPromptSubmit: [{ matcher: "*", hooks: [{ command: "exit 0" }] }],
+				}),
+			)
+
+			expect(result.problems).toEqual([])
+		})
+	})
 })
