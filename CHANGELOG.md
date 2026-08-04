@@ -1,5 +1,12 @@
 # KitPilot Changelog
 
+## 0.2.4
+
+### Fixed
+
+- **The spending limit no longer asks again for money you already approved.** If you approved carrying on past a cost limit and then reloaded the window, KitPilot forgot that approval and counted the whole run's cost from scratch — so it asked again straight away for spending you had already allowed. The approval now survives a reload. If you later rewind or edit a message and remove some of that spending, the limit re-checks against what the run actually costs now, so the removed amount cannot quietly become spending that never counts.
+- **KitPilot now tells you when a hook will never run.** Hook settings accept nine event types, but only three of them currently do anything. A hook placed on one of the other six was accepted without complaint and then simply never fired, with nothing to explain the silence. The hooks report now says which events are accepted but not yet in use, and still loads the hook. Events you have declared but left empty stay quiet.
+
 ## 0.2.3
 
 ### Changed
