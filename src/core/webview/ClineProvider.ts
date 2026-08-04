@@ -1803,12 +1803,20 @@ export class ClineProvider
 	 * of approval, recorded per root task. Returns `undefined` when the tree
 	 * cost cannot be resolved, so enforcement falls back to per-task behaviour
 	 * rather than failing open on a zero.
+	 *
+	 * The in-memory map is authoritative while the window lives, but it does not
+	 * survive a reload — so on a miss the root's persisted baseline is used
+	 * instead. Absent from both means zero, which is the stricter reading: a
+	 * tree that never approved anything counts its whole cost.
 	 */
 	public async getBudgetWindowTreeCost(task: Task): Promise<number | undefined> {
 		try {
 			const rootTaskId = await this.resolveRootTaskId(task)
 			const treeCost = await this.getDelegationTreeCost(task)
-			const baseline = this.budgetWindowBaselines.get(rootTaskId) ?? 0
+			const baseline =
+				this.budgetWindowBaselines.get(rootTaskId) ??
+				this.findHistoryItem(rootTaskId)?.budgetWindowBaseline ??
+				0
 
 			return Math.max(0, treeCost - baseline)
 		} catch (error) {
@@ -1839,11 +1847,33 @@ export class ClineProvider
 	/**
 	 * Start a new budget window for a task's delegation tree, after the user
 	 * approved continuing past the cap.
+	 *
+	 * Written to both the in-memory map and the root's `HistoryItem`, so the
+	 * approved window survives a Reload Window instead of silently resetting to
+	 * zero while the costs it offsets stay in history. The persist is skipped
+	 * when the root has no history entry yet — there is nothing to attach it to,
+	 * and the map still covers the current session.
 	 */
 	public async rebaselineBudgetWindow(task: Task): Promise<void> {
 		try {
 			const rootTaskId = await this.resolveRootTaskId(task)
-			this.budgetWindowBaselines.set(rootTaskId, await this.getDelegationTreeCost(task))
+			const baseline = await this.getDelegationTreeCost(task)
+			this.budgetWindowBaselines.set(rootTaskId, baseline)
+
+			const rootHistoryItem = this.findHistoryItem(rootTaskId)
+
+			if (rootHistoryItem) {
+				// Not webview-visible data, so skip the broadcast a default
+				// `updateTaskHistory` would send.
+				await this.updateTaskHistory(
+					{ ...rootHistoryItem, budgetWindowBaseline: baseline },
+					{ broadcast: false },
+				)
+			} else {
+				this.log(
+					`[rebaselineBudgetWindow] No history item for root ${rootTaskId}; baseline kept in memory only`,
+				)
+			}
 		} catch (error) {
 			this.log(
 				`[rebaselineBudgetWindow] Failed to rebaseline ${task.taskId} (non-fatal): ${

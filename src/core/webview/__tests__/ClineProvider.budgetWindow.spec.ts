@@ -16,6 +16,7 @@ interface ProviderInternals {
 	budgetWindowBaselines: Map<string, number>
 	getGlobalState: (key: string) => unknown
 	log: (message: string) => void
+	isViewLaunched: boolean
 }
 
 function makeProvider(history: HistoryItem[]) {
@@ -28,12 +29,30 @@ function makeProvider(history: HistoryItem[]) {
 	internals.taskHistoryStore = {
 		initialized: Promise.resolve(),
 		get: (id: string) => history.find((item) => item.id === id),
+		// `rebaselineBudgetWindow` persists through the real `updateTaskHistory`,
+		// so the store has to accept writes as well as reads. Mutating the same
+		// array keeps reads and writes consistent for the reload assertions.
+		upsert: async (updated: HistoryItem) => {
+			const index = history.findIndex((existing) => existing.id === updated.id)
+			if (index === -1) {
+				history.push(updated)
+			} else {
+				history[index] = updated
+			}
+			return history
+		},
 	}
 	internals.budgetWindowBaselines = new Map()
 	internals.getGlobalState = () => []
 	internals.log = () => {}
+	internals.isViewLaunched = false
 
 	return provider
+}
+
+/** Drop in-memory state the way a Reload Window does, keeping history. */
+function simulateReload(provider: ClineProvider) {
+	;(provider as unknown as ProviderInternals).budgetWindowBaselines = new Map()
 }
 
 function item(id: string, totalCost: number, childIds?: string[]): HistoryItem {
@@ -156,6 +175,61 @@ describe("ClineProvider budget window (delegation tree)", () => {
 		await provider.rebaselineBudgetWindow(task)
 
 		expect(await provider.getBudgetWindowTreeCost(task)).toBeCloseTo(0)
+	})
+
+	describe("surviving a reload", () => {
+		// The baselines map is in-memory. Before it was persisted, a Reload
+		// Window silently reset it to zero while the costs it offsets stayed in
+		// history — so a resumed tree re-prompted for spend already approved.
+		it("keeps the approved window after the in-memory map is lost", async () => {
+			const history = [item("root", 4.0, ["child"]), item("child", 2.0)]
+			const provider = makeProvider(history)
+
+			await provider.rebaselineBudgetWindow(makeTask("child", 2.0, "root"))
+			simulateReload(provider)
+
+			expect(await provider.getBudgetWindowTreeCost(makeTask("child", 2.0, "root"))).toBeCloseTo(0)
+
+			// Spend after the approval still counts against the restored window.
+			expect(await provider.getBudgetWindowTreeCost(makeTask("child", 3.5, "root"))).toBeCloseTo(1.5)
+		})
+
+		it("records the baseline on the root's history item", async () => {
+			const history = [item("root", 4.0, ["child"]), item("child", 2.0)]
+			const provider = makeProvider(history)
+
+			await provider.rebaselineBudgetWindow(makeTask("child", 2.0, "root"))
+
+			expect(history.find((entry) => entry.id === "root")?.budgetWindowBaseline).toBeCloseTo(6.0)
+			// Only the root carries it — children are not separate windows.
+			expect(history.find((entry) => entry.id === "child")?.budgetWindowBaseline).toBeUndefined()
+		})
+
+		it("reads a persisted baseline the map never held", async () => {
+			// Exactly the rehydrated case: history came off disk, no approval has
+			// happened in this session, so the map is empty.
+			const root = { ...item("root", 5.0, ["child"]), budgetWindowBaseline: 4.0 } as HistoryItem
+			const provider = makeProvider([root, item("child", 1.0)])
+
+			expect(await provider.getBudgetWindowTreeCost(makeTask("child", 1.0, "root"))).toBeCloseTo(2.0)
+		})
+
+		it("counts the whole tree when no approval was ever granted", async () => {
+			const provider = makeProvider([item("root", 4.0, ["child"]), item("child", 2.0)])
+			simulateReload(provider)
+
+			expect(await provider.getBudgetWindowTreeCost(makeTask("child", 2.0, "root"))).toBeCloseTo(6.0)
+		})
+
+		it("still rebaselines in memory when the root has no history entry", async () => {
+			// A root that hasn't been written to history yet has nothing to attach
+			// the baseline to; the session must keep working regardless.
+			const provider = makeProvider([item("child", 2.0)])
+			const task = makeTask("child", 2.0, "missingRoot")
+
+			await expect(provider.rebaselineBudgetWindow(task)).resolves.toBeUndefined()
+			expect(await provider.getBudgetWindowTreeCost(task)).toBeCloseTo(0)
+		})
 	})
 
 	describe("legacy histories written before lineage was recorded", () => {
