@@ -1,8 +1,10 @@
 /**
  * Hook service — declarative shell hooks fired around tool execution.
  *
- * Slice 1 wires only PreToolUse + PostToolUse into the dispatcher; the other 7
- * event types are accepted in config but never fire yet.
+ * Three events are wired into the dispatcher today — PreToolUse, PostToolUse
+ * and UserPromptSubmit (see DISPATCHED_EVENT_TYPES). The other six are accepted
+ * in config and loaded, but never fire; validation reports them so the silence
+ * is explained rather than mysterious.
  *
  * See README.md in this directory for config schema and porting notes.
  */
@@ -27,7 +29,7 @@ export type {
 	ExecutionResult,
 	ProcessEventResult,
 } from "./types"
-export { SUPPORTED_EVENT_TYPES, makeHookConfig } from "./types"
+export { DISPATCHED_EVENT_TYPES, SUPPORTED_EVENT_TYPES, makeHookConfig } from "./types"
 export type { HookGroup, HooksConfigDict } from "./registry"
 // Side-effect: registers all built-in hook handlers.
 import "./builtins"

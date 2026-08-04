@@ -19,6 +19,14 @@ export type HookEventType =
 	| "Stop"
 	| "SubagentStop"
 
+/**
+ * Every event type a hooks.json file may legally declare.
+ *
+ * This is the *accepted config* list, not the list of events that fire — the
+ * registry seeds its map from it and drops anything outside it, so narrowing it
+ * to the dispatched set would silently discard hooks rather than report them.
+ * Use `DISPATCHED_EVENT_TYPES` to ask what actually runs.
+ */
 export const SUPPORTED_EVENT_TYPES: readonly HookEventType[] = [
 	"PreToolUse",
 	"PostToolUse",
@@ -30,6 +38,16 @@ export const SUPPORTED_EVENT_TYPES: readonly HookEventType[] = [
 	"Stop",
 	"SubagentStop",
 ]
+
+/**
+ * The event types that currently have a fire site in the extension.
+ *
+ * Everything else in `SUPPORTED_EVENT_TYPES` parses and loads but is never
+ * dispatched, so validation reports it — otherwise a user's `Stop` hook
+ * validates clean and then does nothing, with nothing to explain the silence.
+ * Extend this list when a new fire site lands.
+ */
+export const DISPATCHED_EVENT_TYPES: readonly HookEventType[] = ["PreToolUse", "PostToolUse", "UserPromptSubmit"]
 
 export type HookType = "command" | "prompt" | "builtin"
 
