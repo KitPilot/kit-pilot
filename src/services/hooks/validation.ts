@@ -80,10 +80,18 @@ export function validateHooksText(text: string | null): HooksFileValidation {
 		groupCounts.push(`${eventType}×${groups.length}`)
 
 		// Declared, parsed and loaded — but never dispatched, so these hooks sit
-		// there silently. Only worth saying when hooks are actually configured:
-		// `"Stop": []` affects nothing, and a warning about it would be noise
-		// that teaches people to skip the report.
-		if (groups.length > 0 && !DISPATCHED_EVENT_TYPES.includes(eventType)) {
+		// there silently. Only worth saying when a hook actually exists to be
+		// silenced: the message claims hooks load and never fire, which is untrue
+		// of `"Stop": []`, of a group with no `hooks` key, and of one whose
+		// `hooks` array is empty. Those shapes are reported below as the
+		// structural problems they are, and saying both would be noise that
+		// teaches people to skip the report.
+		const hasConfiguredHook = groups.some(
+			(group: HookGroupLike) =>
+				Boolean(group) && typeof group === "object" && Array.isArray(group.hooks) && group.hooks.length > 0,
+		)
+
+		if (hasConfiguredHook && !DISPATCHED_EVENT_TYPES.includes(eventType)) {
 			problems.push(
 				`"${eventType}" is accepted but not yet dispatched — its hooks load and never fire. Currently dispatched: ${DISPATCHED_EVENT_TYPES.join(", ")}.`,
 			)

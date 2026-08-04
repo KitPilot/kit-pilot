@@ -108,6 +108,41 @@ describe("hooks/validateHooksText", () => {
 			expect(result.groupCounts).toEqual(["SessionStart×0", "Stop×0"])
 		})
 
+		// The message says the hooks "load and never fire". For a group carrying
+		// no hooks that is simply false — there is nothing to fire. Those shapes
+		// already have their own structural problem, and stacking a second,
+		// untrue one on top is what makes a report stop being read.
+		it("says nothing when a group's hooks array is empty", () => {
+			const result = validateHooksText(JSON.stringify({ Stop: [{ matcher: "*", hooks: [] }] }))
+
+			expect(result.problems).toEqual(['Stop[0] has no "hooks" array — the group does nothing.'])
+			expect(result.problems.join("\n")).not.toContain("not yet dispatched")
+		})
+
+		it("says nothing when a group has no hooks key at all", () => {
+			const result = validateHooksText(JSON.stringify({ Stop: [{ matcher: "*" }] }))
+
+			expect(result.problems).toEqual(['Stop[0] has no "hooks" array — the group does nothing.'])
+			expect(result.problems.join("\n")).not.toContain("not yet dispatched")
+		})
+
+		it("still warns when one group among empty ones carries a real hook", () => {
+			const result = validateHooksText(
+				JSON.stringify({
+					Stop: [
+						{ matcher: "*", hooks: [] },
+						{ matcher: "execute_command", hooks: [{ command: "echo hi" }] },
+					],
+				}),
+			)
+			const text = result.problems.join("\n")
+
+			// Both stand on their own: the empty group does nothing, and the real
+			// hook genuinely will never fire.
+			expect(text).toContain('Stop[0] has no "hooks" array')
+			expect(text).toContain('"Stop" is accepted but not yet dispatched')
+		})
+
 		it("says nothing about dispatched events", () => {
 			const result = validateHooksText(
 				JSON.stringify({
