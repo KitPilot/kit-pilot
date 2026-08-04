@@ -1803,14 +1803,35 @@ export class ClineProvider
 	 * of approval, recorded per root task. Returns `undefined` when the tree
 	 * cost cannot be resolved, so enforcement falls back to per-task behaviour
 	 * rather than failing open on a zero.
+	 *
+	 * The in-memory map is authoritative while the window lives, but it does not
+	 * survive a reload — so on a miss the root's persisted baseline is used
+	 * instead. Absent from both means zero, which is the stricter reading: a
+	 * tree that never approved anything counts its whole cost.
 	 */
 	public async getBudgetWindowTreeCost(task: Task): Promise<number | undefined> {
 		try {
 			const rootTaskId = await this.resolveRootTaskId(task)
 			const treeCost = await this.getDelegationTreeCost(task)
-			const baseline = this.budgetWindowBaselines.get(rootTaskId) ?? 0
+			const baseline =
+				this.budgetWindowBaselines.get(rootTaskId) ??
+				this.findHistoryItem(rootTaskId)?.budgetWindowBaseline ??
+				0
 
-			return Math.max(0, treeCost - baseline)
+			if (baseline > treeCost) {
+				// The tree now costs less than the approval it is measured
+				// against, so recorded spend was removed — a rewind, or an edited
+				// message that dropped later turns. Clamping the result to zero
+				// is not enough: the baseline would keep offsetting spend that no
+				// longer exists, so the window would read zero until the tree
+				// climbed back to its old total and that re-spend would never be
+				// counted against `allowedMaxCost`. Re-anchor to what the tree
+				// actually costs now, so the very next request is metered again.
+				await this.setBudgetWindowBaseline(rootTaskId, treeCost)
+				return 0
+			}
+
+			return treeCost - baseline
 		} catch (error) {
 			this.log(
 				`[getBudgetWindowTreeCost] Failed to resolve tree cost for ${task.taskId} (non-fatal): ${
@@ -1839,11 +1860,15 @@ export class ClineProvider
 	/**
 	 * Start a new budget window for a task's delegation tree, after the user
 	 * approved continuing past the cap.
+	 *
+	 * Written to both the in-memory map and the root's `HistoryItem`, so the
+	 * approved window survives a Reload Window instead of silently resetting to
+	 * zero while the costs it offsets stay in history.
 	 */
 	public async rebaselineBudgetWindow(task: Task): Promise<void> {
 		try {
 			const rootTaskId = await this.resolveRootTaskId(task)
-			this.budgetWindowBaselines.set(rootTaskId, await this.getDelegationTreeCost(task))
+			await this.setBudgetWindowBaseline(rootTaskId, await this.getDelegationTreeCost(task))
 		} catch (error) {
 			this.log(
 				`[rebaselineBudgetWindow] Failed to rebaseline ${task.taskId} (non-fatal): ${
@@ -1851,6 +1876,37 @@ export class ClineProvider
 				}`,
 			)
 		}
+	}
+
+	/**
+	 * Record a tree's budget baseline, in memory and on the root's `HistoryItem`.
+	 *
+	 * The index write is flushed rather than left to the store's debounce.
+	 * `upsert` writes the per-task file immediately but only *schedules* the
+	 * index write, and a new `TaskHistoryStore` loads from that index without
+	 * re-reading per-task files for ids it already covers. A Reload Window
+	 * inside the debounce would therefore start from an index entry that
+	 * predates the baseline and lose it — exactly the reload this is meant to
+	 * survive. Baselines are written on user approval and on the rare rewind
+	 * correction, so an immediate index write here is cheap.
+	 *
+	 * Skipped when the root has no history entry yet: there is nothing to attach
+	 * the baseline to, and the in-memory map still covers the current session.
+	 */
+	private async setBudgetWindowBaseline(rootTaskId: string, baseline: number): Promise<void> {
+		this.budgetWindowBaselines.set(rootTaskId, baseline)
+
+		const rootHistoryItem = this.findHistoryItem(rootTaskId)
+
+		if (!rootHistoryItem) {
+			this.log(`[setBudgetWindowBaseline] No history item for root ${rootTaskId}; baseline kept in memory only`)
+			return
+		}
+
+		// Not webview-visible data, so skip the broadcast a default
+		// `updateTaskHistory` would send.
+		await this.updateTaskHistory({ ...rootHistoryItem, budgetWindowBaseline: baseline }, { broadcast: false })
+		await this.taskHistoryStore.flushIndex()
 	}
 
 	async showTaskWithId(id: string) {
