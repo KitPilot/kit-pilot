@@ -1,5 +1,16 @@
 # KitPilot Changelog
 
+## Unreleased
+
+### Changed
+
+- **The spending limit now covers a whole run, not each task separately.** If you set a cost limit and KitPilot broke your work into subtasks, every subtask used to start its own budget from zero — so a job could quietly spend several times the limit before asking you. The limit now counts the entire run, including subtasks, and asks before continuing once the limit is crossed. If you have a limit set, expect to be asked sooner on larger jobs than before. The cost shown in the task header now matches the number the limit is checked against.
+
+### Fixed
+
+- Code search now looks in the folder the task is actually working in. In a workspace with more than one folder open, it could search a different folder's index and return results from the wrong project.
+- Links are now opened only if they are ordinary web addresses. Anything else is refused rather than handed to whatever app the system has registered for it.
+
 ## 0.2.2
 
 This release closes the remaining upgrade-time trust gaps after KitPilot became a Copilot-only extension.
