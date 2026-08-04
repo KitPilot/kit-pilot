@@ -41,6 +41,10 @@ function makeProvider(history: HistoryItem[]) {
 			}
 			return history
 		},
+		// Baseline writes flush the index so a reload inside the store's debounce
+		// still sees them; the real durability of that is covered by
+		// ClineProvider.budgetWindowPersistence.spec.ts against a real store.
+		flushIndex: async () => {},
 	}
 	internals.budgetWindowBaselines = new Map()
 	internals.getGlobalState = () => []
@@ -229,6 +233,58 @@ describe("ClineProvider budget window (delegation tree)", () => {
 
 			await expect(provider.rebaselineBudgetWindow(task)).resolves.toBeUndefined()
 			expect(await provider.getBudgetWindowTreeCost(task)).toBeCloseTo(0)
+		})
+	})
+
+	describe("a rewind that removes approved spend", () => {
+		// Rewinding or editing a message drops later turns, so the tree recomputes
+		// a LOWER total than the baseline recorded at approval. Left alone, that
+		// difference is an unmetered allowance: the window reads zero until
+		// spending climbs back to the old total, so the re-spend never counts
+		// against `allowedMaxCost`. The baseline has to follow the cost down.
+		it("meters new spend immediately after the tree shrinks", async () => {
+			const history = [item("root", 6.0, ["child"]), item("child", 4.0)]
+			const provider = makeProvider(history)
+
+			await provider.rebaselineBudgetWindow(makeTask("child", 4.0, "root"))
+			expect(await provider.getBudgetWindowTreeCost(makeTask("child", 4.0, "root"))).toBeCloseTo(0)
+
+			// Rewind: the child's later turns are gone, so the tree costs 6.5 not 10.
+			history[1] = item("child", 0.5)
+
+			expect(await provider.getBudgetWindowTreeCost(makeTask("child", 0.5, "root"))).toBeCloseTo(0)
+
+			// The next request must be metered against the shrunken tree. Before
+			// the baseline followed the cost down this read 0, because 7.5 was
+			// still below the stale 10.0 baseline.
+			expect(await provider.getBudgetWindowTreeCost(makeTask("child", 1.5, "root"))).toBeCloseTo(1.0)
+		})
+
+		it("lowers the persisted baseline, so a reload cannot restore the allowance", async () => {
+			const history = [item("root", 6.0, ["child"]), item("child", 4.0)]
+			const provider = makeProvider(history)
+
+			await provider.rebaselineBudgetWindow(makeTask("child", 4.0, "root"))
+			expect(history.find((entry) => entry.id === "root")?.budgetWindowBaseline).toBeCloseTo(10.0)
+
+			history[1] = item("child", 0.5)
+			await provider.getBudgetWindowTreeCost(makeTask("child", 0.5, "root"))
+
+			// Re-anchored on disk as well as in memory.
+			expect(history.find((entry) => entry.id === "root")?.budgetWindowBaseline).toBeCloseTo(6.5)
+
+			simulateReload(provider)
+			expect(await provider.getBudgetWindowTreeCost(makeTask("child", 1.5, "root"))).toBeCloseTo(1.0)
+		})
+
+		it("does not disturb a baseline the tree has not fallen below", async () => {
+			const history = [item("root", 4.0, ["child"]), item("child", 2.0)]
+			const provider = makeProvider(history)
+
+			await provider.rebaselineBudgetWindow(makeTask("child", 2.0, "root"))
+			await provider.getBudgetWindowTreeCost(makeTask("child", 3.0, "root"))
+
+			expect(history.find((entry) => entry.id === "root")?.budgetWindowBaseline).toBeCloseTo(6.0)
 		})
 	})
 
