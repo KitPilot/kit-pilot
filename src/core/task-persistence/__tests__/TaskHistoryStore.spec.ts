@@ -439,4 +439,43 @@ describe("TaskHistoryStore", () => {
 			expect(store.get("gone-task")).toBeUndefined()
 		})
 	})
+
+	describe("budgetWindowBaseline round-trip", () => {
+		// The tree-wide budget baseline is only useful if it survives a reload,
+		// so it has to come back off disk in a *new* store instance. Asserting
+		// against the same in-memory object would prove nothing about
+		// serialization.
+		it("restores the baseline in a fresh store built from the same directory", async () => {
+			await store.initialize()
+			await store.upsert(makeHistoryItem({ id: "root-task", budgetWindowBaseline: 6.5 }))
+			await store.flushIndex()
+
+			const reopened = new TaskHistoryStore(tmpDir)
+
+			try {
+				await reopened.initialize()
+				expect(reopened.get("root-task")?.budgetWindowBaseline).toBeCloseTo(6.5)
+			} finally {
+				reopened.dispose()
+			}
+		})
+
+		it("leaves the field undefined for items written without it", async () => {
+			await store.initialize()
+			await store.upsert(makeHistoryItem({ id: "legacy-task" }))
+			await store.flushIndex()
+
+			const reopened = new TaskHistoryStore(tmpDir)
+
+			try {
+				await reopened.initialize()
+				const restored = reopened.get("legacy-task")
+
+				expect(restored).toBeDefined()
+				expect(restored?.budgetWindowBaseline).toBeUndefined()
+			} finally {
+				reopened.dispose()
+			}
+		})
+	})
 })

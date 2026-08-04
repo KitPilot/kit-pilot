@@ -26,6 +26,14 @@ export const historyItemSchema = z.object({
 	awaitingChildId: z.string().optional(), // Child currently awaited (set when delegated)
 	completedByChildId: z.string().optional(), // Child that completed and resumed this parent
 	completionResultSummary: z.string().optional(), // Summary from completed child
+	/**
+	 * Tree-wide auto-approval budget baseline, recorded on the ROOT task when
+	 * the user approves continuing past a cost limit. Persisting it lets the
+	 * approved window survive a reload; without it a resumed tree counts its
+	 * whole persisted lifetime cost against the cap and re-prompts for spend
+	 * already approved. Absent means no approval has been granted yet.
+	 */
+	budgetWindowBaseline: z.number().optional(),
 })
 
 export type HistoryItem = z.infer<typeof historyItemSchema>
