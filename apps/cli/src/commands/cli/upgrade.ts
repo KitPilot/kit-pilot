@@ -1,11 +1,7 @@
-import { spawn } from "child_process"
-
 import { VERSION } from "@/lib/utils/version.js"
 import { isRecord } from "@/lib/utils/guards.js"
 
-const RELEASES_URL = "https://api.github.com/repos/KitPilotInc/KitPilot/releases?per_page=100"
-export const INSTALL_SCRIPT_COMMAND =
-	"curl -fsSL https://raw.githubusercontent.com/KitPilotInc/KitPilot/main/apps/cli/install.sh | sh"
+const RELEASES_URL = "https://api.github.com/repos/KitPilot/kit-pilot/releases?per_page=100"
 
 export interface UpgradeOptions {
 	currentVersion?: string
@@ -109,25 +105,15 @@ export async function getLatestCliVersion(fetchImpl: typeof fetch = fetch): Prom
 	throw new Error("Could not determine the latest CLI release version.")
 }
 
-export function runUpgradeInstaller(version?: string, spawnImpl: typeof spawn = spawn): Promise<void> {
-	return new Promise((resolve, reject) => {
-		const env = version ? { ...process.env, KITPILOT_VERSION: version } : process.env
-		const child = spawnImpl("sh", ["-c", INSTALL_SCRIPT_COMMAND], { stdio: "inherit", env })
-
-		child.once("error", (error) => {
-			reject(error)
-		})
-
-		child.once("close", (code, signal) => {
-			if (code === 0) {
-				resolve()
-				return
-			}
-
-			const reason = signal ? `signal ${signal}` : `exit code ${code ?? "unknown"}`
-			reject(new Error(`Upgrade installer failed (${reason}).`))
-		})
-	})
+// The CLI is quarantined and no release contains it, so there is nothing to
+// install. This function refuses instead of downloading and running a shell
+// script. See apps/cli/README.md.
+export function runUpgradeInstaller(_version?: string): Promise<void> {
+	return Promise.reject(
+		new Error(
+			"The KitPilot CLI is not distributed, so it cannot upgrade itself. Build it from the repository instead.",
+		),
+	)
 }
 
 export async function upgrade(options: UpgradeOptions = {}): Promise<void> {

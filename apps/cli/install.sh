@@ -1,19 +1,21 @@
 #!/bin/sh
 # KitPilot CLI Installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/KitPilotInc/KitPilot/main/apps/cli/install.sh | sh
+#
+# The CLI is quarantined and does not run. See apps/cli/README.md. Use this
+# script only for a local build, with KITPILOT_LOCAL_TARBALL. Do not publish
+# it, and do not tell anybody to run it from a remote address.
 #
 # Environment variables:
 #   KITPILOT_INSTALL_DIR   - Installation directory (default: ~/.kitpilot/cli)
 #   KITPILOT_BIN_DIR       - Binary symlink directory (default: ~/.local/bin)
-#   KITPILOT_VERSION       - Specific version to install (default: latest)
-#   KITPILOT_LOCAL_TARBALL - Path to local tarball to install (skips download)
+#   KITPILOT_VERSION       - Version label for the local tarball (default: local)
+#   KITPILOT_LOCAL_TARBALL - Path to the local tarball to install (required)
 
 set -e
 
 # Configuration
 INSTALL_DIR="${KITPILOT_INSTALL_DIR:-$HOME/.kitpilot/cli}"
 BIN_DIR="${KITPILOT_BIN_DIR:-$HOME/.local/bin}"
-REPO="KitPilotInc/KitPilot"
 MIN_NODE_VERSION=20
 
 # Color output (only if terminal supports it)
@@ -82,88 +84,21 @@ detect_platform() {
     info "Detected platform: $PLATFORM"
 }
 
-# Get latest release version or use specified version
+# Resolve the version label for the local tarball
 get_version() {
-    # Skip version fetch if using local tarball
-    if [ -n "$KITPILOT_LOCAL_TARBALL" ]; then
-        VERSION="${KITPILOT_VERSION:-local}"
-        info "Using local tarball (version: $VERSION)"
-        return
+    if [ -z "$KITPILOT_LOCAL_TARBALL" ]; then
+        error "KITPILOT_LOCAL_TARBALL is not set.
+
+The KitPilot CLI is quarantined and does not run. No release contains it, so
+this script cannot download one. See apps/cli/README.md.
+
+To install a local build:
+  ./apps/cli/scripts/build.sh
+  KITPILOT_LOCAL_TARBALL=<path to tarball> ./apps/cli/install.sh"
     fi
-    
-    if [ -n "$KITPILOT_VERSION" ]; then
-        VERSION="$KITPILOT_VERSION"
-        info "Using specified version: $VERSION"
-        return
-    fi
-    
-    info "Fetching latest version..."
-    
-    # Try to get the latest cli release
-    RELEASES_JSON=$(curl -fsSL "https://api.github.com/repos/$REPO/releases" 2>/dev/null) || {
-        error "Failed to fetch releases from GitHub. Check your internet connection."
-    }
-    
-    # Extract highest cli-v* tag by semantic version (do not rely on API ordering)
-    VERSION=$(printf "%s" "$RELEASES_JSON" | node -e '
-const fs = require("fs")
-const input = fs.readFileSync(0, "utf8")
-let releases
-try {
-  releases = JSON.parse(input)
-} catch {
-  process.exit(1)
-}
 
-function parseVersion(version) {
-  const core = String(version).trim().split("+", 1)[0].split("-", 1)[0]
-  if (!core) return null
-  const parts = core.split(".")
-  if (parts.length === 0 || parts.some((part) => !/^\d+$/.test(part))) {
-    return null
-  }
-  return parts.map((part) => Number.parseInt(part, 10))
-}
-
-function compareVersions(a, b) {
-  const maxLength = Math.max(a.length, b.length)
-  for (let i = 0; i < maxLength; i++) {
-    const aPart = a[i] ?? 0
-    const bPart = b[i] ?? 0
-    if (aPart > bPart) return 1
-    if (aPart < bPart) return -1
-  }
-  return 0
-}
-
-let latestVersion = ""
-let latestParts = null
-
-if (Array.isArray(releases)) {
-  for (const release of releases) {
-    if (!release || typeof release.tag_name !== "string" || !release.tag_name.startsWith("cli-v")) {
-      continue
-    }
-    const candidate = release.tag_name.slice("cli-v".length)
-    const candidateParts = parseVersion(candidate)
-    if (!candidateParts) continue
-    if (!latestParts || compareVersions(candidateParts, latestParts) > 0) {
-      latestVersion = candidate
-      latestParts = candidateParts
-    }
-  }
-}
-
-if (latestVersion) {
-  process.stdout.write(latestVersion)
-}
-')
-    
-    if [ -z "$VERSION" ]; then
-        error "Could not find any CLI releases. The CLI may not have been released yet."
-    fi
-    
-    info "Latest version: $VERSION"
+    VERSION="${KITPILOT_VERSION:-local}"
+    info "Using local tarball (version: $VERSION)"
 }
 
 # Download and extract
@@ -174,33 +109,12 @@ download_and_install() {
     TMP_DIR=$(mktemp -d)
     trap "rm -rf $TMP_DIR" EXIT
     
-    # Use local tarball if provided, otherwise download
-    if [ -n "$KITPILOT_LOCAL_TARBALL" ]; then
-        if [ ! -f "$KITPILOT_LOCAL_TARBALL" ]; then
-            error "Local tarball not found: $KITPILOT_LOCAL_TARBALL"
-        fi
-        info "Using local tarball: $KITPILOT_LOCAL_TARBALL"
-        cp "$KITPILOT_LOCAL_TARBALL" "$TMP_DIR/$TARBALL"
-    else
-        URL="https://github.com/$REPO/releases/download/cli-v${VERSION}/${TARBALL}"
-        
-        info "Downloading from $URL..."
-        
-        # Download with progress indicator
-        HTTP_CODE=$(curl -fsSL -w "%{http_code}" "$URL" -o "$TMP_DIR/$TARBALL" 2>/dev/null) || {
-            if [ "$HTTP_CODE" = "404" ]; then
-                error "Release not found for platform $PLATFORM version $VERSION.
-
-Available at: https://github.com/$REPO/releases"
-            fi
-            error "Download failed. HTTP code: $HTTP_CODE"
-        }
-
-        # Verify we got something
-        if [ ! -s "$TMP_DIR/$TARBALL" ]; then
-            error "Downloaded file is empty. Please try again."
-        fi
+    # The tarball is always local; get_version refuses otherwise.
+    if [ ! -f "$KITPILOT_LOCAL_TARBALL" ]; then
+        error "Local tarball not found: $KITPILOT_LOCAL_TARBALL"
     fi
+    info "Using local tarball: $KITPILOT_LOCAL_TARBALL"
+    cp "$KITPILOT_LOCAL_TARBALL" "$TMP_DIR/$TARBALL"
 
     # Remove old installation if exists
     if [ -d "$INSTALL_DIR" ]; then
