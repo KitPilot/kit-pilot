@@ -246,7 +246,7 @@ This release is all about steering — changing your mind while KitPilot is work
 ### Added
 
 - **Marketplace pre-release channel.** Tags matching `v0.1.X-pre.N` now publish to the VS Code Marketplace pre-release channel (visible only to users who opt in via the extension page's "Switch to Pre-Release Version" button). Lets us validate risky changes against real installs without polluting the stable channel.
-- **KitPilot → KitPilot migration scripts** in `scripts/` (`migrate-from-kitpilot.sh` for macOS/Linux/Git Bash; `migrate-from-kitpilot.ps1` for Windows). Both forks share the same `globalStorage` layout, so the scripts copy missing task directories and merge the master `_index.json` (dedupes by id; KitPilot wins on conflict). Backs up KitPilot storage before any write; idempotent on re-run. Not bundled with the extension — pull the file you need from the repo and run it.
+- **Roo Code → KitPilot migration scripts** in `scripts/` (`migrate-from-roo.sh` for macOS/Linux/Git Bash; `migrate-from-roo.ps1` for Windows). Both forks share the same `globalStorage` layout, so the scripts copy missing task directories and merge the master `_index.json` (dedupes by id; KitPilot wins on conflict). Backs up KitPilot storage before any write; idempotent on re-run. Not bundled with the extension — pull the file you need from the repo and run it.
 
 ### Changed
 
@@ -297,18 +297,18 @@ This release is all about steering — changing your mind while KitPilot is work
 
 - **Chat home page polished.** Replaced the cluttered tip cards with a single faint panel — "Supercharge GitHub Copilot." heading, a one-line description, and a docs link. Less noise on a fresh task.
 - **The API Configuration selector has been removed from the chat input bar.** Since KitPilot only supports VS Code LM, the "configuration" concept added little — what users actually need to switch is the model. Named API configurations still exist in Settings for users who want to keep per-profile preferences like rate limits.
-- **Workspace files no longer carry the KitPilot name.** KitPilot now writes its workspace files under `.kitpilot*` instead of `.kitpilot*`. Existing `.kitpilot*` files keep working — no manual migration needed.
+- **Workspace files no longer carry the Roo Code name.** KitPilot now writes its workspace files under `.kitpilot*` instead of `.roo*`. Existing `.roo*` files keep working — no manual migration needed.
 
 ## 0.1.5
 
 ### Fixed
 
-- "Check our docs to get started" link on the welcome screen now points to the KitPilot repo (was still pointing to KitPilot's repo).
+- "Check our docs to get started" link on the welcome screen now points to the KitPilot repo (was still pointing to Roo Code's repo).
 - Error boundary "report a bug" link → KitPilot issues.
 - Settings → About "Report a bug" and "Security issue" links → KitPilot issues / security policy.
 - ChatRow unknown-error fallback link → KitPilot issues.
 
-The Announcement dialog's "fork of KitPilot" link intentionally still points to the KitPilot repo as upstream attribution.
+The Announcement dialog's "fork of Roo Code" link intentionally still points to the Roo Code repo as upstream attribution.
 
 ## 0.1.4
 
@@ -351,7 +351,7 @@ These are disabled by default; turn them on in VS Code Settings (search "kit-pil
 
 ## 0.1.0
 
-Initial release. KitPilot is a fork of [KitPilot](https://github.com/KitPilotInc/KitPilot) v3.53.0, narrowed for use with GitHub Copilot only.
+Initial release. KitPilot is a fork of [Roo Code](https://github.com/RooCodeInc/Roo-Code) v3.53.0, narrowed for use with GitHub Copilot only.
 
 ### Changed
 

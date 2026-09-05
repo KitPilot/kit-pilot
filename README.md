@@ -12,7 +12,7 @@ KitPilot strips all of that out:
 
 - **One provider, by design.** Only `vscode-lm` (Copilot). No direct LLM-provider API-key setup — Copilot auth is handled entirely by VS Code.
 - **Smaller install.** ~50 npm packages removed vs. the upstream extension; bundle is leaner.
-- **Lower token cost per turn.** Delta-only environment injection and trimmed-history sends mean roughly 3× fewer tokens vs. base KitPilot for the same conversation.
+- **Lower token cost per turn.** Delta-only environment injection and trimmed-history sends mean roughly 3× fewer tokens vs. upstream Roo Code for the same conversation.
 - **Same agent depth.** Full multi-mode chat, tool use, MCP, custom modes — all of it works through Copilot.
 
 ## What Can KitPilot Do For You
@@ -50,7 +50,7 @@ KitPilot is a fork of Roo Code, which itself is a fork of [Cline](https://cline.
 
 ## License
 
-[Apache 2.0](./LICENSE) © KitPilot contributors. Original KitPilot work © KitPilot, Inc. See [NOTICE](./NOTICE) for the full attribution chain.
+[Apache 2.0](./LICENSE) © KitPilot contributors. Original Roo Code work © Roo Code, Inc. See [NOTICE](./NOTICE) for the full attribution chain.
 
 ## Disclaimer
 
@@ -65,8 +65,8 @@ downtime, and any operational consequences of running AI-generated commands
 or code on your system.
 
 KitPilot is **not affiliated with, endorsed by, or sponsored by**
-KitPilot, Inc., GitHub, Inc., Microsoft Corporation, or the maintainers of
+Roo Code, Inc., GitHub, Inc., Microsoft Corporation, or the maintainers of
 any other upstream project. Trademarks such as "GitHub Copilot," "VS Code,"
-and "KitPilot" remain the property of their respective owners and are used
+and "Roo Code" remain the property of their respective owners and are used
 here only for the descriptive purpose of identifying the products that
 KitPilot integrates with or derives from.
