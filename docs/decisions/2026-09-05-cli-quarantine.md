@@ -62,7 +62,11 @@ Quarantine the package. Do not delete it, and do not publish it.
 2. Remove every pointer to `KitPilotInc` from the CLI. Repoint the release
    lookup in `upgrade.ts` at the real repository.
 3. Make `runUpgradeInstaller` refuse. It no longer downloads or runs a script.
-4. Correct the install script header and the build script summary.
+4. Make `install.sh` accept a local tarball only. The script held the same
+   account name in a `REPO` variable and used it to download a release. That
+   path is removed. The script now stops unless `KITPILOT_LOCAL_TARBALL`
+   names a file, which is what `scripts/build.sh` already passes.
+5. Correct the install script header and the build script summary.
 
 The package is already `private: true`, so npm does not receive it. The VSIX
 does not contain it.
