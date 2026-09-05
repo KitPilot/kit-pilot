@@ -330,8 +330,9 @@ print_summary() {
         echo "    ./apps/cli/scripts/build.sh --install"
     fi
     echo ""
-    echo "  For official multi-platform releases, use the GitHub Actions workflow:"
-    echo "    .github/workflows/cli-release.yml"
+    echo "  The CLI is quarantined and does not run. This build is for local"
+    echo "  development only. No release contains the CLI, and no release"
+    echo "  workflow builds it. See apps/cli/README.md."
     echo ""
 }
 

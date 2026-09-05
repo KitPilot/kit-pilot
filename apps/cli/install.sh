@@ -1,6 +1,9 @@
 #!/bin/sh
 # KitPilot CLI Installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/KitPilotInc/KitPilot/main/apps/cli/install.sh | sh
+#
+# The CLI is quarantined and does not run. See apps/cli/README.md. Use this
+# script only for a local build, with KITPILOT_LOCAL_TARBALL. Do not publish
+# it, and do not tell anybody to run it from a remote address.
 #
 # Environment variables:
 #   KITPILOT_INSTALL_DIR   - Installation directory (default: ~/.kitpilot/cli)

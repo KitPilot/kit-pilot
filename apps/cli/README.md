@@ -1,240 +1,63 @@
-# @kit-pilot/cli
+# @kit-pilot/cli — quarantined, does not run
 
-Command Line Interface for KitPilot - Run the KitPilot agent from the terminal without VSCode.
+**Status: quarantined. Do not install this package. Do not advertise it.**
 
-## Overview
+This package does not run. It is kept in the repository as the starting point
+for a future command line interface. It is not a product, and no release
+contains it.
 
-This CLI uses the `@kit-pilot/vscode-shim` package to provide a VSCode API compatibility layer, allowing the main KitPilot extension to run in a Node.js environment.
+See `docs/decisions/2026-09-05-cli-quarantine.md` for the full decision.
 
-## Installation
+## Why it does not run
 
-### Quick Install (Recommended)
+KitPilot sends every model request through GitHub Copilot with the VS Code
+Language Model API. That API exists only inside VS Code. A terminal program
+cannot call it. The CLI has no other transport, so it has no way to reach a
+model.
 
-Install the KitPilot CLI with a single command:
+The code shows the same conflict:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/KitPilotInc/KitPilot/main/apps/cli/install.sh | sh
-```
+- `src/types/types.ts` accepts one provider, `vscode-lm`.
+- `src/lib/utils/provider.ts` states in a comment that the CLI cannot use
+  `vscode-lm`, because that provider needs the VS Code API.
+- `src/commands/cli/run.ts` selects `openrouter` when you give no provider.
+  The check that follows rejects `openrouter` and stops the program.
 
-**Requirements:**
+Thus both paths fail. The default provider is refused, and the one accepted
+provider cannot work outside VS Code.
 
-- Node.js 20 or higher
-- macOS Apple Silicon (M1/M2/M3/M4) or Linux x64
+Six files carry `@ts-nocheck`. They compile only because the type checker
+skips them. The tests pass, but they test the retired provider behavior and
+they stop at the API factory. A green test run does not mean the CLI runs.
 
-**Custom installation directory:**
+## What was removed
 
-```bash
-KITPILOT_INSTALL_DIR=/opt/kit-pilot KITPILOT_BIN_DIR=/usr/local/bin curl -fsSL ... | sh
-```
+The earlier version of this file gave install instructions. Those
+instructions told you to run a shell script from
+`github.com/KitPilotInc/KitPilot`. That account does not exist. Anyone can
+register the name and then control what the command downloads and runs.
 
-**Install a specific version:**
+Do not restore those instructions. Do not copy that command from the git
+history.
 
-```bash
-KITPILOT_VERSION=0.1.0 curl -fsSL https://raw.githubusercontent.com/KitPilotInc/KitPilot/main/apps/cli/install.sh | sh
-```
+## Before this package ships
 
-### Updating
+Complete all of the following first:
 
-Re-run the install script to update to the latest version:
+1. Give the CLI a transport that reaches a model from a terminal.
+2. Remove every `@ts-nocheck`, then make the package pass the type checker.
+3. Write tests that cross the API factory and reach a real model call.
+4. Publish the package from a release workflow that exists.
+5. Write the documentation again from what the package then does.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/KitPilotInc/KitPilot/main/apps/cli/install.sh | sh
-```
+## Local development
 
-Or run:
-
-```bash
-kitpilot upgrade
-```
-
-### Uninstalling
-
-```bash
-rm -rf ~/.kitpilot/cli ~/.local/bin/kitpilot
-```
-
-## Usage
-
-### Interactive Mode (Default)
-
-By default, the CLI auto-approves actions and runs in interactive TUI mode:
+The build script still works for local development:
 
 ```bash
-export OPENROUTER_API_KEY=sk-or-v1-...
-
-kitpilot "What is this project?" -w ~/Documents/my-project
-```
-
-You can also run without a prompt and enter it interactively in TUI mode:
-
-```bash
-kitpilot -w ~/Documents/my-project
-```
-
-In interactive mode:
-
-- Tool executions are auto-approved
-- Commands are auto-approved
-- Followup questions show suggestions with a 60-second timeout, then auto-select the first suggestion
-- Browser and MCP actions are auto-approved
-
-### Approval-Required Mode (`--require-approval`)
-
-If you want manual approval prompts, enable approval-required mode:
-
-```bash
-kitpilot "Refactor the utils.ts file" --require-approval -w ~/Documents/my-project
-```
-
-In approval-required mode:
-
-- Tool, command, browser, and MCP actions prompt for yes/no approval
-- Followup questions wait for manual input (no auto-timeout)
-
-### Print Mode (`--print`)
-
-Use `--print` for non-interactive execution and machine-readable output:
-
-```bash
-# Prompt is required
-kitpilot --print "Summarize this repository"
-
-# Create a new task with a specific session ID (UUID)
-kitpilot --print --create-with-session-id 018f7fc8-7c96-7f7c-98aa-2ec4ff7f6d87 "Summarize this repository"
-```
-
-### Stdin Stream Mode (`--stdin-prompt-stream`)
-
-For programmatic control (one process, multiple prompts), use `--stdin-prompt-stream` with `--print`.
-Send NDJSON commands via stdin:
-
-```bash
-printf '{"command":"start","requestId":"1","prompt":"1+1=?"}\n' | kitpilot --print --stdin-prompt-stream --output-format stream-json
-
-# Optional: provide taskId per start command
-printf '{"command":"start","requestId":"1","taskId":"018f7fc8-7c96-7f7c-98aa-2ec4ff7f6d87","prompt":"1+1=?"}\n' | kitpilot --print --stdin-prompt-stream --output-format stream-json
-```
-
-## Options
-
-| Option                                  | Description                                                                             | Default                     |
-| --------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------- |
-| `[prompt]`                              | Your prompt (positional argument, optional)                                             | None                        |
-| `--prompt-file <path>`                  | Read prompt from a file instead of command line argument                                | None                        |
-| `--create-with-session-id <session-id>` | Create a new task using the provided session ID (UUID)                                  | None                        |
-| `-w, --workspace <path>`                | Workspace path to operate in                                                            | Current directory           |
-| `-p, --print`                           | Print response and exit (non-interactive mode)                                          | `false`                     |
-| `--stdin-prompt-stream`                 | Read NDJSON control commands from stdin (requires `--print`)                            | `false`                     |
-| `-e, --extension <path>`                | Path to the extension bundle directory                                                  | Auto-detected               |
-| `-d, --debug`                           | Enable debug output (includes detailed debug information, prompts, paths, etc)          | `false`                     |
-| `-a, --require-approval`                | Require manual approval before actions execute                                          | `false`                     |
-| `-k, --api-key <key>`                   | API key for the LLM provider                                                            | From env var                |
-| `--provider <provider>`                 | API provider (anthropic, openai, openrouter, etc.)                                      | `openrouter`                |
-| `-m, --model <model>`                   | Model to use                                                                            | `anthropic/claude-opus-4.6` |
-| `--mode <mode>`                         | Mode to start in (code, architect, ask, debug, etc.)                                    | `code`                      |
-| `--terminal-shell <path>`               | Absolute shell path for inline terminal command execution                               | Auto-detected shell         |
-| `-r, --reasoning-effort <effort>`       | Reasoning effort level (unspecified, disabled, none, minimal, low, medium, high, xhigh) | `medium`                    |
-| `--consecutive-mistake-limit <n>`       | Consecutive error/repetition limit before guidance prompt (`0` disables the limit)      | `10`                        |
-| `--ephemeral`                           | Run without persisting state (uses temporary storage)                                   | `false`                     |
-| `--oneshot`                             | Exit upon task completion                                                               | `false`                     |
-| `--output-format <format>`              | Output format with `--print`: `text`, `json`, or `stream-json`                          | `text`                      |
-
-## Environment Variables
-
-The CLI will look for API keys in environment variables if not provided via `--api-key`:
-
-| Provider          | Environment Variable        |
-| ----------------- | --------------------------- |
-| anthropic         | `ANTHROPIC_API_KEY`         |
-| openai-native     | `OPENAI_API_KEY`            |
-| openrouter        | `OPENROUTER_API_KEY`        |
-| gemini            | `GOOGLE_API_KEY`            |
-| vercel-ai-gateway | `VERCEL_AI_GATEWAY_API_KEY` |
-
-## Architecture
-
-```
-┌─────────────────┐
-│   CLI Entry     │
-│   (index.ts)    │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  ExtensionHost  │
-│  (extension-    │
-│   host.ts)      │
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-    ▼         ▼
-┌───────┐  ┌──────────┐
-│vscode │  │Extension │
-│-shim  │  │ Bundle   │
-└───────┘  └──────────┘
-```
-
-## How It Works
-
-1. **CLI Entry Point** (`index.ts`): Parses command line arguments and initializes the ExtensionHost
-
-2. **ExtensionHost** (`extension-host.ts`):
-
-    - Creates a VSCode API mock using `@kit-pilot/vscode-shim`
-    - Intercepts `require('vscode')` to return the mock
-    - Loads and activates the extension bundle
-    - Manages bidirectional message flow
-
-3. **Message Flow**:
-    - CLI → Extension: `emit("webviewMessage", {...})`
-    - Extension → CLI: `emit("extensionWebviewMessage", {...})`
-
-## Development
-
-```bash
-# Run directly from source (no build required)
-pnpm dev --provider openrouter --api-key $OPENROUTER_API_KEY --print "Hello"
-
-# Run tests
-pnpm test
-
-# Type checking
-pnpm check-types
-
-# Linting
-pnpm lint
-```
-
-## Releasing
-
-Official releases are created via the GitHub Actions workflow at `.github/workflows/cli-release.yml`.
-
-To trigger a release:
-
-1. Go to **Actions** → **CLI Release**
-2. Click **Run workflow**
-3. Optionally specify a version (defaults to `package.json` version)
-4. Click **Run workflow**
-
-The workflow will:
-
-1. Build the CLI on all platforms (macOS Apple Silicon, Linux x64)
-2. Create platform-specific tarballs with bundled ripgrep
-3. Verify each tarball
-4. Create a GitHub release with all tarballs attached
-
-### Local Builds
-
-For local development and testing, use the build script:
-
-```bash
-# Build tarball for your current platform
 ./apps/cli/scripts/build.sh
-
-# Build and install locally
-./apps/cli/scripts/build.sh --install
-
-# Fast build (skip verification)
-./apps/cli/scripts/build.sh --skip-verify
 ```
+
+The package stays in the workspace, so the type checker, the linter, and the
+tests still run against it. This keeps the code from decaying further. It
+does not mean the code works.
