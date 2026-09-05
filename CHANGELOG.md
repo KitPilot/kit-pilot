@@ -1,5 +1,18 @@
 # KitPilot Changelog
 
+## 0.2.5
+
+This release corrects the text on the Marketplace page. KitPilot behaves as
+before.
+
+### Fixed
+
+- **The Marketplace page credits Roo Code again.** KitPilot is a fork of Roo Code. A rename replaced the upstream name with KitPilot's own name in the attribution text. Thus the page stated that KitPilot is not affiliated with itself, and it credited Roo Code's work to KitPilot. The page now names Roo Code correctly, and the wording agrees with the NOTICE file.
+
+### Security
+
+- **The command line interface in the repository is quarantined.** The command line interface is not part of KitPilot, and no release contains it. Its instructions told you to download and run a script from a GitHub account that does not exist. Anybody can register that name and then control what the script installs. The instructions are gone, the script accepts a local file only, and the package now states that it does not run. If you followed those instructions, examine what the script installed.
+
 ## 0.2.4
 
 ### Fixed
