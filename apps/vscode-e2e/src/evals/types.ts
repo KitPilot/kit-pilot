@@ -18,6 +18,22 @@ export type EvalVariant = "baseline" | "treatment"
 
 export const EVAL_VARIANTS: readonly EvalVariant[] = ["baseline", "treatment"]
 
+/**
+ * Trials for each case, for each variant.
+ *
+ * An even number, because the order of the two variants flips on every trial.
+ * An odd number gives one variant the first slot one more time than the other,
+ * which is the order effect that the flip exists to remove.
+ *
+ * Six is small. It shows a spread; it does not settle a small difference.
+ */
+export const DEFAULT_TRIALS = 6
+
+/** Says whether a trial count gives each variant the first slot equally often. */
+export function trialsAreBalanced(trials: number): boolean {
+	return trials % 2 === 0
+}
+
 export interface GradeResult {
 	passed: boolean
 	/** Why it passed or failed. Goes into the report. */

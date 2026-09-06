@@ -7,7 +7,7 @@ import { waitFor } from "../suite/utils"
 import { findCase } from "./cases"
 import { summarizeCase, variantOrder } from "./metrics"
 import { runTrial } from "./runTrial"
-import { EVAL_VARIANTS, type CaseSummary, type EvalVariant, type TrialResult } from "./types"
+import { DEFAULT_TRIALS, EVAL_VARIANTS, type CaseSummary, type EvalVariant, type TrialResult } from "./types"
 
 /**
  * Runs the trials for one case inside VS Code.
@@ -21,7 +21,7 @@ export async function run(): Promise<void> {
 	const workspaceDir = requireEnv("EVAL_WORKSPACE")
 	const outFile = requireEnv("EVAL_OUT")
 	const modelId = requireEnv("EVAL_MODEL_ID")
-	const trials = Number(process.env.EVAL_TRIALS ?? "3")
+	const trials = Number(process.env.EVAL_TRIALS ?? String(DEFAULT_TRIALS))
 	const timeoutMs = Number(process.env.EVAL_TIMEOUT_MS ?? String(10 * 60 * 1000))
 	const maxRequests = Number(process.env.EVAL_MAX_REQUESTS ?? "40")
 

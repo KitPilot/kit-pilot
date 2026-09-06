@@ -121,12 +121,32 @@ would put that drift on one side.
 Pin the model. A baseline that does not name its model cannot be compared with
 a later run.
 
+### First, check the harness
+
+Run one trial of each variant before you spend on a full run. That is eight
+tasks, and it checks the sign-in, the model id, the reporting and that a run
+finishes:
+
 ```bash
-EVAL_MODEL_ID=<copilot model id> pnpm --filter @kit-pilot/vscode-e2e evals -- --trials 5
+EVAL_MODEL_ID=<copilot model id> pnpm --filter @kit-pilot/vscode-e2e evals -- --trials 1
 ```
 
-That runs every case, both variants, five trials each, from one commit. There
-is no second checkout and no second build.
+Read the report it writes. If a case did not run, the report says so and the
+command exits non-zero.
+
+### Then the balanced run
+
+```bash
+EVAL_MODEL_ID=<copilot model id> pnpm --filter @kit-pilot/vscode-e2e evals
+```
+
+Six trials is the default: 4 cases, 2 variants, 6 trials, 48 tasks, from one
+commit. There is no second checkout and no second build.
+
+Use an even number of trials. The order of the two variants flips on every
+trial, so an odd count gives one variant the first slot one more time than the
+other. Five trials, for instance, give one variant three first slots and the
+other two. The command warns when the count is odd.
 
 One case, more trials:
 
@@ -204,10 +224,19 @@ exploration. The Measured column says how many trials reported usage.
 
 ## Reading a result
 
+Read correctness first. A change is worth taking only if the pass rate holds.
+Read the exploratory calls and the elapsed time after that, and read them for
+each case on its own.
+
 The model gives a different answer each run. Thus the report gives the median,
-the range and the sample standard deviation, not the mean alone. Three trials
-show the spread but they do not prove a small difference. Raise the trial count
-before you accept a change that moves a number by less than its spread.
+the range and the sample standard deviation, not the mean alone. Six trials
+show the spread. They do not settle a small difference, so treat what they show
+as early evidence and not as a result. Raise the trial count before you accept
+a change that moves a number by less than its spread.
+
+Alternating the order of the variants removes an order effect. It does not
+remove a cache that warms, a model that slows down, or another program that
+starts partway through.
 
 Correctness comes first. Fewer exploratory calls with a lower pass rate is not
 an improvement.

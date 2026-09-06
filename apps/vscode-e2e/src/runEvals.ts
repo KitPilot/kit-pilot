@@ -8,7 +8,9 @@ import { EVAL_CASES } from "./evals/cases"
 import { evalProfileDir, profileLaunchArgs, REQUIRED_EXTENSIONS } from "./evals/profile"
 import { renderReport } from "./evals/report"
 import {
+	DEFAULT_TRIALS,
 	EVAL_VARIANTS,
+	trialsAreBalanced,
 	type CaseFailure,
 	type CaseSummary,
 	type EvalRun,
@@ -82,8 +84,11 @@ async function signIn(): Promise<void> {
  *
  * Usage:
  *
+ *   Check the harness first, one trial of each variant, eight tasks:
+ *   EVAL_MODEL_ID=<copilot model id> pnpm --filter @kit-pilot/vscode-e2e evals -- --trials 1
+ *
+ *   Then the balanced run, six trials of each variant, forty-eight tasks:
  *   EVAL_MODEL_ID=<copilot model id> pnpm --filter @kit-pilot/vscode-e2e evals
- *   EVAL_MODEL_ID=<id> pnpm --filter @kit-pilot/vscode-e2e evals -- --case definition-bugfix --trials 5
  */
 async function main() {
 	if (process.argv.includes("--signin")) {
@@ -115,7 +120,19 @@ async function main() {
 		process.exit(1)
 	}
 
-	const trials = Number(argValue("--trials") ?? process.env.EVAL_TRIALS ?? "3")
+	const trials = Number(argValue("--trials") ?? process.env.EVAL_TRIALS ?? String(DEFAULT_TRIALS))
+
+	// The order of the two variants flips on every trial. An odd count gives one
+	// variant the first slot one more time than the other, which is the order
+	// effect the flip exists to remove. This warns rather than stops, because a
+	// single trial is a useful check of the harness before a paid run.
+	if (!trialsAreBalanced(trials) && trials > 1) {
+		console.warn(
+			`Warning: ${trials} trials do not balance the order of the variants. ` +
+				`One runs first ${Math.ceil(trials / 2)} times and the other ${Math.floor(trials / 2)}. ` +
+				"Use an even number for a run you intend to compare.",
+		)
+	}
 	const only = argValue("--case")
 	const label = argValue("--label") ?? process.env.EVAL_LABEL ?? "comparison"
 	// Both variants are the same build. The baseline turns `find_symbol` off

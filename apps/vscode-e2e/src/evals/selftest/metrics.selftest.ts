@@ -3,7 +3,7 @@ import * as assert from "assert"
 import type { ToolUsage } from "@kit-pilot/types"
 
 import { mergeToolUsage, stat, summarizeCase, summarizeToolUsage, variantOrder } from "../metrics"
-import type { TrialResult } from "../types"
+import { trialsAreBalanced, type TrialResult } from "../types"
 
 function toolsWith(exploratoryCalls: number) {
 	return { exploratoryCalls, editCalls: 0, shellCalls: 0, totalCalls: exploratoryCalls, failedCalls: 0, byTool: {} }
@@ -146,6 +146,27 @@ suite("evals/metrics", () => {
 
 		assert.strictEqual(counts.baseline, 6)
 		assert.strictEqual(counts.treatment, 6)
+	})
+
+	// Five trials give one variant the first slot three times and the other
+	// twice. Only an even count balances.
+	test("knows which trial counts balance the order", () => {
+		assert.strictEqual(trialsAreBalanced(6), true)
+		assert.strictEqual(trialsAreBalanced(5), false)
+		assert.strictEqual(trialsAreBalanced(2), true)
+		assert.strictEqual(trialsAreBalanced(1), false)
+	})
+
+	test("an odd trial count really does leave the order unbalanced", () => {
+		let baselineFirst = 0
+		for (let trial = 1; trial <= 5; trial++) {
+			if (variantOrder(trial, ["baseline", "treatment"])[0] === "baseline") {
+				baselineFirst += 1
+			}
+		}
+
+		assert.strictEqual(baselineFirst, 3)
+		assert.strictEqual(5 - baselineFirst, 2)
 	})
 
 	test("gives each variant the first slot the same number of times", () => {
