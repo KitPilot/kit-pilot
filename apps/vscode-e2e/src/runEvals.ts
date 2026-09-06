@@ -30,6 +30,11 @@ import {
  *
  * VS Code prints a line and does nothing when an extension is already there,
  * thus this is safe to run every time. Set EVAL_SKIP_INSTALL=1 to skip it.
+ *
+ * A current VS Code carries Copilot with it, and it refuses to replace a
+ * built-in extension with an older one from the marketplace. That refusal is
+ * the right outcome and not a fault, so it is reported in one line. The install
+ * still matters for a VS Code that does not carry Copilot.
  */
 async function ensureCopilot(): Promise<void> {
 	if (process.env.EVAL_SKIP_INSTALL === "1") {
@@ -43,15 +48,27 @@ async function ensureCopilot(): Promise<void> {
 				version: await vsCodeVersion(),
 			})
 		} catch (error) {
-			console.error(`Could not install ${id}. Continuing, but a model may not be available.`, error)
+			const message = error instanceof Error ? error.message : String(error)
+			if (message.includes("built-in extension")) {
+				process.stdout.write(`  ${id} is built into this VS Code. Using that one.\n`)
+			} else {
+				console.error(`Could not install ${id}. Continuing, but a model may not be available.`, error)
+			}
 		}
 	}
 }
 
 /**
- * Opens VS Code on the evaluation profile so the user can sign in to GitHub.
+ * Opens VS Code on the evaluation profile so the user can sign in to GitHub and
+ * grant KitPilot access to a model.
  *
- * The sign-in is stored in the profile, so it is needed one time only.
+ * Both are stored in the profile, so this is needed one time only.
+ *
+ * The window loads KitPilot itself. `vscode.lm.selectChatModels` returns only
+ * the models that the asking extension has been granted, and that grant is a
+ * prompt the user answers on first use. A test host can show no prompt, so a
+ * profile that has never granted KitPilot reports no model at all, however
+ * complete its sign-in is.
  */
 async function signIn(): Promise<void> {
 	await ensureCopilot()
@@ -59,15 +76,20 @@ async function signIn(): Promise<void> {
 	const executable = await resolveExecutable(await downloadAndUnzipVSCode({ version: await vsCodeVersion() }))
 	// Without --disable-updates this window updates itself on quit and writes
 	// the new version over the pinned one in the download cache.
-	const args = [...profileLaunchArgs(), ...INTERACTIVE_LAUNCH_ARGS]
+	const args = [...profileLaunchArgs(), ...INTERACTIVE_LAUNCH_ARGS, `--extensionDevelopmentPath=${EXTENSION_PATH}`]
 
 	console.log(
 		[
 			"",
 			"VS Code is opening on the evaluation profile.",
 			"",
-			"1. Sign in to GitHub, then open the Copilot chat view one time.",
-			"2. Close the window.",
+			"1. Sign in to GitHub if the window asks.",
+			'2. Open the KitPilot view and send it one message, for example "hi".',
+			"3. Approve the prompt that asks to let KitPilot use a language model.",
+			"4. Wait for a reply, then close the window.",
+			"",
+			"Step 3 is the one that matters. A model is offered to an extension only",
+			"after that grant, and a test run cannot ask for it.",
 			"",
 			"The sign-in stays in the profile, so this is needed one time only.",
 			"Close the window before you start a run. VS Code will not run a test",
