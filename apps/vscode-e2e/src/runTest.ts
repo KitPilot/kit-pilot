@@ -2,9 +2,9 @@ import * as path from "path"
 import * as os from "os"
 import * as fs from "fs/promises"
 
-import { runTests } from "@vscode/test-electron"
+import { downloadAndUnzipVSCode, runTests } from "@vscode/test-electron"
 
-import { vsCodeVersion } from "./evals/vscodeVersion"
+import { resolveExecutable, vsCodeVersion } from "./evals/vscodeVersion"
 
 async function main() {
 	try {
@@ -40,10 +40,12 @@ async function main() {
 			extensionTestsPath,
 			launchArgs: [testWorkspace],
 			extensionTestsEnv,
-			// The extension declares a floor in `engines.vscode`. A VS Code below
-			// that floor refuses to load it, and every test then fails with
-			// "Extension not found". Thus the version comes from the manifest.
-			version: await vsCodeVersion(),
+			// `@vscode/test-electron` builds the path to a binary named `Electron`,
+			// but a current VS Code names it `Code`, so its own path fails with
+			// ENOENT. Resolve the executable and hand it over.
+			vscodeExecutablePath: await resolveExecutable(
+				await downloadAndUnzipVSCode({ version: await vsCodeVersion() }),
+			),
 		})
 
 		// Clean up the temporary workspace

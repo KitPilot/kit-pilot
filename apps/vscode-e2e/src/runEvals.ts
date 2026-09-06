@@ -17,7 +17,13 @@ import {
 	type EvalVariant,
 	type TrialResult,
 } from "./evals/types"
-import { EXTENSION_PATH, readExtensionVersion, vsCodeVersion } from "./evals/vscodeVersion"
+import {
+	EXTENSION_PATH,
+	installedVersion,
+	readExtensionVersion,
+	resolveExecutable,
+	vsCodeVersion,
+} from "./evals/vscodeVersion"
 
 /**
  * Installs the extensions that `vscode-lm` needs into the evaluation profile.
@@ -50,7 +56,7 @@ async function ensureCopilot(): Promise<void> {
 async function signIn(): Promise<void> {
 	await ensureCopilot()
 
-	const executable = await downloadAndUnzipVSCode({ version: await vsCodeVersion() })
+	const executable = await resolveExecutable(await downloadAndUnzipVSCode({ version: await vsCodeVersion() }))
 	// Without --disable-updates this window updates itself on quit and writes
 	// the new version over the pinned one in the download cache.
 	const args = [...profileLaunchArgs(), ...INTERACTIVE_LAUNCH_ARGS]
@@ -155,9 +161,14 @@ async function main() {
 	const extensionTestsPath = path.resolve(__dirname, "./evals/index")
 	const extensionVersion = await readExtensionVersion(extensionDevelopmentPath)
 	const version = await vsCodeVersion()
+	// `@vscode/test-electron` builds the path to a binary named `Electron`, but a
+	// current VS Code names it `Code`. Resolve it here and hand the result to
+	// `runTests`, which skips its own download when it is given one.
+	const executable = await resolveExecutable(await downloadAndUnzipVSCode({ version }))
+	const actualVersion = (await installedVersion(executable)) ?? version
 
 	console.log(
-		`KitPilot ${extensionVersion} on VS Code ${version}, model ${modelId}, variants ${variants.join(" and ")}`,
+		`KitPilot ${extensionVersion} on VS Code ${actualVersion}, model ${modelId}, variants ${variants.join(" and ")}`,
 	)
 
 	await ensureCopilot()
@@ -191,7 +202,7 @@ async function main() {
 					EVAL_TRIALS: String(trials),
 					EVAL_VARIANTS: variants.join(","),
 				},
-				version,
+				vscodeExecutablePath: executable,
 			})
 
 			const parsed = JSON.parse(await fs.readFile(outFile, "utf8")) as {
@@ -216,7 +227,7 @@ async function main() {
 		label,
 		modelId,
 		extensionVersion,
-		vscodeVersion: version,
+		vscodeVersion: actualVersion,
 		trialsPerCase: trials,
 		variants,
 		cases: summaries,
