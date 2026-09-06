@@ -5,7 +5,7 @@ import * as path from "path"
 import { downloadAndUnzipVSCode, runTests, runVSCodeCommand } from "@vscode/test-electron"
 
 import { EVAL_CASES } from "./evals/cases"
-import { evalProfileDir, profileLaunchArgs, REQUIRED_EXTENSIONS } from "./evals/profile"
+import { evalProfileDir, INTERACTIVE_LAUNCH_ARGS, profileLaunchArgs, REQUIRED_EXTENSIONS } from "./evals/profile"
 import { renderReport } from "./evals/report"
 import {
 	DEFAULT_TRIALS,
@@ -51,7 +51,9 @@ async function signIn(): Promise<void> {
 	await ensureCopilot()
 
 	const executable = await downloadAndUnzipVSCode({ version: await vsCodeVersion() })
-	const args = profileLaunchArgs()
+	// Without --disable-updates this window updates itself on quit and writes
+	// the new version over the pinned one in the download cache.
+	const args = [...profileLaunchArgs(), ...INTERACTIVE_LAUNCH_ARGS]
 
 	console.log(
 		[
@@ -62,6 +64,8 @@ async function signIn(): Promise<void> {
 			"2. Close the window.",
 			"",
 			"The sign-in stays in the profile, so this is needed one time only.",
+			"Close the window before you start a run. VS Code will not run a test",
+			"while another instance holds the same profile.",
 			`Profile: ${evalProfileDir()}`,
 			"",
 		].join("\n"),

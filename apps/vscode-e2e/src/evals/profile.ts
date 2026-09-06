@@ -26,3 +26,17 @@ export function profileLaunchArgs(): string[] {
 
 /** The extensions that `vscode-lm` needs. */
 export const REQUIRED_EXTENSIONS = ["GitHub.copilot", "GitHub.copilot-chat"]
+
+/**
+ * Flags for a VS Code that the harness opens for a person to use.
+ *
+ * `--disable-updates` is the one that matters. `runTests` passes it, but the
+ * sign-in window did not, so that window updated itself on quit and wrote the
+ * new version over the pinned one inside the download cache. The cache then
+ * held a directory named for one version that contained another, with its
+ * binary under a different name, and every later run failed to start it.
+ *
+ * The evaluation must run against the version it pins, thus no window that the
+ * harness opens may update itself.
+ */
+export const INTERACTIVE_LAUNCH_ARGS = ["--disable-updates", "--skip-welcome", "--skip-release-notes"]

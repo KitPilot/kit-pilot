@@ -90,6 +90,10 @@ VS Code opens on the evaluation profile. Sign in to GitHub, open the Copilot
 chat view one time, then close the window. The sign-in stays in the profile,
 so this is needed one time only.
 
+**Close that window before you start a run.** VS Code refuses to run an
+extension test while another instance holds the same profile, and a run stops
+with "only supported if no other instance of Code is running".
+
 The profile is separate from your own VS Code profile on purpose. An
 evaluation must not change your settings, and your settings must not change an
 evaluation.
@@ -210,6 +214,23 @@ and the statistics. It runs no model, so `pnpm test` runs it.
 A grader that passes on the starting files would report progress that did not
 happen. A grader that fails on the solution would hide a real improvement.
 Both make the baseline worthless, so the self test guards them.
+
+## When the pinned VS Code will not start
+
+If a run stops with `spawn .../MacOS/Electron ENOENT`, the download cache holds
+a broken install. That happens when a VS Code opened on the profile updates
+itself and writes the new version over the pinned one. The directory keeps its
+old name, holds a newer version, and names its binary `Code` rather than
+`Electron`.
+
+Every window the harness opens now carries `--disable-updates`, so this does
+not happen again. To repair a cache that it already happened to, delete the
+directory and let the next run download it again. The updater runs as root,
+thus the delete needs `sudo`:
+
+```bash
+sudo rm -rf apps/vscode-e2e/.vscode-test/vscode-darwin-arm64-<version>
+```
 
 ## An incomplete run
 
