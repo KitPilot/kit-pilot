@@ -93,12 +93,15 @@ export async function run(): Promise<void> {
  * both variants, and the report reads as a measurement. Thus this stops first.
  */
 async function preflight(modelId: string): Promise<void> {
+	await activateCopilot()
+
 	let ids: string[] = []
 	try {
 		const models = await vscode.lm.selectChatModels({ vendor: "copilot" })
 		ids = models.map((model) => model.id)
-	} catch {
-		// Treated as no model, which is what it means here.
+	} catch (error) {
+		// Report it. Reading an exception as "no model" hid the cause before.
+		console.log(`[evals] selectChatModels threw: ${error instanceof Error ? error.message : String(error)}`)
 	}
 
 	console.log(`[evals] models in the test host: ${ids.length > 0 ? ids.join(", ") : "(none)"}`)
@@ -108,17 +111,69 @@ async function preflight(modelId: string): Promise<void> {
 			[
 				"No Copilot model is available inside the test host.",
 				"",
-				"A sign-in is not enough, and neither is granting KitPilot a model in an",
-				"ordinary window. The grant does not reach the host that runTests starts.",
+				"Measured on 2026-09-06: the host that `runTests` starts loads the core",
+				"built-in extensions and the extension under development, and nothing",
+				"else. Copilot is not among them, not even the copy that VS Code 1.136",
+				"carries. A sign-in does not change that, and neither does granting",
+				"KitPilot a model in an ordinary window.",
 				"",
-				"Without this check every trial would spend its whole timeout talking to a",
-				"stand-in model and report a plain failure, in both variants.",
+				"An evaluation that needs a model cannot use this host. Driving an",
+				"ordinary VS Code window over KITPILOT_IPC_SOCKET_PATH is the path that",
+				"could work. See TODO Tier 2 #14.",
 			].join("\n"),
 		)
 	}
 
+	// A trial asks for one model by id. Checking that some model exists is not
+	// the same check: `createClient` passes the exact selector, so a run could
+	// still start with a model that never answers.
 	if (!ids.includes(modelId)) {
-		console.warn(`[evals] "${modelId}" is not in that list. KitPilot may fall back to another model.`)
+		throw new Error(
+			`The model "${modelId}" is not in the test host. Found: ${ids.join(", ")}. ` +
+				"A trial asks for that exact id, so a run with another one would measure nothing.",
+		)
+	}
+}
+
+/**
+ * Starts the Copilot extension, and waits for it to register its models.
+ *
+ * Measured on 2026-09-06 by comparing the extension host logs. An ordinary
+ * window activates `GitHub.copilot-chat` and offers models. The host that
+ * `runTests` starts never activates it and offers none, because nothing in a
+ * test opens a chat view and the extension waits for that. A provider that
+ * never starts registers no model, so `selectChatModels` is empty for every
+ * caller.
+ *
+ * Thus the harness starts it itself rather than waiting for a person.
+ */
+async function activateCopilot(): Promise<void> {
+	const copilot = vscode.extensions.all.filter((extension) => /copilot/i.test(extension.id))
+	console.log(`[evals] copilot extensions present: ${copilot.map((e) => e.id).join(", ") || "(none)"}`)
+
+	for (const extension of copilot) {
+		if (extension.isActive) {
+			continue
+		}
+		try {
+			await extension.activate()
+			console.log(`[evals] activated ${extension.id}`)
+		} catch (error) {
+			console.log(`[evals] could not activate ${extension.id}: ${error instanceof Error ? error.message : error}`)
+		}
+	}
+
+	// Registration is not finished when activate() resolves. Give it a moment
+	// and stop as soon as a model appears.
+	for (let attempt = 0; attempt < 20; attempt++) {
+		const found = await vscode.lm.selectChatModels({ vendor: "copilot" }).then(
+			(models) => models.length > 0,
+			() => false,
+		)
+		if (found) {
+			return
+		}
+		await new Promise((resolve) => setTimeout(resolve, 500))
 	}
 }
 

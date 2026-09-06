@@ -14,6 +14,7 @@
 ### Fixed
 
 - **A verification command that is stopped no longer counts as a pass.** If the command was killed, or if it could not start, KitPilot read the result as success and finished the task. A test suite that ran out of memory therefore looked like a test suite that passed. Both cases now stop the completion and report what happened.
+- **KitPilot now says when no model is available, instead of answering for it.** If no language model matched your settings, KitPilot quietly stood in for one and replied "Language model functionality is limited" to everything. The task then behaved as though it were working: it ran, it produced that sentence, it used no tool, it tried again, and it kept going until it stopped. One task spent seven minutes and 118 messages that way. KitPilot now reports which model it looked for and what to do about it.
 - **A failing verification command now tells the model what went wrong.** KitPilot read the error from one output stream only, but a compiler and most test runners write their errors to the other one. The model was told that the check failed and nothing more, so it could not fix it. It now gets the command's output, shortened at both ends if it is long.
 
 ## 0.2.5
