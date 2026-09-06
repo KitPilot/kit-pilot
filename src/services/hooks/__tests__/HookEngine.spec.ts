@@ -17,9 +17,7 @@ describe("hooks/HookEngine", () => {
 
 	it("fires only on matching events and tool names", async () => {
 		const config: HooksConfigDict = {
-			PreToolUse: [
-				{ matcher: "execute_command", hooks: [{ type: "command", command: "exit 0" }] },
-			],
+			PreToolUse: [{ matcher: "execute_command", hooks: [{ type: "command", command: "exit 0" }] }],
 		}
 		const engine = new HookEngine(config)
 		// Non-matching tool
@@ -75,9 +73,7 @@ describe("hooks/HookEngine", () => {
 
 	it("marks once-hooks as fired so they don't re-execute", async () => {
 		const config: HooksConfigDict = {
-			PreToolUse: [
-				{ matcher: "*", hooks: [{ type: "command", command: "exit 0", once: true }] },
-			],
+			PreToolUse: [{ matcher: "*", hooks: [{ type: "command", command: "exit 0", once: true }] }],
 		}
 		const engine = new HookEngine(config)
 		const first = await engine.processEvent({
@@ -111,6 +107,49 @@ describe("hooks/HookEngine", () => {
 			toolArgs: {},
 		})
 		expect(passes.executedHooks).toBe(0)
+	})
+
+	// A verification command is an ordinary project command, so it can fail with
+	// any non-zero code and it usually writes its errors to stdout. The hook is
+	// the only path that runs it, thus the model must get the output.
+	it("injectVerifyCommandHook blocks on any non-zero exit, not only on 1", async () => {
+		const config: HooksConfigDict = {}
+		injectVerifyCommandHook(config, "exit 2")
+		const engine = new HookEngine(config)
+		const result = await engine.processEvent({
+			eventType: "PreToolUse",
+			toolName: "attempt_completion",
+			toolArgs: {},
+		})
+		expect(result.blocked).toBe(true)
+		expect(result.blockingReason).toContain("exited with code 2")
+	})
+
+	it("injectVerifyCommandHook puts the command output in the blocking reason", async () => {
+		const config: HooksConfigDict = {}
+		injectVerifyCommandHook(config, 'echo "src/a.ts(3,1): error TS2304"; exit 1')
+		const engine = new HookEngine(config)
+		const result = await engine.processEvent({
+			eventType: "PreToolUse",
+			toolName: "attempt_completion",
+			toolArgs: {},
+		})
+		expect(result.blocked).toBe(true)
+		expect(result.blockingReason).toContain("error TS2304")
+		expect(result.blockingReason).not.toContain("no details provided")
+	})
+
+	it("injectVerifyCommandHook does not block when the command passes", async () => {
+		const config: HooksConfigDict = {}
+		injectVerifyCommandHook(config, 'echo "5 tests passed"; exit 0')
+		const engine = new HookEngine(config)
+		const result = await engine.processEvent({
+			eventType: "PreToolUse",
+			toolName: "attempt_completion",
+			toolArgs: {},
+		})
+		expect(result.executedHooks).toBe(1)
+		expect(result.blocked).toBe(false)
 	})
 
 	it("injectVerifyCommandHook is a no-op when verifyCommand is empty", () => {

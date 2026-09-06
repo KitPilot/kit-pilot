@@ -9,7 +9,7 @@
  * makes that silent fallback visible to the user.
  */
 
-import { DISPATCHED_EVENT_TYPES, SUPPORTED_EVENT_TYPES } from "./types"
+import { DISPATCHED_EVENT_TYPES, HOOK_CONTRACTS, SUPPORTED_EVENT_TYPES } from "./types"
 
 export interface HooksFileValidation {
 	/** False when the file does not exist (text was null). */
@@ -25,6 +25,7 @@ export interface HooksFileValidation {
 interface HookEntryLike {
 	id?: unknown
 	type?: unknown
+	contract?: unknown
 	command?: unknown
 }
 
@@ -119,6 +120,14 @@ export function validateHooksText(text: string | null): HooksFileValidation {
 				if (hook.type !== undefined && !["command", "prompt", "builtin"].includes(hook.type as string)) {
 					problems.push(
 						`${hookWhere} has unsupported type "${String(hook.type)}" (expected "command", "prompt", or "builtin").`,
+					)
+				}
+				if (
+					hook.contract !== undefined &&
+					!(HOOK_CONTRACTS as readonly string[]).includes(hook.contract as string)
+				) {
+					problems.push(
+						`${hookWhere} has unsupported contract "${String(hook.contract)}" (expected ${HOOK_CONTRACTS.map((c) => `"${c}"`).join(" or ")}).`,
 					)
 				}
 			})

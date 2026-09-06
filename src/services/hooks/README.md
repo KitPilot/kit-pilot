@@ -91,6 +91,22 @@ Diagnostics** command.
 | `2`            | Non-blocking error. `stderr` is surfaced to the model but the tool still runs.    |
 | other non-zero | Treated as error (logged, non-blocking).                                          |
 
+### The `contract` field
+
+The table above is the contract that a hook script is written for. An ordinary
+project command does not know it: a compiler can exit with any non-zero code,
+and a test runner usually writes its errors to stdout, not stderr. Set
+`"contract": "plain-command"` on such a hook. Then any non-zero exit blocks the
+tool call, and the block reason carries the command output, truncated at the
+start and the end.
+
+| `contract`         | Blocks on    | Block reason contains                    |
+| ------------------ | ------------ | ---------------------------------------- |
+| `"hook"` (default) | exit `1`     | `stderr`                                 |
+| `"plain-command"`  | any non-zero | the exit code plus `stdout` and `stderr` |
+
+`kit-pilot.verifyCommand` uses `"plain-command"`.
+
 ### Worked example: block `rm -rf` and scan prompts for AWS keys
 
 `~/.kitpilot/hooks.json`:
@@ -151,14 +167,18 @@ Each hook script gets:
 - **substitutions** in the `command` string — `${file}`, `${tool_name}`,
   `${event_type}`, `${CLAUDE_PROJECT_DIR}`, `${CLAUDE_TOOL_INPUT}`.
 
-## `verifyCommand` migration
+## `verifyCommand`
 
-The existing `kit-pilot.verifyCommand` VS Code setting is now enforced via a
-synthetic `PreToolUse` hook on `attempt_completion` (see `injectVerifyCommandHook`
-in `config.ts`). When you set `kit-pilot.verifyCommand` to e.g. `pnpm test`, that
-command will actually run before completion and block it on non-zero exit — not
-just be mentioned in the system prompt.
+The `kit-pilot.verifyCommand` VS Code setting is enforced through a synthetic
+`PreToolUse` hook on `attempt_completion`. See `injectVerifyCommandHook` in
+`config.ts`. When you set `kit-pilot.verifyCommand` to `pnpm test`, that command
+runs before the completion and blocks it on a non-zero exit.
 
-The prompt-text injection in `objective.ts` is kept as a hint so the model knows
-to expect verification (avoids one wasted round-trip), but the hook is now the
-source of truth.
+The hook is the only place that runs the command. The system prompt clause in
+`objective.ts` states the command, states that KitPilot runs it, and tells the
+model not to run it through `execute_command`. Before, the clause told the model
+to run the command itself, so an expensive test suite ran two times for one
+completion.
+
+The hook uses `"contract": "plain-command"`, so a failure of any non-zero exit
+code blocks the completion and the model gets the command output.

@@ -44,4 +44,35 @@ describe("getObjectiveSection", () => {
 		expect(objective).toContain("OBJECTIVE")
 		expect(objective).toContain("You accomplish a given task iteratively")
 	})
+
+	describe("verification command clause", () => {
+		it("omits the clause when no verification command is set", () => {
+			expect(getObjectiveSection()).not.toContain("verification command")
+			expect(getObjectiveSection("")).not.toContain("verification command")
+			expect(getObjectiveSection("   ")).not.toContain("verification command")
+		})
+
+		it("states the command and that KitPilot runs it", () => {
+			const objective = getObjectiveSection("pnpm check-types")
+
+			expect(objective).toContain("pnpm check-types")
+			expect(objective).toContain("KitPilot runs it for you when you call `attempt_completion`")
+		})
+
+		// The hook on attempt_completion is the only execution path. A clause that
+		// told the model to run the command first made an expensive suite run twice.
+		it("tells the model not to run the command itself", () => {
+			const objective = getObjectiveSection("pnpm test")
+
+			expect(objective).toContain("Do NOT run it yourself with `execute_command` first")
+			expect(objective).not.toContain("run the project's verification command via `execute_command`")
+		})
+
+		it("explains what a failure does", () => {
+			const objective = getObjectiveSection("pnpm test")
+
+			expect(objective).toContain("the completion is blocked")
+			expect(objective).toContain("call `attempt_completion` again")
+		})
+	})
 })

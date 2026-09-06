@@ -82,6 +82,14 @@ export function mergeConfigs(a: HooksConfigDict, b: HooksConfigDict): HooksConfi
  * `kit-pilot.verifyCommand` setting. This makes verifyCommand actually-enforced
  * (block on non-zero exit) instead of just prompt text.
  *
+ * This hook is the only place that runs the verification command. The system
+ * prompt tells the model that KitPilot runs it, so the model must not run it
+ * again through `execute_command`. See `getObjectiveSection`.
+ *
+ * The contract is "plain-command", not "hook". A verification command is an
+ * ordinary project command such as `pnpm check-types`, so it can fail with any
+ * non-zero code and it usually writes its errors to stdout. See HookContract.
+ *
  * Mutates `config` in place. Idempotent (uses a stable id).
  */
 export function injectVerifyCommandHook(config: HooksConfigDict, verifyCommand: string | undefined): void {
@@ -98,6 +106,7 @@ export function injectVerifyCommandHook(config: HooksConfigDict, verifyCommand: 
 				type: "command",
 				command: cmd,
 				timeout: 120_000,
+				contract: "plain-command",
 			},
 		],
 	}

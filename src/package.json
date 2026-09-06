@@ -290,7 +290,7 @@
 				"kit-pilot.verifyCommand": {
 					"type": "string",
 					"default": "",
-					"description": "Optional shell command (e.g. `pnpm check-types` or `npm test`) that KitPilot should run before finishing any task. When set, the agent is instructed to run this command and address any errors before calling attempt_completion. Leave empty to disable."
+					"description": "Optional shell command (e.g. `pnpm check-types` or `npm test`) that KitPilot runs before it finishes any task. KitPilot runs the command itself when the model calls attempt_completion, and the model is told not to run it again. A non-zero exit blocks the completion and returns the command output to the model. Leave empty to disable."
 				},
 				"kit-pilot.destructiveCommandGuard": {
 					"type": "string",
