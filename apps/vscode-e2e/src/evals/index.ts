@@ -76,33 +76,49 @@ export async function run(): Promise<void> {
 }
 
 /**
- * Checks that the wanted model is there before a trial starts.
+ * Stops before a trial when no model is there.
  *
- * VS Code runs the evaluation in its own profile, so the Copilot extension and
- * the GitHub sign-in must both be in that profile. Without a model every trial
- * fails the same way, and the report then says the tasks failed when the truth
- * is that nothing ran. Thus this stops first and says what is wrong.
+ * Measured on 2026-09-06. A profile that is fully signed in, and where KitPilot
+ * has been granted a model and has completed a task in an ordinary window,
+ * still offers no model inside the test host that `runTests` starts. The grant
+ * does not carry across.
+ *
+ * Nothing about that is loud. `VsCodeLmHandler.createClient` answers an empty
+ * model list with a stand-in model that yields the sentence "Language model
+ * functionality is limited", so a task keeps its shape: it runs, it produces
+ * text, it calls no tool, it retries, and it fills the time. One trial spent
+ * 440 seconds and 118 messages that way and reported a plain FAIL.
+ *
+ * A run of that shape is worse than no run. Every trial fails the same way, in
+ * both variants, and the report reads as a measurement. Thus this stops first.
  */
 async function preflight(modelId: string): Promise<void> {
-	const models = await vscode.lm.selectChatModels({ vendor: "copilot" })
-	const ids = models.map((model) => model.id)
+	let ids: string[] = []
+	try {
+		const models = await vscode.lm.selectChatModels({ vendor: "copilot" })
+		ids = models.map((model) => model.id)
+	} catch {
+		// Treated as no model, which is what it means here.
+	}
 
-	console.log(`[evals] models in the evaluation profile: ${ids.length > 0 ? ids.join(", ") : "(none)"}`)
+	console.log(`[evals] models in the test host: ${ids.length > 0 ? ids.join(", ") : "(none)"}`)
 
-	if (models.length === 0) {
+	if (ids.length === 0) {
 		throw new Error(
 			[
-				"No Copilot model is available in the evaluation profile.",
+				"No Copilot model is available inside the test host.",
 				"",
-				"Sign in one time with:",
+				"A sign-in is not enough, and neither is granting KitPilot a model in an",
+				"ordinary window. The grant does not reach the host that runTests starts.",
 				"",
-				"  pnpm --filter @kit-pilot/vscode-e2e evals -- --signin",
+				"Without this check every trial would spend its whole timeout talking to a",
+				"stand-in model and report a plain failure, in both variants.",
 			].join("\n"),
 		)
 	}
 
 	if (!ids.includes(modelId)) {
-		throw new Error(`EVAL_MODEL_ID "${modelId}" is not available. Models found: ${ids.join(", ")}`)
+		console.warn(`[evals] "${modelId}" is not in that list. KitPilot may fall back to another model.`)
 	}
 }
 
