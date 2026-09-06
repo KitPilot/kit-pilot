@@ -7,6 +7,9 @@
 		"format": "prettier --write src",
 		"test:ci": "pnpm -w bundle && pnpm --filter @kit-pilot/vscode-webview build && pnpm test:run",
 		"test:run": "rimraf out && tsc -p tsconfig.json && npx dotenvx run -f .env.local -- node ./out/runTest.js",
+		"evals": "rimraf out && tsc -p tsconfig.json && node ./out/runEvals.js",
+		"evals:selftest": "rimraf out && tsc -p tsconfig.json && npx mocha --ui tdd --timeout 60000 \"out/evals/selftest/*.selftest.js\"",
+		"test": "pnpm evals:selftest",
 		"clean": "rimraf out .turbo"
 	},
 	"devDependencies": {
