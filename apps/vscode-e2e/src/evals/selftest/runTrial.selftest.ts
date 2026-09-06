@@ -54,7 +54,7 @@ function evalCase(): EvalCase {
 		fixture: "definition-bugfix",
 		mode: "code",
 		prompt: "does not matter",
-		grade: () => Promise.resolve({ passed: false, detail: "not graded" }),
+		grade: () => Promise.resolve({ passed: false, detail: "not graded", behaviorChecked: false }),
 	}
 }
 
@@ -67,7 +67,7 @@ async function withWorkspace<T>(body: (dir: string) => Promise<T>): Promise<T> {
 	}
 }
 
-const OPTIONS = { timeoutMs: 1200, modelId: "test-model", maxRequests: 5 }
+const OPTIONS = { timeoutMs: 1200, modelId: "test-model", maxRequests: 5, variant: "treatment" as const }
 
 suite("evals/runTrial measurement", function () {
 	this.timeout(30_000)

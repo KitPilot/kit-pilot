@@ -98,14 +98,35 @@ If a model is still missing, the run stops before the first trial and says so.
 It also prints every model id that the profile does offer, which is how to find
 the id for `EVAL_MODEL_ID`.
 
+## What the run compares
+
+One run compares two variants of **the same build**:
+
+- **treatment** is the build as it is.
+- **baseline** turns `find_symbol` off through the `disabledTools` setting,
+  which removes the tool and its description from the request.
+
+Nothing else differs. Both use the same commit, the same harness, the same
+fixtures, the same graders and the same verification behavior. Comparing two
+commits instead would measure every change between them, not the tool.
+
+The two run inside one VS Code instance, and their order flips on every trial.
+A long run drifts, and running all of one variant and then all of the other
+would put that drift on one side.
+
+`--variants treatment` runs one variant alone, which is useful for a dry run.
+
 ## Run it
 
 Pin the model. A baseline that does not name its model cannot be compared with
 a later run.
 
 ```bash
-EVAL_MODEL_ID=<copilot model id> pnpm --filter @kit-pilot/vscode-e2e evals
+EVAL_MODEL_ID=<copilot model id> pnpm --filter @kit-pilot/vscode-e2e evals -- --trials 5
 ```
+
+That runs every case, both variants, five trials each, from one commit. There
+is no second checkout and no second build.
 
 One case, more trials:
 
@@ -133,7 +154,8 @@ The report lands in `apps/vscode-e2e/evals-results/<timestamp>/`, as
 | `EVAL_TRIALS`       | 3                              | Trials for each case.                                  |
 | `EVAL_TIMEOUT_MS`   | 600000                         | How long one task may run.                             |
 | `EVAL_MAX_REQUESTS` | 40                             | Upper bound on requests, so one trial cannot run away. |
-| `EVAL_LABEL`        | `baseline`                     | The name of the run in the report.                     |
+| `EVAL_LABEL`        | `comparison`                   | The name of the run in the report.                     |
+| `EVAL_VARIANTS`     | `baseline,treatment`           | The variants to run, in order.                         |
 | `VSCODE_VERSION`    | the `engines.vscode` floor     | The VS Code version to test against.                   |
 | `EVAL_PROFILE_DIR`  | `apps/vscode-e2e/.vscode-eval` | The VS Code profile the evaluation runs in.            |
 | `EVAL_SKIP_INSTALL` | unset                          | Set to `1` to skip the Copilot extension install.      |

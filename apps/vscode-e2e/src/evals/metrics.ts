@@ -1,6 +1,6 @@
 import type { ToolUsage } from "@kit-pilot/types"
 
-import type { CaseSummary, EvalCategory, Stat, ToolSummary, TrialResult } from "./types"
+import type { CaseSummary, EvalCategory, EvalVariant, Stat, ToolSummary, TrialResult } from "./types"
 
 /**
  * Calls that look for something rather than change something.
@@ -87,6 +87,18 @@ export function mergeToolUsage(a: ToolUsage | undefined, b: ToolUsage | undefine
 	return merged as ToolUsage
 }
 
+/**
+ * The order to run the variants in for a given trial number.
+ *
+ * A run takes a long time, and a machine does not stay the same throughout: a
+ * model can slow down, a cache warms, another program starts. Running every
+ * baseline trial and then every treatment trial would put all of that drift on
+ * one side of the comparison. Alternating the order spreads it.
+ */
+export function variantOrder(trial: number, variants: readonly EvalVariant[]): EvalVariant[] {
+	return trial % 2 === 0 ? [...variants].reverse() : [...variants]
+}
+
 export function stat(values: number[]): Stat {
 	if (values.length === 0) {
 		return { mean: 0, median: 0, min: 0, max: 0, stdDev: 0 }
@@ -108,7 +120,12 @@ export function stat(values: number[]): Stat {
 	return { mean, median, min: at(0), max: at(sorted.length - 1), stdDev }
 }
 
-export function summarizeCase(caseId: string, category: EvalCategory, trials: TrialResult[]): CaseSummary {
+export function summarizeCase(
+	caseId: string,
+	variant: EvalVariant,
+	category: EvalCategory,
+	trials: TrialResult[],
+): CaseSummary {
 	const passed = trials.filter((trial) => trial.passed).length
 
 	// A trial that reported no usage at all did not run. Its zeros would lower
@@ -120,9 +137,12 @@ export function summarizeCase(caseId: string, category: EvalCategory, trials: Tr
 
 	return {
 		caseId,
+		variant,
 		category,
 		trials: trials.length,
 		passed,
+		// A pass whose grader only read the code is weaker than one that ran it.
+		behaviorChecked: trials.filter((trial) => trial.behaviorChecked).length,
 		passRate: trials.length === 0 ? 0 : passed / trials.length,
 		measured: measured.length,
 		elapsedMs: stat(measured.map((trial) => trial.elapsedMs)),

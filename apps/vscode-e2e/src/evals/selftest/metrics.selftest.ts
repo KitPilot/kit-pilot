@@ -2,7 +2,7 @@ import * as assert from "assert"
 
 import type { ToolUsage } from "@kit-pilot/types"
 
-import { mergeToolUsage, stat, summarizeCase, summarizeToolUsage } from "../metrics"
+import { mergeToolUsage, stat, summarizeCase, summarizeToolUsage, variantOrder } from "../metrics"
 import type { TrialResult } from "../types"
 
 function toolsWith(exploratoryCalls: number) {
@@ -12,7 +12,9 @@ function toolsWith(exploratoryCalls: number) {
 function trial(overrides: Partial<TrialResult> & { trial: number }): TrialResult {
 	return {
 		caseId: "case",
+		variant: "treatment",
 		passed: true,
+		behaviorChecked: true,
 		detail: "",
 		elapsedMs: 1000,
 		timedOut: false,
@@ -91,7 +93,7 @@ suite("evals/metrics", () => {
 			trial({ trial: 3, passed: true, tools: toolsWith(12) }),
 		]
 
-		const summary = summarizeCase("case", "bug-fix", trials)
+		const summary = summarizeCase("case", "treatment", "bug-fix", trials)
 
 		assert.strictEqual(summary.trials, 3)
 		assert.strictEqual(summary.measured, 2)
@@ -122,6 +124,62 @@ suite("evals/metrics", () => {
 		assert.deepStrictEqual(merged, { read_file: { attempts: 2, failures: 0 } })
 	})
 
+	// A long run drifts: a model slows down, a cache warms, another program
+	// starts. Running every baseline trial and then every treatment trial would
+	// put all of that on one side of the comparison.
+	test("flips the order of the variants on every trial", () => {
+		const variants = ["baseline", "treatment"] as const
+
+		assert.deepStrictEqual(variantOrder(1, variants), ["baseline", "treatment"])
+		assert.deepStrictEqual(variantOrder(2, variants), ["treatment", "baseline"])
+		assert.deepStrictEqual(variantOrder(3, variants), ["baseline", "treatment"])
+		assert.deepStrictEqual(variantOrder(4, variants), ["treatment", "baseline"])
+	})
+
+	test("runs each variant the same number of times over an even trial count", () => {
+		const counts = { baseline: 0, treatment: 0 }
+		for (let trial = 1; trial <= 6; trial++) {
+			for (const variant of variantOrder(trial, ["baseline", "treatment"])) {
+				counts[variant] += 1
+			}
+		}
+
+		assert.strictEqual(counts.baseline, 6)
+		assert.strictEqual(counts.treatment, 6)
+	})
+
+	test("gives each variant the first slot the same number of times", () => {
+		let baselineFirst = 0
+		for (let trial = 1; trial <= 6; trial++) {
+			if (variantOrder(trial, ["baseline", "treatment"])[0] === "baseline") {
+				baselineFirst += 1
+			}
+		}
+
+		assert.strictEqual(baselineFirst, 3)
+	})
+
+	// A pass where the grader only read the code is weaker than one that ran it.
+	// The summary keeps the count so a reader can tell them apart.
+	test("counts the trials whose behavior was run", () => {
+		const trials = [
+			trial({ trial: 1, passed: true, behaviorChecked: true }),
+			trial({ trial: 2, passed: true, behaviorChecked: false }),
+			trial({ trial: 3, passed: true, behaviorChecked: true }),
+		]
+
+		const summary = summarizeCase("case", "treatment", "cross-file-refactor", trials)
+
+		assert.strictEqual(summary.passed, 3)
+		assert.strictEqual(summary.behaviorChecked, 2)
+	})
+
+	test("keeps the variant on the summary", () => {
+		const summary = summarizeCase("case", "baseline", "bug-fix", [trial({ trial: 1 })])
+
+		assert.strictEqual(summary.variant, "baseline")
+	})
+
 	test("summarizes a case", () => {
 		const trials = [
 			trial({ trial: 1, passed: true, elapsedMs: 10_000 }),
@@ -129,7 +187,7 @@ suite("evals/metrics", () => {
 			trial({ trial: 3, passed: true, elapsedMs: 30_000 }),
 		]
 
-		const summary = summarizeCase("case", "bug-fix", trials)
+		const summary = summarizeCase("case", "treatment", "bug-fix", trials)
 
 		assert.strictEqual(summary.trials, 3)
 		assert.strictEqual(summary.passed, 2)

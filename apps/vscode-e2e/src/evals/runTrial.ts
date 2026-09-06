@@ -8,10 +8,12 @@ import {
 
 import { waitFor } from "../suite/utils"
 import { mergeToolUsage, summarizeToolUsage } from "./metrics"
-import type { EvalCase, TrialResult } from "./types"
+import type { EvalCase, EvalVariant, TrialResult } from "./types"
 import { resetWorkspace } from "./workspace"
 
 export interface TrialOptions {
+	/** Which build to run. See EvalVariant. */
+	variant: EvalVariant
 	/** How long one task may run before the trial counts as a timeout. */
 	timeoutMs: number
 	/** The Copilot model id, for example "gpt-4.1". */
@@ -38,6 +40,10 @@ export interface TrialOptions {
 function trialConfiguration(evalCase: EvalCase, options: TrialOptions): KitPilotSettings {
 	return {
 		mode: evalCase.mode,
+		// The only difference between the two variants. `disabledTools` drops the
+		// tool and its description from the request, so the baseline never sees
+		// that the tool exists.
+		disabledTools: options.variant === "baseline" ? ["find_symbol"] : [],
 		apiProvider: "vscode-lm",
 		vsCodeLmModelSelector: { vendor: "copilot", id: options.modelId },
 		autoApprovalEnabled: true,
@@ -144,6 +150,7 @@ export async function runTrial(
 	const graded = await evalCase.grade(workspaceDir).catch((caught: unknown) => ({
 		passed: false,
 		detail: `the grader threw: ${caught instanceof Error ? caught.message : String(caught)}`,
+		behaviorChecked: false,
 	}))
 
 	let tools: ToolUsage | undefined
@@ -162,9 +169,11 @@ export async function runTrial(
 
 	return {
 		caseId: evalCase.id,
+		variant: options.variant,
 		trial,
 		passed: graded.passed,
 		detail: graded.detail,
+		behaviorChecked: graded.behaviorChecked,
 		elapsedMs,
 		timedOut,
 		aborted,

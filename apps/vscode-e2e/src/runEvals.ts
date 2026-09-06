@@ -7,7 +7,14 @@ import { downloadAndUnzipVSCode, runTests, runVSCodeCommand } from "@vscode/test
 import { EVAL_CASES } from "./evals/cases"
 import { evalProfileDir, profileLaunchArgs, REQUIRED_EXTENSIONS } from "./evals/profile"
 import { renderReport } from "./evals/report"
-import type { CaseFailure, CaseSummary, EvalRun, TrialResult } from "./evals/types"
+import {
+	EVAL_VARIANTS,
+	type CaseFailure,
+	type CaseSummary,
+	type EvalRun,
+	type EvalVariant,
+	type TrialResult,
+} from "./evals/types"
 import { EXTENSION_PATH, readExtensionVersion, vsCodeVersion } from "./evals/vscodeVersion"
 
 /**
@@ -110,7 +117,12 @@ async function main() {
 
 	const trials = Number(argValue("--trials") ?? process.env.EVAL_TRIALS ?? "3")
 	const only = argValue("--case")
-	const label = argValue("--label") ?? process.env.EVAL_LABEL ?? "baseline"
+	const label = argValue("--label") ?? process.env.EVAL_LABEL ?? "comparison"
+	// Both variants are the same build. The baseline turns `find_symbol` off
+	// through `disabledTools`, so nothing else differs between them.
+	const variants = (argValue("--variants") ?? process.env.EVAL_VARIANTS ?? EVAL_VARIANTS.join(",")).split(
+		",",
+	) as EvalVariant[]
 	const cases = only ? EVAL_CASES.filter((evalCase) => evalCase.id === only) : EVAL_CASES
 
 	if (cases.length === 0) {
@@ -123,7 +135,9 @@ async function main() {
 	const extensionVersion = await readExtensionVersion(extensionDevelopmentPath)
 	const version = await vsCodeVersion()
 
-	console.log(`KitPilot ${extensionVersion} on VS Code ${version}, model ${modelId}`)
+	console.log(
+		`KitPilot ${extensionVersion} on VS Code ${version}, model ${modelId}, variants ${variants.join(" and ")}`,
+	)
 
 	await ensureCopilot()
 
@@ -154,15 +168,16 @@ async function main() {
 					EVAL_OUT: outFile,
 					EVAL_MODEL_ID: modelId,
 					EVAL_TRIALS: String(trials),
+					EVAL_VARIANTS: variants.join(","),
 				},
 				version,
 			})
 
 			const parsed = JSON.parse(await fs.readFile(outFile, "utf8")) as {
-				summary: CaseSummary
+				summaries: CaseSummary[]
 				results: TrialResult[]
 			}
-			summaries.push(parsed.summary)
+			summaries.push(...parsed.summaries)
 			trialResults.push(...parsed.results)
 		} catch (error) {
 			// A case that could not run is not a case that scored zero. Record it,
@@ -182,6 +197,7 @@ async function main() {
 		extensionVersion,
 		vscodeVersion: version,
 		trialsPerCase: trials,
+		variants,
 		cases: summaries,
 		trialResults,
 		failures,

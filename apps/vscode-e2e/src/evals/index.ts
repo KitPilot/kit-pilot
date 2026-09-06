@@ -5,9 +5,9 @@ import type { KitPilotAPI } from "@kit-pilot/types"
 
 import { waitFor } from "../suite/utils"
 import { findCase } from "./cases"
-import { summarizeCase } from "./metrics"
+import { summarizeCase, variantOrder } from "./metrics"
 import { runTrial } from "./runTrial"
-import type { TrialResult } from "./types"
+import { EVAL_VARIANTS, type CaseSummary, type EvalVariant, type TrialResult } from "./types"
 
 /**
  * Runs the trials for one case inside VS Code.
@@ -42,20 +42,37 @@ export async function run(): Promise<void> {
 
 	await preflight(modelId)
 
+	const variants = (process.env.EVAL_VARIANTS ?? EVAL_VARIANTS.join(",")).split(",") as EvalVariant[]
 	const results: TrialResult[] = []
 
 	for (let trial = 1; trial <= trials; trial++) {
-		console.log(`[evals] ${caseId} trial ${trial}/${trials}`)
-		const result = await runTrial(api, evalCase, workspaceDir, trial, { timeoutMs, modelId, maxRequests })
-		console.log(
-			`[evals] ${caseId} trial ${trial}: ${result.passed ? "PASS" : "FAIL"} — ${result.detail} ` +
-				`(${result.tools.exploratoryCalls} exploratory calls, ${Math.round(result.elapsedMs / 1000)}s)`,
-		)
-		results.push(result)
+		// The order flips on every trial, so a machine that drifts over a long
+		// run does not push that drift onto one variant.
+		for (const variant of variantOrder(trial, variants)) {
+			console.log(`[evals] ${caseId} trial ${trial}/${trials} ${variant}`)
+			const result = await runTrial(api, evalCase, workspaceDir, trial, {
+				timeoutMs,
+				modelId,
+				maxRequests,
+				variant,
+			})
+			console.log(
+				`[evals] ${caseId} trial ${trial} ${variant}: ${result.passed ? "PASS" : "FAIL"} — ${result.detail} ` +
+					`(${result.tools.exploratoryCalls} exploratory calls, ${Math.round(result.elapsedMs / 1000)}s)`,
+			)
+			results.push(result)
+		}
 	}
 
-	const summary = summarizeCase(evalCase.id, evalCase.category, results)
-	await fs.writeFile(outFile, JSON.stringify({ summary, results }, null, 2), "utf8")
+	const summaries: CaseSummary[] = variants.map((variant) =>
+		summarizeCase(
+			evalCase.id,
+			variant,
+			evalCase.category,
+			results.filter((result) => result.variant === variant),
+		),
+	)
+	await fs.writeFile(outFile, JSON.stringify({ summaries, results }, null, 2), "utf8")
 }
 
 /**

@@ -4,7 +4,7 @@
 
 ### Changed
 
-- **KitPilot starts faster.** The libraries that read PDF, DOCX and XLSX files loaded every time KitPilot started, because the code that reads plain text sat in the same file. Thus a terminal command or a difference view pulled in a document reader that it never used. The libraries now load the first time you open such a document. The part of KitPilot that loads at start is half the size it was, and the work that moved costs 124 milliseconds and 46 megabytes when it does run.
+- **The document readers load only when you open a document.** The libraries that read PDF, DOCX and XLSX files were part of the code that KitPilot loads at start, because the code that reads plain text sat in the same file. Thus a terminal command or a difference view pulled in a document reader that it never used. They now load the first time you open such a document. The code that KitPilot loads at start went from 10.7 to 5.3 megabytes, and the work that moved costs 124 milliseconds and 46 megabytes of memory when it does run. These are measurements of the built code, not of the time that VS Code takes to start KitPilot, which is not measured.
 - **The verification command runs one time for each completion.** If you set `kit-pilot.verifyCommand`, KitPilot told the model to run it and then ran it again itself. An expensive test suite therefore ran twice for one task. KitPilot now runs it, and the model is told not to. You see the same check, in half the time.
 
 ### Added

@@ -6,10 +6,30 @@ import type { TokenUsage, ToolUsage } from "@kit-pilot/types"
  */
 export type EvalCategory = "bug-fix" | "cross-file-refactor" | "test-failure" | "project-memory" | "interrupted-task"
 
+/**
+ * The two builds under comparison.
+ *
+ * Both are the same commit and the same build. "baseline" turns `find_symbol`
+ * off through the `disabledTools` setting, which drops the tool and its
+ * description from the request. Nothing else differs, thus a difference in the
+ * result belongs to the tool and not to some other change between commits.
+ */
+export type EvalVariant = "baseline" | "treatment"
+
+export const EVAL_VARIANTS: readonly EvalVariant[] = ["baseline", "treatment"]
+
 export interface GradeResult {
 	passed: boolean
 	/** Why it passed or failed. Goes into the report. */
 	detail: string
+	/**
+	 * Whether the grader ran the code, or only read it.
+	 *
+	 * The TypeScript case runs on Node 23 and later. On an older Node its grader
+	 * checks the rename and nothing else. A pass of that kind is weaker, so the
+	 * report keeps the two apart rather than adding them together.
+	 */
+	behaviorChecked: boolean
 }
 
 export interface EvalCase {
@@ -49,9 +69,12 @@ export interface ToolSummary {
 
 export interface TrialResult {
 	caseId: string
+	variant: EvalVariant
 	trial: number
 	passed: boolean
 	detail: string
+	/** Whether the grader ran the code, or only read it. */
+	behaviorChecked: boolean
 	/** From the start of the task to its completion, in milliseconds. */
 	elapsedMs: number
 	/** True when the task did not finish inside the timeout. */
@@ -78,7 +101,10 @@ export interface Stat {
 
 export interface CaseSummary {
 	caseId: string
+	variant: EvalVariant
 	category: EvalCategory
+	/** Trials whose grader ran the code. The rest only read it. */
+	behaviorChecked: number
 	trials: number
 	passed: number
 	passRate: number
@@ -100,6 +126,8 @@ export interface EvalRun {
 	extensionVersion: string
 	vscodeVersion: string
 	trialsPerCase: number
+	/** The variants that ran, in the order they were asked for. */
+	variants: EvalVariant[]
 	cases: CaseSummary[]
 	trialResults: TrialResult[]
 	/** Cases that could not run at all, for example when VS Code failed to start. */

@@ -42,31 +42,50 @@ export function renderReport(run: EvalRun): string {
 		lines.push("")
 	}
 
+	lines.push(
+		"Both variants are the same build. The baseline turns `find_symbol` off through the " +
+			"`disabledTools` setting, which drops the tool and its description from the request. " +
+			"Nothing else differs, and the order of the two flips on every trial.",
+	)
+	lines.push("")
 	lines.push("Each cell gives the median, then the range and the sample standard deviation.")
 	lines.push("")
-	lines.push(
-		"| Case | Category | Pass rate | Measured | Exploratory calls | Edit calls | Shell calls | Elapsed | Cost |",
-	)
-	lines.push(
-		"| ---- | -------- | --------- | -------- | ----------------- | ---------- | ----------- | ------- | ---- |",
-	)
 
-	for (const summary of run.cases) {
+	// One table for each case, so nothing is added across cases. The two rename
+	// cases use different module systems and the language provider does not
+	// behave the same in each, thus an average over them would hide what they
+	// were built to measure.
+	for (const caseId of caseIds(run)) {
+		const rows = run.cases.filter((summary) => summary.caseId === caseId)
+		const category = rows[0]?.category ?? ""
+
+		lines.push(`### ${caseId} (${category})`)
+		lines.push("")
 		lines.push(
-			[
-				"",
-				summary.caseId,
-				summary.category,
-				`${summary.passed}/${summary.trials}`,
-				summary.measured === summary.trials ? "all" : `${summary.measured}/${summary.trials}`,
-				statCell(summary.exploratoryCalls, (n) => round(n)),
-				statCell(summary.editCalls, (n) => round(n)),
-				statCell(summary.shellCalls, (n) => round(n)),
-				statCell(summary.elapsedMs, seconds),
-				statCell(summary.cost, (n) => `$${n.toFixed(3)}`),
-				"",
-			].join(" | "),
+			"| Variant | Pass rate | Behavior run | Measured | Exploratory calls | Edit calls | Shell calls | Elapsed | Cost |",
 		)
+		lines.push(
+			"| ------- | --------- | ------------ | -------- | ----------------- | ---------- | ----------- | ------- | ---- |",
+		)
+
+		for (const summary of rows) {
+			lines.push(
+				[
+					"",
+					summary.variant,
+					`${summary.passed}/${summary.trials}`,
+					summary.behaviorChecked === summary.trials ? "all" : `${summary.behaviorChecked}/${summary.trials}`,
+					summary.measured === summary.trials ? "all" : `${summary.measured}/${summary.trials}`,
+					statCell(summary.exploratoryCalls, (n) => round(n)),
+					statCell(summary.editCalls, (n) => round(n)),
+					statCell(summary.shellCalls, (n) => round(n)),
+					statCell(summary.elapsedMs, seconds),
+					statCell(summary.cost, (n) => `$${n.toFixed(3)}`),
+					"",
+				].join(" | "),
+			)
+		}
+		lines.push("")
 	}
 
 	lines.push("")
@@ -80,9 +99,12 @@ export function renderReport(run: EvalRun): string {
 		if (trial.aborted) notes.push("aborted")
 		if (trial.usageMissing) notes.push("no usage reported, left out of the statistics")
 		if (trial.error) notes.push(trial.error)
+		if (!trial.behaviorChecked && trial.passed) {
+			notes.push("the grader read the code and did not run it")
+		}
 
 		lines.push(
-			`- **${verdict}** ${trial.caseId} trial ${trial.trial}: ${trial.detail}` +
+			`- **${verdict}** ${trial.caseId} · ${trial.variant} · trial ${trial.trial}: ${trial.detail}` +
 				(notes.length > 0 ? ` (${notes.join("; ")})` : ""),
 		)
 		lines.push(
@@ -122,8 +144,31 @@ export function renderReport(run: EvalRun): string {
 			"none did not run, so it counts against the pass rate but stays out of the call " +
 			"and cost statistics, where its zeros would look like a cheap trial.",
 	)
+	lines.push("")
+	lines.push(
+		"The Behavior run column says how many trials had their code run by the grader. A pass " +
+			"where the grader only read the code is a weaker result, so read a case whose count " +
+			"is below its trial count with that in mind.",
+	)
+	lines.push("")
+	lines.push(
+		"Read each case on its own. `reference-rename` is CommonJS and `reference-rename-ts` is " +
+			"TypeScript with ESM imports, and the language provider does not behave the same in " +
+			"the two. An average over them would hide that.",
+	)
 
 	return lines.join("\n") + "\n"
+}
+
+/** The case ids in the order they first appear, so the report keeps that order. */
+function caseIds(run: EvalRun): string[] {
+	const seen: string[] = []
+	for (const summary of run.cases) {
+		if (!seen.includes(summary.caseId)) {
+			seen.push(summary.caseId)
+		}
+	}
+	return seen
 }
 
 export function countPassed(trials: TrialResult[]): number {

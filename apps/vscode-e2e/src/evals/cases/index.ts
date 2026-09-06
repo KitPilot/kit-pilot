@@ -4,12 +4,22 @@ import * as path from "path"
 import type { EvalCase, GradeResult } from "../types"
 import { fixtureWorkspaceDir, listFiles, runInWorkspace } from "../workspace"
 
+/** A pass whose grader ran the code. */
 function pass(detail: string): GradeResult {
-	return { passed: true, detail }
+	return { passed: true, detail, behaviorChecked: true }
+}
+
+/**
+ * A pass whose grader only read the code.
+ *
+ * This is a weaker result than one that ran, so the report keeps the two apart.
+ */
+function passWithoutRunning(detail: string): GradeResult {
+	return { passed: true, detail, behaviorChecked: false }
 }
 
 function fail(detail: string): GradeResult {
-	return { passed: false, detail }
+	return { passed: false, detail, behaviorChecked: false }
 }
 
 /**
@@ -180,7 +190,9 @@ export const EVAL_CASES: EvalCase[] = [
 			// its structure alone and the detail says so. It must not read as a
 			// failure by the model.
 			if (!(await nodeCanRunTypeScript(workspaceDir))) {
-				return pass("every reference is renamed. Node here cannot run TypeScript, so behavior was not run")
+				return passWithoutRunning(
+					"every reference is renamed. Node here cannot run TypeScript, so the behavior was not run",
+				)
 			}
 
 			const app = await runInWorkspace("node", ["src/index.ts"], workspaceDir)
