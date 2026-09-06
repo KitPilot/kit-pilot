@@ -147,14 +147,36 @@ describe("VsCodeLmHandler", () => {
 			})
 		})
 
-		it("should return default client when no models available", async () => {
+		// A stand-in model used to be returned here. It answered every request
+		// with one sentence, so a task ran, produced text, called no tool,
+		// retried, and filled its time while nothing named the cause.
+		it("reports that no model matched, rather than standing in for one", async () => {
 			;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([])
 
-			const client = await handler["createClient"]({})
+			await expect(handler["createClient"]({ vendor: "copilot", id: "auto" })).rejects.toThrow(
+				/No language model matched/,
+			)
+		})
 
-			expect(client).toBeDefined()
-			expect(client.id).toBe("default-lm")
-			expect(client.vendor).toBe("vscode")
+		it("names the selector and what to do about it", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([])
+
+			await expect(handler["createClient"]({ vendor: "copilot", id: "auto" })).rejects.toThrow(
+				/Open the Copilot chat view one time/,
+			)
+		})
+
+		// The constructor starts the client without waiting for it. A rejection
+		// there must not escape as an unhandled rejection.
+		it("survives a construction where no model is available", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValue([])
+
+			const quiet = new VsCodeLmHandler({ vsCodeLmModelSelector: { vendor: "copilot", id: "auto" } })
+			await new Promise((resolve) => setTimeout(resolve, 0))
+
+			// getModel() still answers from the selector while there is no client.
+			expect(quiet.getModel().id).toContain("copilot")
+			quiet.dispose()
 		})
 	})
 

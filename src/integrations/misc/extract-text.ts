@@ -1,22 +1,25 @@
 import * as path from "path"
-// @ts-ignore-next-line
-import pdf from "pdf-parse/lib/pdf-parse"
-import mammoth from "mammoth"
 import fs from "fs/promises"
 import { isBinaryFile } from "isbinaryfile"
-import { extractTextFromXLSX } from "./extract-text-from-xlsx"
+import { loadDocumentParsers } from "./document-parsers-loader"
 import { readWithSlice } from "./indentation-reader"
 import { DEFAULT_LINE_LIMIT } from "../../core/prompts/tools/native-tools/read_file"
 
+// The PDF, DOCX and XLSX libraries load on demand. See ./document-parsers-loader.
+
 async function extractTextFromPDF(filePath: string): Promise<string> {
-	const dataBuffer = await fs.readFile(filePath)
-	const data = await pdf(dataBuffer)
-	return addLineNumbers(data.text)
+	const parsers = await loadDocumentParsers()
+	return addLineNumbers(await parsers.extractTextFromPDF(filePath))
 }
 
 async function extractTextFromDOCX(filePath: string): Promise<string> {
-	const result = await mammoth.extractRawText({ path: filePath })
-	return addLineNumbers(result.value)
+	const parsers = await loadDocumentParsers()
+	return addLineNumbers(await parsers.extractTextFromDOCX(filePath))
+}
+
+async function extractTextFromXLSX(filePath: string): Promise<string> {
+	const parsers = await loadDocumentParsers()
+	return parsers.extractTextFromXLSX(filePath)
 }
 
 async function extractTextFromIPYNB(filePath: string): Promise<string> {

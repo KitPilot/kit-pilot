@@ -1,6 +1,11 @@
 export function getObjectiveSection(verifyCommand?: string): string {
+	// KitPilot runs the verification command itself, as a PreToolUse hook on
+	// `attempt_completion` (see `injectVerifyCommandHook`). Thus this clause tells
+	// the model what the check is and how it behaves. It must not tell the model
+	// to run the command, because that ran the command twice: once through
+	// `execute_command` and once through the hook.
 	const verifyClause = verifyCommand?.trim()
-		? `\n\nBEFORE calling \`attempt_completion\`, run the project's verification command via \`execute_command\`:\n\n\`\`\`\n${verifyCommand.trim()}\n\`\`\`\n\nIf the command exits non-zero or surfaces errors, fix them and re-run until it passes. Only then call \`attempt_completion\`. This catches mistakes that type-check but break behavior.`
+		? `\n\nThis project has a verification command:\n\n\`\`\`\n${verifyCommand.trim()}\n\`\`\`\n\nKitPilot runs it for you when you call \`attempt_completion\`. Do NOT run it yourself with \`execute_command\` first, because that runs it twice. If it exits non-zero, the completion is blocked and you get the command's output as a tool error. Fix the errors and call \`attempt_completion\` again. You may still run narrower checks (a single test file, a type check of one package) with \`execute_command\` while you work.`
 		: ""
 
 	return `====

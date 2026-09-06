@@ -33,6 +33,146 @@ describe("hooks/executor", () => {
 		expect(result.error).toContain("warn")
 	})
 
+	describe("contract: plain-command", () => {
+		// A verification command such as `pnpm check-types` is not a hook script.
+		// It can fail with any non-zero code, and it usually writes its errors to
+		// stdout. See HookContract in ../types.
+
+		it("does not block on exit 0", async () => {
+			const hook = makeHookConfig({ matcher: "*", command: 'echo "all good"; exit 0', contract: "plain-command" })
+			const result = await executeHook(hook, baseEvent)
+			expect(result.blocked).toBe(false)
+			expect(result.error).toBeUndefined()
+		})
+
+		it("blocks on a non-zero exit that is not 1", async () => {
+			const hook = makeHookConfig({ matcher: "*", command: "exit 2", contract: "plain-command" })
+			const result = await executeHook(hook, baseEvent)
+			expect(result.exitCode).toBe(2)
+			expect(result.blocked).toBe(true)
+			expect(result.error).toContain("exited with code 2")
+		})
+
+		it("puts stdout in the block reason", async () => {
+			const hook = makeHookConfig({
+				matcher: "*",
+				command: 'echo "src/a.ts(3,1): error TS2304: Cannot find name x"; exit 1',
+				contract: "plain-command",
+			})
+			const result = await executeHook(hook, baseEvent)
+			expect(result.blocked).toBe(true)
+			expect(result.error).toContain("error TS2304")
+		})
+
+		it("puts both streams in the block reason", async () => {
+			const hook = makeHookConfig({
+				matcher: "*",
+				command: 'echo "from stdout"; echo "from stderr" >&2; exit 3',
+				contract: "plain-command",
+			})
+			const result = await executeHook(hook, baseEvent)
+			expect(result.error).toContain("from stdout")
+			expect(result.error).toContain("from stderr")
+		})
+
+		it("states the exit code when the command produces no output", async () => {
+			const hook = makeHookConfig({ matcher: "*", command: "exit 7", contract: "plain-command" })
+			const result = await executeHook(hook, baseEvent)
+			expect(result.error).toBe("exited with code 7 and produced no output")
+		})
+
+		it("truncates a block reason that has too many lines", async () => {
+			// Approximately 1,600 characters over 200 lines: the line limit applies.
+			const hook = makeHookConfig({
+				matcher: "*",
+				command: 'for i in $(seq 1 200); do echo "err $i"; done; exit 1',
+				contract: "plain-command",
+			})
+			const result = await executeHook(hook, baseEvent)
+			expect(result.blocked).toBe(true)
+			expect(result.error).toContain("lines omitted")
+			// The start and the end both survive, so a compiler error and a test
+			// summary are both readable.
+			expect(result.error).toContain("err 1\n")
+			expect(result.error).toContain("err 200")
+			// The full output stays on the result for the transcript.
+			expect(result.stdout).toContain("err 100")
+		})
+
+		it("truncates a block reason that is too long", async () => {
+			// Approximately 9,000 characters: the character limit applies first.
+			const hook = makeHookConfig({
+				matcher: "*",
+				command: 'for i in $(seq 1 500); do echo "failure line $i"; done; exit 1',
+				contract: "plain-command",
+			})
+			const result = await executeHook(hook, baseEvent)
+			expect(result.blocked).toBe(true)
+			expect(result.error).toContain("characters omitted")
+			expect(result.error!.length).toBeLessThan(result.stdout.length)
+			expect(result.error).toContain("failure line 1")
+			expect(result.error).toContain("failure line 500")
+		})
+
+		// The verification hook is the only thing that runs the project's check.
+		// A command that a signal stopped reports a null exit code, and reading
+		// that as 0 would let the completion through as if the check had passed.
+		it("blocks when a signal stops the command", async () => {
+			const hook = makeHookConfig({
+				matcher: "*",
+				command: 'echo "starting"; kill -TERM $$; echo "never"',
+				contract: "plain-command",
+			})
+			const result = await executeHook(hook, baseEvent)
+
+			expect(result.blocked).toBe(true)
+			expect(result.error).toContain("stopped by SIGTERM")
+			expect(result.error).toContain("did not report a result")
+		})
+
+		it("keeps the output when a signal stops the command", async () => {
+			const hook = makeHookConfig({
+				matcher: "*",
+				command: 'echo "src/a.ts: error TS2304"; kill -TERM $$',
+				contract: "plain-command",
+			})
+			const result = await executeHook(hook, baseEvent)
+
+			expect(result.blocked).toBe(true)
+			expect(result.error).toContain("error TS2304")
+		})
+
+		// A command that cannot start has not passed either.
+		it("blocks when the command cannot start", async () => {
+			const hook = makeHookConfig({
+				matcher: "*",
+				command: "kitpilot-no-such-command-exists",
+				contract: "plain-command",
+			})
+			const result = await executeHook(hook, baseEvent)
+
+			expect(result.blocked).toBe(true)
+		})
+
+		it("leaves the default hook contract unchanged", async () => {
+			const hook = makeHookConfig({ matcher: "*", command: 'echo "on stdout"; exit 2' })
+			const result = await executeHook(hook, baseEvent)
+			expect(hook.contract).toBe("hook")
+			expect(result.blocked).toBe(false)
+			expect(result.error).toBeUndefined()
+		})
+
+		// A user's hook script keeps the Claude Code contract exactly. A signal
+		// there still reports exit 0 and does not block, as it did before.
+		it("leaves a signal under the hook contract unchanged", async () => {
+			const hook = makeHookConfig({ matcher: "*", command: "kill -TERM $$" })
+			const result = await executeHook(hook, baseEvent)
+
+			expect(result.exitCode).toBe(0)
+			expect(result.blocked).toBe(false)
+		})
+	})
+
 	it("times out and marks blocked", async () => {
 		const hook = makeHookConfig({ matcher: "*", command: "sleep 1", timeout: 200 })
 		const result = await executeHook(hook, baseEvent)

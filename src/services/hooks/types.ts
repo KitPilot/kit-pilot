@@ -51,6 +51,23 @@ export const DISPATCHED_EVENT_TYPES: readonly HookEventType[] = ["PreToolUse", "
 
 export type HookType = "command" | "prompt" | "builtin"
 
+/**
+ * How to read a command hook's exit code and output.
+ *
+ * "hook" is the Claude Code contract and the default: exit 1 blocks the tool
+ * call, and stderr gives the reason. A hook script is written for that
+ * contract.
+ *
+ * "plain-command" is for an ordinary project command, for example the command
+ * in `kit-pilot.verifyCommand`. Such a command does not know the contract. It
+ * can fail with any non-zero code, and a build tool or a test runner usually
+ * writes its errors to stdout. Thus any non-zero exit blocks, and the reason
+ * contains the command's output.
+ */
+export type HookContract = "hook" | "plain-command"
+
+export const HOOK_CONTRACTS: readonly HookContract[] = ["hook", "plain-command"]
+
 /** Per-hook configuration. */
 export interface HookConfig {
 	/** Pattern to match against tool name / file ext / regex (e.g. "execute_command", ".py", "A && B"). */
@@ -67,6 +84,8 @@ export interface HookConfig {
 	enabled: boolean
 	/** Stable id; auto-derived from matcher+type+command if not given. */
 	id: string
+	/** How to read the exit code and the output. See HookContract. */
+	contract: HookContract
 }
 
 export interface HookConfigInput {
@@ -80,6 +99,7 @@ export interface HookConfigInput {
 	once?: boolean
 	enabled?: boolean
 	id?: string
+	contract?: HookContract
 }
 
 /** Construct a fully-defaulted HookConfig from loose input. */
@@ -98,6 +118,11 @@ export function makeHookConfig(input: HookConfigInput): HookConfig {
 	const timeout = input.timeout ?? 5000
 	if (timeout < 100) throw new Error(`Hook timeout must be >= 100ms, got: ${timeout}`)
 
+	const contract: HookContract = input.contract ?? "hook"
+	if (!HOOK_CONTRACTS.includes(contract)) {
+		throw new Error(`Hook contract must be one of ${HOOK_CONTRACTS.join(", ")}, got: ${contract}`)
+	}
+
 	const id = input.id ?? deriveHookId(matcher, type, command)
 
 	return {
@@ -108,6 +133,7 @@ export function makeHookConfig(input: HookConfigInput): HookConfig {
 		once: input.once ?? false,
 		enabled: input.enabled ?? true,
 		id,
+		contract,
 	}
 }
 

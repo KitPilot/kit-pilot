@@ -13,7 +13,7 @@ const LEGACY_IGNORE_FILENAME = ".rooignore"
 
 /**
  * Controls LLM access to files by enforcing ignore patterns.
- * Reads either `.kitpilotignore` (preferred) or legacy `.kitpilotignore` from the workspace root.
+ * Reads either `.kitpilotignore` (preferred) or the legacy `.rooignore` from the workspace root.
  */
 export class KitPilotIgnoreController {
 	private cwd: string

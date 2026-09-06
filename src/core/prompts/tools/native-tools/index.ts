@@ -9,6 +9,7 @@ import editTool from "./edit"
 import executeCommand from "./execute_command"
 import checkTask from "./check_task"
 import stopTask from "./stop_task"
+import findSymbol from "./find_symbol"
 import listFiles from "./list_files"
 import newTask from "./new_task"
 import readCommandOutput from "./read_command_output"
@@ -59,6 +60,7 @@ export function getNativeTools(options: NativeToolsOptions = {}): OpenAI.Chat.Ch
 		executeCommand,
 		checkTask,
 		stopTask,
+		findSymbol,
 		listFiles,
 		newTask,
 		readCommandOutput,

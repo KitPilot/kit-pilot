@@ -12,6 +12,7 @@ import type { ToolParamName, ToolResponse, ToolUse, McpToolUse } from "../../sha
 import { AskIgnoredError } from "../task/AskIgnoredError"
 import { Task } from "../task/Task"
 
+import { findSymbolTool } from "../tools/FindSymbolTool"
 import { listFilesTool } from "../tools/ListFilesTool"
 import { readFileTool } from "../tools/ReadFileTool"
 import { readCommandOutputTool } from "../tools/ReadCommandOutputTool"
@@ -356,6 +357,8 @@ export async function presentAssistantMessage(cline: Task) {
 						return `[${block.name}]`
 					case "list_files":
 						return `[${block.name} for '${block.params.path}']`
+					case "find_symbol":
+						return `[${block.name} for '${block.params.symbol}' (${block.params.lookup})]`
 					case "use_mcp_tool":
 						return `[${block.name} for '${block.params.server_name}']`
 					case "access_mcp_resource":
@@ -809,6 +812,13 @@ export async function presentAssistantMessage(cline: Task) {
 					break
 				case "list_files":
 					await listFilesTool.handle(cline, block as ToolUse<"list_files">, {
+						askApproval,
+						handleError,
+						pushToolResult,
+					})
+					break
+				case "find_symbol":
+					await findSymbolTool.handle(cline, block as ToolUse<"find_symbol">, {
 						askApproval,
 						handleError,
 						pushToolResult,

@@ -1,0 +1,287 @@
+import * as fs from "fs/promises"
+import * as os from "os"
+import * as path from "path"
+
+import { downloadAndUnzipVSCode, runTests, runVSCodeCommand } from "@vscode/test-electron"
+
+import { EVAL_CASES } from "./evals/cases"
+import { evalProfileDir, INTERACTIVE_LAUNCH_ARGS, profileLaunchArgs, REQUIRED_EXTENSIONS } from "./evals/profile"
+import { renderReport } from "./evals/report"
+import {
+	DEFAULT_TRIALS,
+	EVAL_VARIANTS,
+	trialsAreBalanced,
+	type CaseFailure,
+	type CaseSummary,
+	type EvalRun,
+	type EvalVariant,
+	type TrialResult,
+} from "./evals/types"
+import {
+	EXTENSION_PATH,
+	installedVersion,
+	readExtensionVersion,
+	resolveExecutable,
+	vsCodeVersion,
+} from "./evals/vscodeVersion"
+
+/**
+ * Installs the extensions that `vscode-lm` needs into the evaluation profile.
+ *
+ * VS Code prints a line and does nothing when an extension is already there,
+ * thus this is safe to run every time. Set EVAL_SKIP_INSTALL=1 to skip it.
+ *
+ * A current VS Code carries Copilot with it, and it refuses to replace a
+ * built-in extension with an older one from the marketplace. That refusal is
+ * the right outcome and not a fault, so it is reported in one line. The install
+ * still matters for a VS Code that does not carry Copilot.
+ */
+async function ensureCopilot(): Promise<void> {
+	if (process.env.EVAL_SKIP_INSTALL === "1") {
+		return
+	}
+
+	for (const id of REQUIRED_EXTENSIONS) {
+		process.stdout.write(`Installing ${id} into the evaluation profile...\n`)
+		try {
+			await runVSCodeCommand(["--install-extension", id, ...profileLaunchArgs()], {
+				version: await vsCodeVersion(),
+			})
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			if (message.includes("built-in extension")) {
+				process.stdout.write(`  ${id} is built into this VS Code. Using that one.\n`)
+			} else {
+				console.error(`Could not install ${id}. Continuing, but a model may not be available.`, error)
+			}
+		}
+	}
+}
+
+/**
+ * Opens VS Code on the evaluation profile so the user can sign in to GitHub and
+ * grant KitPilot access to a model.
+ *
+ * Both are stored in the profile, so this is needed one time only.
+ *
+ * The window loads KitPilot itself. `vscode.lm.selectChatModels` returns only
+ * the models that the asking extension has been granted, and that grant is a
+ * prompt the user answers on first use. A test host can show no prompt, so a
+ * profile that has never granted KitPilot reports no model at all, however
+ * complete its sign-in is.
+ */
+async function signIn(): Promise<void> {
+	await ensureCopilot()
+
+	const executable = await resolveExecutable(await downloadAndUnzipVSCode({ version: await vsCodeVersion() }))
+	// Without --disable-updates this window updates itself on quit and writes
+	// the new version over the pinned one in the download cache.
+	const args = [...profileLaunchArgs(), ...INTERACTIVE_LAUNCH_ARGS, `--extensionDevelopmentPath=${EXTENSION_PATH}`]
+
+	console.log(
+		[
+			"",
+			"VS Code is opening on the evaluation profile.",
+			"",
+			"1. Sign in to GitHub if the window asks.",
+			'2. Open the KitPilot view and send it one message, for example "hi".',
+			"3. Approve the prompt that asks to let KitPilot use a language model.",
+			"4. Wait for a reply, then close the window.",
+			"",
+			"Step 3 is the one that matters. A model is offered to an extension only",
+			"after that grant, and a test run cannot ask for it.",
+			"",
+			"The sign-in stays in the profile, so this is needed one time only.",
+			"Close the window before you start a run. VS Code will not run a test",
+			"while another instance holds the same profile.",
+			`Profile: ${evalProfileDir()}`,
+			"",
+		].join("\n"),
+	)
+
+	const { spawn } = await import("child_process")
+	await new Promise<void>((resolve) => {
+		const child = spawn(executable, args, { stdio: "inherit" })
+		child.on("close", () => resolve())
+		child.on("error", () => resolve())
+	})
+}
+
+/**
+ * Host side of the evaluation harness.
+ *
+ * It starts VS Code one time for each case, with a temporary workspace that
+ * holds that case's fixture. A task runs in the workspace folder, thus one
+ * workspace cannot hold two cases without the model seeing both.
+ *
+ * Usage:
+ *
+ *   Check the harness first, one trial of each variant, eight tasks:
+ *   EVAL_MODEL_ID=<copilot model id> pnpm --filter @kit-pilot/vscode-e2e evals -- --trials 1
+ *
+ *   Then the balanced run, six trials of each variant, forty-eight tasks:
+ *   EVAL_MODEL_ID=<copilot model id> pnpm --filter @kit-pilot/vscode-e2e evals
+ */
+async function main() {
+	if (process.argv.includes("--signin")) {
+		await signIn()
+		return
+	}
+
+	const modelId = process.env.EVAL_MODEL_ID
+	if (!modelId) {
+		console.error(
+			[
+				"EVAL_MODEL_ID is not set.",
+				"",
+				"Set it to the Copilot model id to measure, for example:",
+				"",
+				"  EVAL_MODEL_ID=gpt-4.1 pnpm --filter @kit-pilot/vscode-e2e evals",
+				"",
+				"The model must be pinned, because a baseline that does not name its model",
+				"cannot be compared with a later run.",
+				"",
+				"To see the ids that the evaluation profile offers, run with any id. The",
+				"preflight lists every model it found before it starts a trial.",
+				"",
+				"If the preflight finds no model, sign in one time with:",
+				"",
+				"  pnpm --filter @kit-pilot/vscode-e2e evals -- --signin",
+			].join("\n"),
+		)
+		process.exit(1)
+	}
+
+	const trials = Number(argValue("--trials") ?? process.env.EVAL_TRIALS ?? String(DEFAULT_TRIALS))
+
+	// The order of the two variants flips on every trial. An odd count gives one
+	// variant the first slot one more time than the other, which is the order
+	// effect the flip exists to remove. This warns rather than stops, because a
+	// single trial is a useful check of the harness before a paid run.
+	if (!trialsAreBalanced(trials) && trials > 1) {
+		console.warn(
+			`Warning: ${trials} trials do not balance the order of the variants. ` +
+				`One runs first ${Math.ceil(trials / 2)} times and the other ${Math.floor(trials / 2)}. ` +
+				"Use an even number for a run you intend to compare.",
+		)
+	}
+	const only = argValue("--case")
+	const label = argValue("--label") ?? process.env.EVAL_LABEL ?? "comparison"
+	// Both variants are the same build. The baseline turns `find_symbol` off
+	// through `disabledTools`, so nothing else differs between them.
+	const variants = (argValue("--variants") ?? process.env.EVAL_VARIANTS ?? EVAL_VARIANTS.join(",")).split(
+		",",
+	) as EvalVariant[]
+	const cases = only ? EVAL_CASES.filter((evalCase) => evalCase.id === only) : EVAL_CASES
+
+	if (cases.length === 0) {
+		console.error(`No case matches "${only}". Known cases: ${EVAL_CASES.map((c) => c.id).join(", ")}`)
+		process.exit(1)
+	}
+
+	const extensionDevelopmentPath = EXTENSION_PATH
+	const extensionTestsPath = path.resolve(__dirname, "./evals/index")
+	const extensionVersion = await readExtensionVersion(extensionDevelopmentPath)
+	const version = await vsCodeVersion()
+	// `@vscode/test-electron` builds the path to a binary named `Electron`, but a
+	// current VS Code names it `Code`. Resolve it here and hand the result to
+	// `runTests`, which skips its own download when it is given one.
+	const executable = await resolveExecutable(await downloadAndUnzipVSCode({ version }))
+	const actualVersion = (await installedVersion(executable)) ?? version
+
+	console.log(
+		`KitPilot ${extensionVersion} on VS Code ${actualVersion}, model ${modelId}, variants ${variants.join(" and ")}`,
+	)
+
+	await ensureCopilot()
+
+	const startedAt = new Date().toISOString()
+	const outDir = path.resolve(__dirname, "../evals-results", startedAt.replace(/[:.]/g, "-"))
+	await fs.mkdir(outDir, { recursive: true })
+
+	const summaries: CaseSummary[] = []
+	const trialResults: TrialResult[] = []
+	const failures: CaseFailure[] = []
+
+	for (const evalCase of cases) {
+		const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), `kitpilot-eval-${evalCase.id}-`))
+		const outFile = path.join(outDir, `${evalCase.id}.json`)
+
+		console.log(`\n=== ${evalCase.id} (${trials} trials) ===`)
+		console.log(evalCase.intent)
+
+		try {
+			await runTests({
+				extensionDevelopmentPath,
+				extensionTestsPath,
+				launchArgs: [workspaceDir, ...profileLaunchArgs()],
+				extensionTestsEnv: {
+					...process.env,
+					EVAL_CASE: evalCase.id,
+					EVAL_WORKSPACE: workspaceDir,
+					EVAL_OUT: outFile,
+					EVAL_MODEL_ID: modelId,
+					EVAL_TRIALS: String(trials),
+					EVAL_VARIANTS: variants.join(","),
+				},
+				vscodeExecutablePath: executable,
+			})
+
+			const parsed = JSON.parse(await fs.readFile(outFile, "utf8")) as {
+				summaries: CaseSummary[]
+				results: TrialResult[]
+			}
+			summaries.push(...parsed.summaries)
+			trialResults.push(...parsed.results)
+		} catch (error) {
+			// A case that could not run is not a case that scored zero. Record it,
+			// so the report cannot read as a complete run with fewer cases.
+			const reason = error instanceof Error ? error.message : String(error)
+			console.error(`Case ${evalCase.id} did not run: ${reason}`)
+			failures.push({ caseId: evalCase.id, reason })
+		} finally {
+			await fs.rm(workspaceDir, { recursive: true, force: true })
+		}
+	}
+
+	const run: EvalRun = {
+		startedAt,
+		label,
+		modelId,
+		extensionVersion,
+		vscodeVersion: actualVersion,
+		trialsPerCase: trials,
+		variants,
+		cases: summaries,
+		trialResults,
+		failures,
+	}
+
+	await fs.writeFile(path.join(outDir, "run.json"), JSON.stringify(run, null, 2), "utf8")
+	const report = renderReport(run)
+	await fs.writeFile(path.join(outDir, "report.md"), report, "utf8")
+
+	console.log(`\n${report}`)
+	console.log(`Report written to ${outDir}`)
+
+	// An incomplete run must not look like a finished one. A missing sign-in, a
+	// VS Code that will not start, or any other harness fault ends here with a
+	// non-zero code, so a script or a person cannot read the report as a result.
+	if (failures.length > 0) {
+		console.error(
+			`\n${failures.length} of ${cases.length} case(s) did not run: ${failures.map((f) => f.caseId).join(", ")}.` +
+				"\nThis run is incomplete and must not be compared with another run.",
+		)
+		process.exit(1)
+	}
+}
+
+function argValue(flag: string): string | undefined {
+	const index = process.argv.indexOf(flag)
+	return index === -1 ? undefined : process.argv[index + 1]
+}
+
+main().catch((error) => {
+	console.error("Failed to run evals", error)
+	process.exit(1)
+})

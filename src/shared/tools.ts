@@ -86,6 +86,9 @@ export const toolParamNames = [
 	// read_file legacy format parameter (backward compatibility)
 	"files",
 	"line_ranges",
+	// find_symbol parameters
+	"symbol",
+	"lookup",
 ] as const
 
 export type ToolParamName = (typeof toolParamNames)[number]
@@ -115,6 +118,7 @@ export type NativeToolArgs = {
 	edit_file: { file_path: string; old_string: string; new_string: string; expected_replacements?: number }
 	apply_patch: { patch: string }
 	list_files: { path: string; recursive?: boolean }
+	find_symbol: { symbol: string; lookup: "definition" | "references" }
 	new_task: { mode: string; message: string; todos?: string }
 	ask_followup_question: {
 		question: string
@@ -228,6 +232,11 @@ export interface SearchFilesToolUse extends ToolUse<"search_files"> {
 	params: Partial<Pick<Record<ToolParamName, string>, "path" | "regex" | "file_pattern">>
 }
 
+export interface FindSymbolToolUse extends ToolUse<"find_symbol"> {
+	name: "find_symbol"
+	params: Partial<Pick<Record<ToolParamName, string>, "symbol" | "lookup">>
+}
+
 export interface ListFilesToolUse extends ToolUse<"list_files"> {
 	name: "list_files"
 	params: Partial<Pick<Record<ToolParamName, string>, "path" | "recursive">>
@@ -300,6 +309,7 @@ export const TOOL_DISPLAY_NAMES: Record<ToolName, string> = {
 	apply_patch: "apply patches using codex format",
 	search_files: "search files",
 	list_files: "list files",
+	find_symbol: "find where a symbol is defined or used",
 	use_mcp_tool: "use mcp tools",
 	access_mcp_resource: "access mcp resources",
 	ask_followup_question: "ask questions",
@@ -319,7 +329,7 @@ export const TOOL_DISPLAY_NAMES: Record<ToolName, string> = {
 // Define available tool groups.
 export const TOOL_GROUPS: Record<ToolGroup, ToolGroupConfig> = {
 	read: {
-		tools: ["read_file", "search_files", "list_files", "codebase_search"],
+		tools: ["read_file", "search_files", "list_files", "codebase_search", "find_symbol"],
 	},
 	edit: {
 		tools: ["apply_diff", "write_to_file", "generate_image"],

@@ -683,6 +683,7 @@ export interface ClineSayTool {
 		| "listFilesTopLevel"
 		| "listFilesRecursive"
 		| "searchFiles"
+		| "findSymbol"
 		| "switchMode"
 		| "newTask"
 		| "finishTask"
@@ -712,6 +713,9 @@ export interface ClineSayTool {
 	diffStats?: { added: number; removed: number }
 	regex?: string
 	filePattern?: string
+	// For findSymbol.
+	symbol?: string
+	lookup?: "definition" | "references"
 	mode?: string
 	reason?: string
 	isOutsideWorkspace?: boolean

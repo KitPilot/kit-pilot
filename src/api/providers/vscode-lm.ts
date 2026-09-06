@@ -225,7 +225,17 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 				})
 			}
 
-			this.initializeClient()
+			// Not awaited on purpose: a handler must be usable before a model
+			// answers. The rejection is handled here, because the surrounding
+			// synchronous catch cannot see it and an unhandled rejection would
+			// escape. The client stays null, `getModel()` answers from the
+			// selector, and the next request reports the real error.
+			void this.initializeClient().catch((error: unknown) => {
+				console.error(
+					"KitPilot <Language Model API>: Client will be created on the first request:",
+					error instanceof Error ? error.message : String(error),
+				)
+			})
 		} catch (error) {
 			// Ensure cleanup if constructor fails
 			this.dispose()
@@ -279,29 +289,20 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 				return models[0]
 			}
 
-			// Create a minimal model if no models are available
-			return {
-				id: "default-lm",
-				name: "Default Language Model",
-				vendor: "vscode",
-				family: "lm",
-				version: "1.0",
-				maxInputTokens: 8192,
-				sendRequest: async (_messages, _options, _token) => {
-					// Provide a minimal implementation
-					return {
-						stream: (async function* () {
-							yield new vscode.LanguageModelTextPart(
-								"Language model functionality is limited. Please check VS Code configuration.",
-							)
-						})(),
-						text: (async function* () {
-							yield "Language model functionality is limited. Please check VS Code configuration."
-						})(),
-					}
-				},
-				countTokens: async () => 0,
-			}
+			// No model matched. This used to return a stand-in model whose only
+			// answer was the sentence "Language model functionality is limited",
+			// which kept the shape of a working task: it ran, it produced text, it
+			// called no tool, it retried, and it filled the time. A task spent 440
+			// seconds and 118 messages that way, and nothing named the cause.
+			//
+			// Say what happened instead. `getModel()` still answers from the
+			// selector while there is no client, and `onDidChangeChatModels`
+			// clears the client, so a model that registers later still recovers.
+			throw new Error(
+				`No language model matched ${stringifyVsCodeLmModelSelector(selector)}. ` +
+					"Copilot may be signed out, still starting, or the model may not exist. " +
+					"Open the Copilot chat view one time, then try again.",
+			)
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : "Unknown error"
 			throw new Error(`KitPilot <Language Model API>: Failed to select model: ${errorMessage}`)
