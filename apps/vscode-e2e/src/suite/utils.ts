@@ -10,14 +10,28 @@ export const waitFor = (
 	{ timeout = 30_000, interval = 250 }: WaitForOptions = {},
 ) => {
 	let timeoutId: NodeJS.Timeout | undefined = undefined
+	// The poll and the timeout race each other. Without this the poll keeps
+	// rescheduling itself after the timeout has already won, so every call that
+	// timed out leaves a timer running for the life of the process.
+	let settled = false
 
 	return Promise.race([
 		new Promise<void>((resolve) => {
 			const check = async () => {
+				if (settled) {
+					return
+				}
+
 				const result = condition()
 				const isSatisfied = result instanceof Promise ? await result : result
 
+				if (settled) {
+					return
+				}
+
 				if (isSatisfied) {
+					settled = true
+
 					if (timeoutId) {
 						clearTimeout(timeoutId)
 						timeoutId = undefined
@@ -33,6 +47,7 @@ export const waitFor = (
 		}),
 		new Promise((_, reject) => {
 			timeoutId = setTimeout(() => {
+				settled = true
 				reject(new Error(`Timeout after ${Math.floor(timeout / 1000)}s`))
 			}, timeout)
 		}),

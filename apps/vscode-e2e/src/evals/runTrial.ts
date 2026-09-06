@@ -79,6 +79,12 @@ export async function runTrial(
 	 * while the task runs.
 	 *
 	 * A subtask reports under its own id, so the map holds the whole run.
+	 *
+	 * The presence of an entry says nothing. `Task` saves the first user message
+	 * before it asks the model, and `hasTokenUsageChanged` treats the first
+	 * snapshot as a change, so every trial gets an entry of zeros before any
+	 * work happens. Whether a trial was measured therefore depends on what the
+	 * entries hold, not on how many there are. See `didAnyWork`.
 	 */
 	const usageByTask = new Map<string, { tokens: TokenUsage; tools: ToolUsage }>()
 
@@ -152,6 +158,8 @@ export async function runTrial(
 		cost += entry.tokens.totalCost
 	}
 
+	const summary = summarizeToolUsage(tools)
+
 	return {
 		caseId: evalCase.id,
 		trial,
@@ -161,12 +169,24 @@ export async function runTrial(
 		timedOut,
 		aborted,
 		error,
-		// A trial that reported no usage at all did not run. The report must not
-		// read that as a cheap trial that needed no exploration.
-		usageMissing: usageByTask.size === 0,
-		tools: summarizeToolUsage(tools),
+		// A trial that did no work did not run. The report must not read that as
+		// a cheap trial that needed no exploration.
+		usageMissing: !didAnyWork(summary.totalCalls, tokensIn, tokensOut),
+		tools: summary,
 		tokensIn,
 		tokensOut,
 		cost,
 	}
+}
+
+/**
+ * Says whether a trial did any work.
+ *
+ * A tool call is the strongest sign, and it stands on its own: Copilot has
+ * reported a cost of zero, so a trial that ran tools must still count when the
+ * cost is missing. Tokens cover a turn that answered without a tool. Cost is
+ * not part of the test, for the same reason.
+ */
+export function didAnyWork(totalCalls: number, tokensIn: number, tokensOut: number): boolean {
+	return totalCalls > 0 || tokensIn > 0 || tokensOut > 0
 }
