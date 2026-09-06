@@ -123,6 +123,24 @@ async function main() {
 		// which breaks when bundled. It needs access to the actual Node.js module instances.
 		// undici must be bundled because our VSIX is packaged with `--no-dependencies`.
 		external: ["vscode", "esbuild", "global-agent"],
+		// Tells `document-parsers-loader.ts` that the parsers are a separate
+		// bundle. The check becomes constant, so esbuild drops the import of the
+		// source module and the document libraries stay out of this entry.
+		define: { "process.env.KITPILOT_BUNDLED_PARSERS": '"1"' },
+	}
+
+	/**
+	 * The document parsers (`pdf-parse`, `mammoth`, `exceljs`) are large and only
+	 * a read of a PDF, DOCX or XLSX file needs them. They get their own bundle,
+	 * which `document-parsers-loader.ts` requires on demand.
+	 *
+	 * @type {import('esbuild').BuildOptions}
+	 */
+	const documentParsersConfig = {
+		...buildOptions,
+		entryPoints: ["integrations/misc/document-parsers.ts"],
+		outfile: "dist/document-parsers.js",
+		external: ["vscode", "esbuild", "global-agent"],
 	}
 
 	/**
@@ -134,18 +152,19 @@ async function main() {
 		outdir: "dist/workers",
 	}
 
-	const [extensionCtx, workerCtx] = await Promise.all([
+	const [extensionCtx, workerCtx, documentParsersCtx] = await Promise.all([
 		esbuild.context(extensionConfig),
 		esbuild.context(workerConfig),
+		esbuild.context(documentParsersConfig),
 	])
 
 	if (watch) {
-		await Promise.all([extensionCtx.watch(), workerCtx.watch()])
+		await Promise.all([extensionCtx.watch(), workerCtx.watch(), documentParsersCtx.watch()])
 		copyLocales(srcDir, distDir)
 		setupLocaleWatcher(srcDir, distDir)
 	} else {
-		await Promise.all([extensionCtx.rebuild(), workerCtx.rebuild()])
-		await Promise.all([extensionCtx.dispose(), workerCtx.dispose()])
+		await Promise.all([extensionCtx.rebuild(), workerCtx.rebuild(), documentParsersCtx.rebuild()])
+		await Promise.all([extensionCtx.dispose(), workerCtx.dispose(), documentParsersCtx.dispose()])
 	}
 }
 
