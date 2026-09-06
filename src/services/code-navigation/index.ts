@@ -19,7 +19,19 @@ import { execRipgrep, getBinPath, truncateLine } from "../ripgrep"
 /** The most results to return. A wide reference list must not fill the context. */
 export const MAX_RESULTS = 40
 
+/**
+ * Where a location came from.
+ *
+ * "provider" means a language provider resolved it, so it is the symbol that
+ * was asked for. "text" means the name appears there. A text match can sit in
+ * a comment or a string, and it can be a different symbol that shares the
+ * name, thus it needs a look before it is changed.
+ */
+export type LocationSource = "provider" | "text"
+
 export interface SymbolLocation {
+	/** Where the location came from. */
+	source: LocationSource
 	/** Path relative to the workspace. */
 	path: string
 	/** One-based line number. */
@@ -78,7 +90,7 @@ export async function findDefinitions(
 	const locations: SymbolLocation[] = []
 	for (const entry of allowed.slice(0, MAX_RESULTS)) {
 		locations.push({
-			...(await describeLocation(entry.location.uri, entry.location.range.start, cwd)),
+			...(await describeLocation(entry.location.uri, entry.location.range.start, cwd, "provider")),
 			kind: vscode.SymbolKind[entry.kind],
 			container: entry.containerName || undefined,
 		})
@@ -99,7 +111,13 @@ export async function findDefinitions(
  * joins a whole-word text search to the provider's answer and removes the
  * duplicates. The provider finds a use that a text search cannot, such as an
  * import under another name. The text search finds a use in a file that the
- * language service never loaded. Together they are safe enough for a rename.
+ * language service never loaded.
+ *
+ * Every location keeps the source it came from, because the two are not of
+ * equal worth. A text match can sit in a comment or a string, and it can be a
+ * different symbol that shares the name. The join raises what the answer
+ * covers. It does not prove that the answer is complete, and it cannot show
+ * that a rename touched every use.
  */
 export async function findReferences(
 	symbol: string,
@@ -111,8 +129,10 @@ export async function findReferences(
 		searchIdentifier(symbol, cwd, ignoreController),
 	])
 
+	// The text entries go in first, so a location that both found keeps the
+	// provider as its source. A resolved location is worth more than a match.
 	const merged = new Map<string, SymbolLocation>()
-	for (const location of [...fromProvider, ...fromText]) {
+	for (const location of [...fromText, ...fromProvider]) {
 		merged.set(`${location.path}:${location.line}:${location.column}`, location)
 	}
 
@@ -120,8 +140,7 @@ export async function findReferences(
 		(a, b) => a.path.localeCompare(b.path) || a.line - b.line || a.column - b.column,
 	)
 
-	const providerKeys = new Set(fromProvider.map((l) => `${l.path}:${l.line}:${l.column}`))
-	const joinedTextSearch = all.some((l) => !providerKeys.has(`${l.path}:${l.line}:${l.column}`))
+	const joinedTextSearch = all.some((location) => location.source === "text")
 
 	return {
 		locations: all.slice(0, MAX_RESULTS),
@@ -151,7 +170,7 @@ async function referencesFromProvider(
 
 	const locations: SymbolLocation[] = []
 	for (const location of allowed) {
-		locations.push(await describeLocation(location.uri, location.range.start, cwd))
+		locations.push(await describeLocation(location.uri, location.range.start, cwd, "provider"))
 	}
 	return locations
 }
@@ -204,6 +223,7 @@ async function searchIdentifier(
 
 		const column = (parsed.data.submatches?.[0]?.start ?? 0) + 1
 		locations.push({
+			source: "text",
 			path: toRelative(vscode.Uri.file(fsPath), cwd),
 			line: parsed.data.line_number ?? 0,
 			column,
@@ -260,10 +280,16 @@ async function findAnchor(
 	}
 }
 
-async function describeLocation(uri: vscode.Uri, position: vscode.Position, cwd: string): Promise<SymbolLocation> {
+async function describeLocation(
+	uri: vscode.Uri,
+	position: vscode.Position,
+	cwd: string,
+	source: LocationSource,
+): Promise<SymbolLocation> {
 	const line = await readLine(uri, position.line)
 
 	return {
+		source,
 		path: toRelative(uri, cwd),
 		line: position.line + 1,
 		column: position.character + 1,

@@ -10,7 +10,9 @@ Parameters:
 
 "definition" answers only for a language whose extension is installed. If it finds nothing it says so; then use search_files.
 
-"references" joins the language provider to a whole-word text search, so it still answers when no provider does. It tells you when the answer came from the text search alone, which means a use under another name may be missing.
+"references" joins the language provider to a whole-word text search, so it still answers when no provider does. Each line is marked [provider] or [text]. A [provider] line is the symbol you asked for. A [text] line only shares the name: it can be a comment, a string, or a different symbol. Read a [text] line before you change it.
+
+The list does not prove that every use is there. Do not treat it as proof that a rename is complete. For a rename, still check the result with search_files or by building the project.
 
 Example: find where a function is declared
 { "symbol": "parseConfig", "lookup": "definition" }

@@ -82,6 +82,7 @@ describe("findDefinitions", () => {
 		expect(result.usedFallback).toBe(false)
 		expect(result.locations).toEqual([
 			{
+				source: "provider",
 				path: "src/config/parse.js",
 				line: 3,
 				column: 10,
@@ -231,7 +232,37 @@ describe("findReferences", () => {
 		const result = await findReferences("parseConfig", CWD)
 
 		expect(result.usedFallback).toBe(true)
-		expect(result.locations).toEqual([{ path: "src/server/boot.js", line: 5, column: 13, text: "parseConfig(t)" }])
+		expect(result.locations).toEqual([
+			{ source: "text", path: "src/server/boot.js", line: 5, column: 13, text: "parseConfig(t)" },
+		])
+	})
+
+	// A text search matches the name wherever it appears. The provider resolves
+	// a symbol. Keeping the two apart is what lets the caller say which lines
+	// need a look before they are changed.
+	it("keeps the source of each location", async () => {
+		executeCommand.mockImplementation((command: string) =>
+			command === "vscode.executeWorkspaceSymbolProvider"
+				? Promise.resolve([symbolAt("parseConfig", "/repo/src/config/parse.js", 2, 0)])
+				: Promise.resolve([
+						{ uri: uri("/repo/src/config/parse.js"), range: { start: { line: 2, character: 9 } } },
+					]),
+		)
+		execRipgrep.mockResolvedValue(
+			[
+				rgMatch("/repo/src/config/parse.js", 3, 9, "function parseConfig(text) {"),
+				rgMatch("/repo/docs/notes.md", 8, 4, "the parseConfig helper is gone"),
+			].join("\n"),
+		)
+
+		const result = await findReferences("parseConfig", CWD)
+
+		const bySource = Object.fromEntries(result.locations.map((l) => [l.path, l.source]))
+		// Both found the declaration, and the provider wins, because it resolved
+		// the symbol rather than matching its name.
+		expect(bySource["src/config/parse.js"]).toBe("provider")
+		// Prose in a document is a text match and nothing more.
+		expect(bySource["docs/notes.md"]).toBe("text")
 	})
 
 	it("reports a fallback when the provider returns nothing usable", async () => {

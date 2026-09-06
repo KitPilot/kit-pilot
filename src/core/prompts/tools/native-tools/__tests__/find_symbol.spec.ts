@@ -27,8 +27,13 @@ describe("find_symbol tool definition", () => {
 	})
 
 	// A reference list that is short by a call site would let a rename look
-	// finished when it is not.
-	it("states that a text-search answer can be incomplete", () => {
-		expect(findSymbol.function.description).toContain("may be missing")
+	// finished when it is not, and a text match is not proof of a use.
+	it("states that a text match needs a look", () => {
+		expect(findSymbol.function.description).toContain("comment, a string, or a different symbol")
+	})
+
+	it("does not let the list be read as a finished rename", () => {
+		expect(findSymbol.function.description).toContain("does not prove that every use is there")
+		expect(findSymbol.function.description).toContain("rename is complete")
 	})
 })

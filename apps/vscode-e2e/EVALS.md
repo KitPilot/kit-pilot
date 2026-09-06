@@ -27,11 +27,38 @@ group would make the headline number wrong.
 
 ## The cases
 
-| Case                | Category            | What it measures                                                           |
-| ------------------- | ------------------- | -------------------------------------------------------------------------- |
-| `definition-bugfix` | bug-fix             | Fix a defect whose cause is three imports away from the symptom.           |
-| `reference-rename`  | cross-file-refactor | Rename an exported function that five places use, across four directories. |
-| `failing-test`      | test-failure        | Fix a failing test whose cause is two modules away from the assertion.     |
+| Case                  | Category            | What it measures                                                                                |
+| --------------------- | ------------------- | ----------------------------------------------------------------------------------------------- |
+| `definition-bugfix`   | bug-fix             | Fix a defect whose cause is three imports away from the symptom. CommonJS JavaScript.           |
+| `reference-rename`    | cross-file-refactor | Rename an exported function that five places use, across four directories. CommonJS JavaScript. |
+| `reference-rename-ts` | cross-file-refactor | The same rename in TypeScript with ESM imports.                                                 |
+| `failing-test`        | test-failure        | Fix a failing test whose cause is two modules away from the assertion. CommonJS JavaScript.     |
+
+### Report the two languages apart
+
+`reference-rename` and `reference-rename-ts` ask for the same rename in two
+module systems. Report them as two results. An average over the two would hide
+the thing they were built to show.
+
+Measured in VS Code 1.107, with no language extension beyond the built-in
+support, by asking the reference provider at the declaration:
+
+| Fixture                                 | Occurrences of the name | Reported by the provider | Files reached |
+| --------------------------------------- | ----------------------- | ------------------------ | ------------- |
+| `reference-rename` (CommonJS)           | 10                      | 2                        | 1 of 5        |
+| `reference-rename-ts` (TypeScript, ESM) | 8                       | 8                        | 5 of 5        |
+
+The CommonJS number does not improve when every file is open. The language
+service builds no project-wide index across `require` in that setup.
+
+**Neither number is a floor or a ceiling.** They are two points. A third
+configuration, such as JavaScript with ESM imports or a project with a
+`jsconfig.json`, could fall anywhere between them or outside them. Do not read
+either as a bound on what the tool can do.
+
+`reference-rename-ts` runs on Node 23 and later, which strips the types. On an
+older Node its grader checks the rename and reports that it did not run the
+behavior. It says so in the trial detail.
 
 Each case names no file in its prompt. The model must first find where the
 code lives. Thus each case measures what definition and reference lookup is
@@ -162,3 +189,7 @@ before you accept a change that moves a number by less than its spread.
 
 Correctness comes first. Fewer exploratory calls with a lower pass rate is not
 an improvement.
+
+Compare one commit with another under the same model and the same settings.
+Run the same cases against each, and repeat each case. A result from one commit
+alone says nothing, because there is nothing to compare it with.

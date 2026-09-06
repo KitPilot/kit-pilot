@@ -14,15 +14,35 @@ describe("find_symbol result text", () => {
 			"references",
 			result({
 				locations: [
-					{ path: "src/server/boot.js", line: 4, column: 9, text: "const c = parseConfig(t)" },
-					{ path: "src/server/boot.js", line: 9, column: 3, text: "parseConfig(other)" },
-					{ path: "src/cli/main.js", line: 2, column: 20, text: "const { parseConfig } = require(...)" },
+					{
+						source: "provider" as const,
+						path: "src/server/boot.js",
+						line: 4,
+						column: 9,
+						text: "const c = parseConfig(t)",
+					},
+					{
+						source: "provider" as const,
+						path: "src/server/boot.js",
+						line: 9,
+						column: 3,
+						text: "parseConfig(other)",
+					},
+					{
+						source: "provider" as const,
+						path: "src/cli/main.js",
+						line: 2,
+						column: 20,
+						text: "const { parseConfig } = require(...)",
+					},
 				],
 			}),
 		)
 
 		expect(text).toContain('3 references of "parseConfig"')
-		expect(text).toContain("src/server/boot.js\n  4:9  const c = parseConfig(t)\n  9:3  parseConfig(other)")
+		expect(text).toContain(
+			"src/server/boot.js\n  4:9  [provider] const c = parseConfig(t)\n  9:3  [provider] parseConfig(other)",
+		)
 		expect(text).toContain("src/cli/main.js\n  2:20")
 	})
 
@@ -31,7 +51,15 @@ describe("find_symbol result text", () => {
 			"parseConfig",
 			"definition",
 			result({
-				locations: [{ path: "src/config/parse.js", line: 3, column: 10, text: "function parseConfig()" }],
+				locations: [
+					{
+						source: "provider" as const,
+						path: "src/config/parse.js",
+						line: 3,
+						column: 10,
+						text: "function parseConfig()",
+					},
+				],
 			}),
 		)
 
@@ -45,6 +73,7 @@ describe("find_symbol result text", () => {
 			result({
 				locations: [
 					{
+						source: "provider" as const,
 						path: "src/a.ts",
 						line: 12,
 						column: 2,
@@ -63,7 +92,10 @@ describe("find_symbol result text", () => {
 		const text = formatResult(
 			"parseConfig",
 			"references",
-			result({ locations: [{ path: "a.js", line: 1, column: 1, text: "x" }], omitted: 12 }),
+			result({
+				locations: [{ source: "provider" as const, path: "a.js", line: 1, column: 1, text: "x" }],
+				omitted: 12,
+			}),
 		)
 
 		expect(text).toContain("12 more not shown")
@@ -80,34 +112,39 @@ describe("find_symbol result text", () => {
 	})
 
 	// A rename that trusts a short list looks done when it is not.
-	it("warns when the reference list came from a text search alone", () => {
+	it("says when the whole list came from a text search", () => {
 		const text = formatResult(
 			"parseConfig",
 			"references",
 			result({
 				usedFallback: true,
-				locations: [{ path: "a.js", line: 1, column: 1, text: "parseConfig()" }],
+				locations: [{ source: "text" as const, path: "a.js", line: 1, column: 1, text: "parseConfig()" }],
 			}),
 		)
 
-		expect(text).toContain("This list is from a text search")
-		expect(text).toContain("may be missing")
+		expect(text).toContain("No language provider answered")
+		expect(text).toContain("every line above is a text match")
 	})
 
-	it("does not mention the text search when the provider found everything", () => {
+	it("says so when every reference came from the provider", () => {
 		const text = formatResult(
 			"parseConfig",
 			"references",
-			result({ locations: [{ path: "a.js", line: 1, column: 1, text: "parseConfig()" }] }),
+			result({
+				locations: [{ source: "provider" as const, path: "a.js", line: 1, column: 1, text: "parseConfig()" }],
+			}),
 		)
 
-		expect(text).not.toContain("text search")
+		expect(text).toContain("Every line above came from the language provider")
+		expect(text).not.toContain("[text]")
+		// A text-match caution would be wrong here; there are no text matches.
+		expect(text).not.toContain("can be in a comment")
 	})
 
-	// The measured case: the provider answers but reports only the uses inside
-	// the declaring file. Silence here would be the most dangerous outcome,
-	// because the list looks like a provider answer and is not a whole one.
-	it("says when the provider answered but the text search found more", () => {
+	// The measured case: the provider resolves the uses inside the declaring
+	// file and a text search supplies the rest. The two are not of equal worth,
+	// so the list has to say which is which.
+	it("marks each reference with its source and counts the two apart", () => {
 		const text = formatResult(
 			"parseConfig",
 			"references",
@@ -115,24 +152,88 @@ describe("find_symbol result text", () => {
 				usedFallback: false,
 				joinedTextSearch: true,
 				locations: [
-					{ path: "src/config/parse.js", line: 3, column: 10, text: "function parseConfig()" },
-					{ path: "src/server/boot.js", line: 5, column: 12, text: "parseConfig(t)" },
+					{
+						source: "provider" as const,
+						path: "src/config/parse.js",
+						line: 3,
+						column: 10,
+						text: "function parseConfig()",
+					},
+					{
+						source: "text" as const,
+						path: "src/server/boot.js",
+						line: 5,
+						column: 12,
+						text: "parseConfig(t)",
+					},
+					{
+						source: "text" as const,
+						path: "src/cli/main.js",
+						line: 2,
+						column: 8,
+						text: "// parseConfig is gone",
+					},
 				],
 			}),
 		)
 
-		expect(text).toContain("The language provider missed some of these")
-		expect(text).toContain("check each one before you change it")
+		expect(text).toContain("[provider] function parseConfig()")
+		expect(text).toContain("[text] parseConfig(t)")
+		expect(text).toContain("1 came from the language provider")
+		expect(text).toContain("2 came from a text search alone")
 	})
 
-	it("does not warn on a definition lookup", () => {
+	// A text match can be a comment, a string, or a different symbol with the
+	// same name. Saying so is the difference between a list that is useful and
+	// one that is trusted too far.
+	it("cautions about text matches whenever there is one", () => {
+		const text = formatResult(
+			"parseConfig",
+			"references",
+			result({
+				locations: [{ source: "text" as const, path: "a.js", line: 1, column: 1, text: "// parseConfig" }],
+			}),
+		)
+
+		expect(text).toContain("can be in a comment or a string")
+		expect(text).toContain("different")
+		expect(text).toContain("Read each one before you change it")
+	})
+
+	// The union raises what the answer covers. It cannot show that nothing is
+	// missing, so the result must never be read as proof of a finished rename.
+	it("never claims the list is complete", () => {
+		for (const usedFallback of [true, false]) {
+			const text = formatResult(
+				"parseConfig",
+				"references",
+				result({
+					usedFallback,
+					locations: [
+						{ source: "provider" as const, path: "a.js", line: 1, column: 1, text: "parseConfig()" },
+					],
+				}),
+			)
+
+			expect(text).toContain("does not prove that every use is here")
+			expect(text).toContain("rename is complete")
+		}
+	})
+
+	// A definition lookup asks the provider only, so none of the reference
+	// wording applies to it.
+	it("says nothing about sources on a definition lookup", () => {
 		const text = formatResult(
 			"parseConfig",
 			"definition",
-			result({ usedFallback: true, locations: [{ path: "a.js", line: 1, column: 1, text: "x" }] }),
+			result({
+				usedFallback: true,
+				locations: [{ source: "provider" as const, path: "a.js", line: 1, column: 1, text: "x" }],
+			}),
 		)
 
 		expect(text).not.toContain("text search")
+		expect(text).not.toContain("rename is complete")
 	})
 
 	it("says when the provider answered but every result was filtered out", () => {

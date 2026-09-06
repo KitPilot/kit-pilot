@@ -107,23 +107,6 @@ export function formatResult(symbol: string, lookup: Lookup, result: LookupResul
 	lines.push(`${result.locations.length} ${noun}${plural} of "${symbol}":`)
 	lines.push("")
 
-	if (lookup === "references" && result.usedFallback) {
-		// The list came from a text search alone, so a use under another name is
-		// missing. Say so, because a rename that trusts a short list looks done
-		// when it is not.
-		lines.push("No language provider answered. This list is from a text search, so a")
-		lines.push("use under another name, such as a renamed import, may be missing.")
-		lines.push("")
-	} else if (lookup === "references" && result.joinedTextSearch) {
-		// The provider answered but a text search found more. Measured in VS Code
-		// 1.107 on a CommonJS project: the provider reported the uses inside the
-		// declaring file and none of the uses in other files. Saying where the
-		// list came from tells the task that the provider alone was not enough.
-		lines.push("The language provider missed some of these. A text search found the rest,")
-		lines.push("so check each one before you change it.")
-		lines.push("")
-	}
-
 	for (const [file, locations] of groupByFile(result.locations)) {
 		lines.push(file)
 		for (const location of locations) {
@@ -136,13 +119,54 @@ export function formatResult(symbol: string, lookup: Lookup, result: LookupResul
 		lines.push(`${result.omitted} more not shown. Narrow the search with search_files if you need them all.`)
 	}
 
+	if (lookup === "references") {
+		lines.push("")
+		lines.push(...describeReferenceSources(result))
+	}
+
 	return lines.join("\n")
 }
 
+/**
+ * States where a reference list came from.
+ *
+ * The two sources are not of equal worth. A provider resolved its locations, so
+ * each one is the symbol that was asked for. A text match only shares the name:
+ * it can sit in a comment or a string, and it can be a different symbol
+ * altogether. Reporting one number for both would hide that.
+ *
+ * None of this proves the list is complete. It cannot, so the text says so.
+ */
+function describeReferenceSources(result: LookupResult): string[] {
+	const fromProvider = result.locations.filter((location) => location.source === "provider").length
+	const fromText = result.locations.length - fromProvider
+	const lines: string[] = []
+
+	if (result.usedFallback) {
+		lines.push("No language provider answered, so every line above is a text match.")
+	} else if (fromText > 0) {
+		lines.push(`${fromProvider} came from the language provider, marked [provider].`)
+		lines.push(`${fromText} came from a text search alone, marked [text].`)
+	} else {
+		lines.push("Every line above came from the language provider.")
+	}
+
+	if (fromText > 0) {
+		lines.push("A text match can be in a comment or a string, and it can be a different")
+		lines.push("symbol with the same name. Read each one before you change it.")
+	}
+
+	lines.push("This list does not prove that every use is here. Do not treat it as proof")
+	lines.push("that a rename is complete.")
+
+	return lines
+}
+
 function describe(location: SymbolLocation): string {
+	const source = `[${location.source}] `
 	const prefix = location.kind ? `${location.kind} ` : ""
 	const suffix = location.container ? ` (in ${location.container})` : ""
-	return `${prefix}${location.text}${suffix}`
+	return `${source}${prefix}${location.text}${suffix}`
 }
 
 function groupByFile(locations: SymbolLocation[]): Map<string, SymbolLocation[]> {

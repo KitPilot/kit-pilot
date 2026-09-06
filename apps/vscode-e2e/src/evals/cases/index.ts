@@ -136,6 +136,70 @@ export const EVAL_CASES: EvalCase[] = [
 		},
 	},
 	{
+		id: "reference-rename-ts",
+		category: "cross-file-refactor",
+		intent: "The same rename in TypeScript with ESM imports, to see whether the language matters.",
+		fixture: "reference-rename-ts",
+		mode: "code",
+		prompt: [
+			"Rename the function `parseConfig` to `readConfig`.",
+			"",
+			"Update its definition, its export, and every place that uses it.",
+			"The behavior must not change.",
+		].join("\n"),
+		grade: async (workspaceDir) => {
+			const files = await listFiles(workspaceDir)
+			const leftovers: string[] = []
+
+			for (const file of files) {
+				if (!file.endsWith(".ts")) {
+					continue
+				}
+				const content = await fs.readFile(path.join(workspaceDir, file), "utf8")
+				if (content.includes("parseConfig")) {
+					leftovers.push(file)
+				}
+			}
+
+			if (leftovers.length > 0) {
+				return fail(`parseConfig is still in: ${leftovers.join(", ")}`)
+			}
+
+			const definition = await fs.readFile(path.join(workspaceDir, "src/config/parse.ts"), "utf8").catch(() => "")
+			if (!/export function readConfig\b/.test(definition)) {
+				return fail("src/config/parse.ts does not export a readConfig function")
+			}
+
+			const barrel = await fs.readFile(path.join(workspaceDir, "src/config/index.ts"), "utf8").catch(() => "")
+			if (!barrel.includes("readConfig")) {
+				return fail("src/config/index.ts no longer re-exports the function")
+			}
+
+			// Node strips the types and runs the fixture from version 23. On an
+			// older Node the behavior half cannot run, so the case is graded on
+			// its structure alone and the detail says so. It must not read as a
+			// failure by the model.
+			if (!(await nodeCanRunTypeScript(workspaceDir))) {
+				return pass("every reference is renamed. Node here cannot run TypeScript, so behavior was not run")
+			}
+
+			const app = await runInWorkspace("node", ["src/index.ts"], workspaceDir)
+			if (app.exitCode !== 0) {
+				return fail(`node src/index.ts exited ${app.exitCode}: ${app.stderr.trim() || "(no output)"}`)
+			}
+			if (!app.stdout.includes("listening on example.com:9000") || !app.stdout.includes("debug=true")) {
+				return fail(`behavior changed. Got:\n${app.stdout}`)
+			}
+
+			const check = await runInWorkspace("node", ["test/parse.check.ts"], workspaceDir)
+			if (check.exitCode !== 0) {
+				return fail(`node test/parse.check.ts exited ${check.exitCode}: ${check.stderr.trim()}`)
+			}
+
+			return pass("every reference is renamed and the behavior is the same")
+		},
+	},
+	{
 		id: "failing-test",
 		category: "test-failure",
 		intent: "Fix a failing test whose cause is two modules away from the assertion.",
@@ -158,6 +222,19 @@ export const EVAL_CASES: EvalCase[] = [
 		},
 	},
 ]
+
+/**
+ * Says whether the Node on this machine can run a TypeScript file.
+ *
+ * Node strips the types from version 23. An older Node cannot run the
+ * TypeScript fixture, and a grader that treated that as a failure would blame
+ * the model for the machine.
+ */
+async function nodeCanRunTypeScript(workspaceDir: string): Promise<boolean> {
+	const version = await runInWorkspace("node", ["--version"], workspaceDir, 5_000)
+	const major = Number(/^v(\d+)/.exec(version.stdout.trim())?.[1] ?? "0")
+	return major >= 23
+}
 
 export function findCase(id: string): EvalCase | undefined {
 	return EVAL_CASES.find((evalCase) => evalCase.id === id)

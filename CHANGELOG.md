@@ -1,5 +1,21 @@
 # KitPilot Changelog
 
+## Unreleased
+
+### Changed
+
+- **KitPilot starts faster.** The libraries that read PDF, DOCX and XLSX files loaded every time KitPilot started, because the code that reads plain text sat in the same file. Thus a terminal command or a difference view pulled in a document reader that it never used. The libraries now load the first time you open such a document. The part of KitPilot that loads at start is half the size it was, and the work that moved costs 124 milliseconds and 46 megabytes when it does run.
+- **The verification command runs one time for each completion.** If you set `kit-pilot.verifyCommand`, KitPilot told the model to run it and then ran it again itself. An expensive test suite therefore ran twice for one task. KitPilot now runs it, and the model is told not to. You see the same check, in half the time.
+
+### Added
+
+- **A new tool finds where a name is defined and where it is used.** Before, KitPilot answered "where is this defined?" by reading files until it found the answer. It now asks the editor, which is the same thing that answers "Go to Definition". For a list of uses it also runs a text search, and it marks each line to say which found it. A line the editor resolved is the name you asked for. A line only the text search found may be a comment, a string, or a different name that reads the same, so KitPilot checks it before it changes it. The list does not prove that every use is there.
+
+### Fixed
+
+- **A verification command that is stopped no longer counts as a pass.** If the command was killed, or if it could not start, KitPilot read the result as success and finished the task. A test suite that ran out of memory therefore looked like a test suite that passed. Both cases now stop the completion and report what happened.
+- **A failing verification command now tells the model what went wrong.** KitPilot read the error from one output stream only, but a compiler and most test runners write their errors to the other one. The model was told that the check failed and nothing more, so it could not fix it. It now gets the command's output, shortened at both ends if it is long.
+
 ## 0.2.5
 
 This release corrects the text on the Marketplace page. KitPilot behaves as
