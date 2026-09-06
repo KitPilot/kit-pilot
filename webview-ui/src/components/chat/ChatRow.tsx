@@ -787,6 +787,37 @@ export const ChatRowContent = ({
 						</div>
 					</>
 				)
+			case "findSymbol": {
+				const isReferences = tool.lookup === "references"
+				const askKey = isReferences
+					? "chat:findSymbol.wantsToFindReferences"
+					: "chat:findSymbol.wantsToFindDefinition"
+				const doneKey = isReferences ? "chat:findSymbol.didFindReferences" : "chat:findSymbol.didFindDefinition"
+
+				return (
+					<>
+						<div style={headerStyle}>
+							{toolIcon("symbol-method")}
+							<span style={{ fontWeight: "bold" }}>
+								<Trans
+									i18nKey={message.type === "ask" ? askKey : doneKey}
+									components={{ code: <code className="font-medium">{tool.symbol}</code> }}
+									values={{ symbol: tool.symbol }}
+								/>
+							</span>
+						</div>
+						<div className="pl-6">
+							<CodeAccordion
+								path={tool.symbol}
+								code={tool.content}
+								language="shellsession"
+								isExpanded={isExpanded}
+								onToggleExpand={handleToggleExpand}
+							/>
+						</div>
+					</>
+				)
+			}
 			case "switchMode":
 				return (
 					<>

@@ -273,6 +273,12 @@
 		"wantsToSearchOutsideWorkspace": "KitPilot wants to search this directory (outside workspace) for <code>{{regex}}</code>",
 		"didSearchOutsideWorkspace": "KitPilot searched this directory (outside workspace) for <code>{{regex}}</code>"
 	},
+	"findSymbol": {
+		"wantsToFindDefinition": "KitPilot wants to find where <code>{{symbol}}</code> is defined",
+		"didFindDefinition": "KitPilot found where <code>{{symbol}}</code> is defined",
+		"wantsToFindReferences": "KitPilot wants to find every use of <code>{{symbol}}</code>",
+		"didFindReferences": "KitPilot found every use of <code>{{symbol}}</code>"
+	},
 	"codebaseSearch": {
 		"wantsToSearch": "KitPilot wants to search the codebase for <code>{{query}}</code>",
 		"wantsToSearchWithPath": "KitPilot wants to search the codebase for <code>{{query}}</code> in <code>{{path}}</code>",
