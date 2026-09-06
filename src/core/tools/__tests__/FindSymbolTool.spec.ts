@@ -94,7 +94,7 @@ describe("find_symbol result text", () => {
 		expect(text).toContain("may be missing")
 	})
 
-	it("does not warn when the provider answered", () => {
+	it("does not mention the text search when the provider found everything", () => {
 		const text = formatResult(
 			"parseConfig",
 			"references",
@@ -102,6 +102,27 @@ describe("find_symbol result text", () => {
 		)
 
 		expect(text).not.toContain("text search")
+	})
+
+	// The measured case: the provider answers but reports only the uses inside
+	// the declaring file. Silence here would be the most dangerous outcome,
+	// because the list looks like a provider answer and is not a whole one.
+	it("says when the provider answered but the text search found more", () => {
+		const text = formatResult(
+			"parseConfig",
+			"references",
+			result({
+				usedFallback: false,
+				joinedTextSearch: true,
+				locations: [
+					{ path: "src/config/parse.js", line: 3, column: 10, text: "function parseConfig()" },
+					{ path: "src/server/boot.js", line: 5, column: 12, text: "parseConfig(t)" },
+				],
+			}),
+		)
+
+		expect(text).toContain("The language provider missed some of these")
+		expect(text).toContain("check each one before you change it")
 	})
 
 	it("does not warn on a definition lookup", () => {

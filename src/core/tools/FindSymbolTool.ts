@@ -114,6 +114,14 @@ export function formatResult(symbol: string, lookup: Lookup, result: LookupResul
 		lines.push("No language provider answered. This list is from a text search, so a")
 		lines.push("use under another name, such as a renamed import, may be missing.")
 		lines.push("")
+	} else if (lookup === "references" && result.joinedTextSearch) {
+		// The provider answered but a text search found more. Measured in VS Code
+		// 1.107 on a CommonJS project: the provider reported the uses inside the
+		// declaring file and none of the uses in other files. Saying where the
+		// list came from tells the task that the provider alone was not enough.
+		lines.push("The language provider missed some of these. A text search found the rest,")
+		lines.push("so check each one before you change it.")
+		lines.push("")
 	}
 
 	for (const [file, locations] of groupByFile(result.locations)) {

@@ -7,7 +7,7 @@ import {
 } from "@kit-pilot/types"
 
 import { waitFor } from "../suite/utils"
-import { summarizeToolUsage } from "./metrics"
+import { mergeToolUsage, summarizeToolUsage } from "./metrics"
 import type { EvalCase, TrialResult } from "./types"
 import { resetWorkspace } from "./workspace"
 
@@ -24,6 +24,14 @@ export interface TrialOptions {
  * Settings for every trial.
  *
  * Approval is automatic, because a trial has nobody to answer a prompt.
+ *
+ * `alwaysAllowExecute` alone is not enough: `getCommandDecision` returns false
+ * when the allowlist is empty, so every command would wait for an approval that
+ * never comes and the trial would end in a timeout. The wildcard is safe here
+ * and only here, because a trial runs in a temporary workspace that holds a
+ * copy of the fixture and nothing else. The denylist is stated rather than left
+ * out, so the setting is a decision and not an oversight.
+ *
  * Checkpoints are off, because the harness copies the fixture over the
  * workspace between trials and a shadow Git repository does not expect that.
  */
@@ -36,6 +44,8 @@ function trialConfiguration(evalCase: EvalCase, options: TrialOptions): KitPilot
 		alwaysAllowReadOnly: true,
 		alwaysAllowWrite: true,
 		alwaysAllowExecute: true,
+		allowedCommands: ["*"],
+		deniedCommands: [],
 		alwaysAllowModeSwitch: true,
 		alwaysAllowSubtasks: true,
 		alwaysApproveResubmit: true,
@@ -55,15 +65,29 @@ export async function runTrial(
 	await resetWorkspace(evalCase.fixture, workspaceDir)
 
 	let startedTaskId = ""
-	let tokenUsage: TokenUsage | undefined
-	let toolUsage: ToolUsage | undefined
 	let completed = false
 	let aborted = false
 
-	const onCompleted = (taskId: string, usage: TokenUsage, tools: ToolUsage) => {
+	/**
+	 * The latest usage of every task seen during the trial, keyed by task id.
+	 *
+	 * A trial that times out or aborts never fires TaskCompleted. Reading usage
+	 * from that event alone would report zero calls and zero cost for a trial
+	 * that in fact made many calls. Those zeros would then lower the median
+	 * number of exploratory calls, which is the very measure the harness exists
+	 * to compare. Thus the trial also follows TaskTokenUsageUpdated, which fires
+	 * while the task runs.
+	 *
+	 * A subtask reports under its own id, so the map holds the whole run.
+	 */
+	const usageByTask = new Map<string, { tokens: TokenUsage; tools: ToolUsage }>()
+
+	const onUsage = (taskId: string, tokens: TokenUsage, tools: ToolUsage) => {
+		usageByTask.set(taskId, { tokens, tools })
+	}
+	const onCompleted = (taskId: string, tokens: TokenUsage, tools: ToolUsage) => {
+		usageByTask.set(taskId, { tokens, tools })
 		if (taskId === startedTaskId) {
-			tokenUsage = usage
-			toolUsage = tools
 			completed = true
 		}
 	}
@@ -73,6 +97,7 @@ export async function runTrial(
 		}
 	}
 
+	api.on(KitPilotEventName.TaskTokenUsageUpdated, onUsage)
 	api.on(KitPilotEventName.TaskCompleted, onCompleted)
 	api.on(KitPilotEventName.TaskAborted, onAborted)
 
@@ -91,6 +116,7 @@ export async function runTrial(
 		timedOut = true
 		error = caught instanceof Error ? caught.message : String(caught)
 	} finally {
+		api.off(KitPilotEventName.TaskTokenUsageUpdated, onUsage)
 		api.off(KitPilotEventName.TaskCompleted, onCompleted)
 		api.off(KitPilotEventName.TaskAborted, onAborted)
 	}
@@ -114,6 +140,18 @@ export async function runTrial(
 		detail: `the grader threw: ${caught instanceof Error ? caught.message : String(caught)}`,
 	}))
 
+	let tools: ToolUsage | undefined
+	let tokensIn = 0
+	let tokensOut = 0
+	let cost = 0
+
+	for (const entry of usageByTask.values()) {
+		tools = mergeToolUsage(tools, entry.tools)
+		tokensIn += entry.tokens.totalTokensIn
+		tokensOut += entry.tokens.totalTokensOut
+		cost += entry.tokens.totalCost
+	}
+
 	return {
 		caseId: evalCase.id,
 		trial,
@@ -123,9 +161,12 @@ export async function runTrial(
 		timedOut,
 		aborted,
 		error,
-		tools: summarizeToolUsage(toolUsage),
-		tokensIn: tokenUsage?.totalTokensIn ?? 0,
-		tokensOut: tokenUsage?.totalTokensOut ?? 0,
-		cost: tokenUsage?.totalCost ?? 0,
+		// A trial that reported no usage at all did not run. The report must not
+		// read that as a cheap trial that needed no exploration.
+		usageMissing: usageByTask.size === 0,
+		tools: summarizeToolUsage(tools),
+		tokensIn,
+		tokensOut,
+		cost,
 	}
 }

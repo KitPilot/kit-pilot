@@ -30,10 +30,26 @@ export function renderReport(run: EvalRun): string {
 	lines.push(`- Model: ${run.modelId}`)
 	lines.push(`- Trials per case: ${run.trialsPerCase}`)
 	lines.push("")
+
+	if (run.failures.length > 0) {
+		lines.push(`## Incomplete`)
+		lines.push("")
+		lines.push(`${run.failures.length} case(s) did not run. Do not compare this run with another one.`)
+		lines.push("")
+		for (const failure of run.failures) {
+			lines.push(`- **${failure.caseId}**: ${failure.reason}`)
+		}
+		lines.push("")
+	}
+
 	lines.push("Each cell gives the median, then the range and the sample standard deviation.")
 	lines.push("")
-	lines.push("| Case | Category | Pass rate | Exploratory calls | Edit calls | Shell calls | Elapsed | Cost |")
-	lines.push("| ---- | -------- | --------- | ----------------- | ---------- | ----------- | ------- | ---- |")
+	lines.push(
+		"| Case | Category | Pass rate | Measured | Exploratory calls | Edit calls | Shell calls | Elapsed | Cost |",
+	)
+	lines.push(
+		"| ---- | -------- | --------- | -------- | ----------------- | ---------- | ----------- | ------- | ---- |",
+	)
 
 	for (const summary of run.cases) {
 		lines.push(
@@ -42,6 +58,7 @@ export function renderReport(run: EvalRun): string {
 				summary.caseId,
 				summary.category,
 				`${summary.passed}/${summary.trials}`,
+				summary.measured === summary.trials ? "all" : `${summary.measured}/${summary.trials}`,
 				statCell(summary.exploratoryCalls, (n) => round(n)),
 				statCell(summary.editCalls, (n) => round(n)),
 				statCell(summary.shellCalls, (n) => round(n)),
@@ -61,6 +78,7 @@ export function renderReport(run: EvalRun): string {
 		const notes: string[] = []
 		if (trial.timedOut) notes.push("timed out")
 		if (trial.aborted) notes.push("aborted")
+		if (trial.usageMissing) notes.push("no usage reported, left out of the statistics")
 		if (trial.error) notes.push(trial.error)
 
 		lines.push(
@@ -97,6 +115,12 @@ export function renderReport(run: EvalRun): string {
 	lines.push(
 		"A change is worth accepting only if the pass rate does not fall. A lower number of " +
 			"exploratory calls with a lower pass rate is not an improvement.",
+	)
+	lines.push("")
+	lines.push(
+		"The Measured column says how many trials reported usage. A trial that reported " +
+			"none did not run, so it counts against the pass rate but stays out of the call " +
+			"and cost statistics, where its zeros would look like a cheap trial.",
 	)
 
 	return lines.join("\n") + "\n"

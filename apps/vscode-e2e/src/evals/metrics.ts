@@ -65,6 +65,28 @@ export function summarizeToolUsage(usage: ToolUsage | undefined): ToolSummary {
 	return summary
 }
 
+/**
+ * Adds two tool usage records together.
+ *
+ * A trial can have subtasks, and each task reports its own usage. Summing the
+ * latest record of every task gives the usage of the whole run.
+ */
+export function mergeToolUsage(a: ToolUsage | undefined, b: ToolUsage | undefined): ToolUsage {
+	const merged: Record<string, { attempts: number; failures: number }> = {}
+
+	for (const usage of [a, b]) {
+		for (const [name, counts] of Object.entries(usage ?? {})) {
+			const existing = merged[name] ?? { attempts: 0, failures: 0 }
+			merged[name] = {
+				attempts: existing.attempts + (counts?.attempts ?? 0),
+				failures: existing.failures + (counts?.failures ?? 0),
+			}
+		}
+	}
+
+	return merged as ToolUsage
+}
+
 export function stat(values: number[]): Stat {
 	if (values.length === 0) {
 		return { mean: 0, median: 0, min: 0, max: 0, stdDev: 0 }
@@ -89,17 +111,25 @@ export function stat(values: number[]): Stat {
 export function summarizeCase(caseId: string, category: EvalCategory, trials: TrialResult[]): CaseSummary {
 	const passed = trials.filter((trial) => trial.passed).length
 
+	// A trial that reported no usage at all did not run. Its zeros would lower
+	// the median number of calls and the median cost, which would make a worse
+	// implementation look cheaper. Thus the call and cost statistics leave it
+	// out, and the summary says how many were left out. The pass rate still
+	// counts it, because a trial that did not run did not do the task.
+	const measured = trials.filter((trial) => !trial.usageMissing)
+
 	return {
 		caseId,
 		category,
 		trials: trials.length,
 		passed,
 		passRate: trials.length === 0 ? 0 : passed / trials.length,
-		elapsedMs: stat(trials.map((trial) => trial.elapsedMs)),
-		exploratoryCalls: stat(trials.map((trial) => trial.tools.exploratoryCalls)),
-		editCalls: stat(trials.map((trial) => trial.tools.editCalls)),
-		shellCalls: stat(trials.map((trial) => trial.tools.shellCalls)),
-		totalCalls: stat(trials.map((trial) => trial.tools.totalCalls)),
-		cost: stat(trials.map((trial) => trial.cost)),
+		measured: measured.length,
+		elapsedMs: stat(measured.map((trial) => trial.elapsedMs)),
+		exploratoryCalls: stat(measured.map((trial) => trial.tools.exploratoryCalls)),
+		editCalls: stat(measured.map((trial) => trial.tools.editCalls)),
+		shellCalls: stat(measured.map((trial) => trial.tools.shellCalls)),
+		totalCalls: stat(measured.map((trial) => trial.tools.totalCalls)),
+		cost: stat(measured.map((trial) => trial.cost)),
 	}
 }

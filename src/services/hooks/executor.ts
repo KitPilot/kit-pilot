@@ -125,29 +125,43 @@ export async function executeHook(
 			settled = true
 			clearTimeout(timer)
 			const durationMs = performance.now() - start
+			// A plain command that cannot start has not passed. The verification
+			// hook is the only thing that runs the project's check, so a command
+			// that never ran must stop the completion rather than let it through.
+			const plainCommand = hook.contract === "plain-command"
 			resolve({
-				blocked: false,
+				blocked: plainCommand,
 				hookCommand: command,
 				stdout,
 				stderr: String(err),
 				exitCode: -1,
 				durationMs,
-				error: `Hook execution error: ${err.message ?? err}`,
+				error: plainCommand
+					? `did not start: ${err.message ?? err}`
+					: `Hook execution error: ${err.message ?? err}`,
 				hookId: hook.id,
 			})
 		})
 
-		child.on("close", (code) => {
+		child.on("close", (code, signal) => {
 			if (settled) return
 			settled = true
 			clearTimeout(timer)
-			const exitCode = code ?? 0
-			const durationMs = performance.now() - start
+			// A process that a signal stopped reports a null code. Reading that
+			// as 0 would count a killed verification command as a pass. The
+			// "hook" contract keeps its earlier reading of a null code, so a
+			// user's hook script behaves exactly as before.
+			const killed = code === null && signal !== null
 			const plainCommand = hook.contract === "plain-command"
-			const blocked = plainCommand ? exitCode !== 0 : exitCode === 1
+			const exitCode = code ?? (plainCommand ? -1 : 0)
+			const durationMs = performance.now() - start
+			const failed = killed || exitCode !== 0
+			const blocked = plainCommand ? failed : exitCode === 1
 			const error = plainCommand
-				? exitCode !== 0
-					? describePlainCommandFailure(exitCode, stdout, stderr)
+				? failed
+					? killed
+						? describePlainCommandKill(signal, stdout, stderr)
+						: describePlainCommandFailure(exitCode, stdout, stderr)
 					: undefined
 				: exitCode !== 0 && stderr
 					? stderr
@@ -187,6 +201,21 @@ function describePlainCommandFailure(exitCode: number, stdout: string, stderr: s
 	}
 	const shown = truncateOutput(output, PLAIN_COMMAND_REASON_LINE_LIMIT, PLAIN_COMMAND_REASON_CHARACTER_LIMIT)
 	return `exited with code ${exitCode}\n\n${shown}`
+}
+
+/**
+ * Builds the block reason for a plain command that a signal stopped.
+ *
+ * The command produced no exit code, thus it did not pass. A build that runs
+ * out of memory ends this way, and so does a command that the user stops.
+ */
+function describePlainCommandKill(signal: NodeJS.Signals | null, stdout: string, stderr: string): string {
+	const output = [stdout.trim(), stderr.trim()].filter(Boolean).join("\n")
+	const head = `was stopped by ${signal ?? "a signal"} and did not report a result`
+	if (!output) {
+		return head
+	}
+	return `${head}\n\n${truncateOutput(output, PLAIN_COMMAND_REASON_LINE_LIMIT, PLAIN_COMMAND_REASON_CHARACTER_LIMIT)}`
 }
 
 async function executeBuiltin(hook: HookConfig, event: EventData): Promise<ExecutionResult> {

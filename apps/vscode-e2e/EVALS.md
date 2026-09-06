@@ -107,9 +107,15 @@ The report lands in `apps/vscode-e2e/evals-results/<timestamp>/`, as
 | `EVAL_TIMEOUT_MS`   | 600000                         | How long one task may run.                             |
 | `EVAL_MAX_REQUESTS` | 40                             | Upper bound on requests, so one trial cannot run away. |
 | `EVAL_LABEL`        | `baseline`                     | The name of the run in the report.                     |
-| `VSCODE_VERSION`    | 1.101.2                        | The VS Code version to test against.                   |
+| `VSCODE_VERSION`    | the `engines.vscode` floor     | The VS Code version to test against.                   |
 | `EVAL_PROFILE_DIR`  | `apps/vscode-e2e/.vscode-eval` | The VS Code profile the evaluation runs in.            |
 | `EVAL_SKIP_INSTALL` | unset                          | Set to `1` to skip the Copilot extension install.      |
+
+A trial approves every command. `alwaysAllowExecute` alone approves nothing,
+because an empty allowlist denies each command, so a trial would wait for an
+approval that never comes and end in a timeout. The wildcard allowlist is safe
+here and only here: a trial runs in a temporary workspace that holds a copy of
+the fixture and nothing else.
 
 ## How it runs
 
@@ -135,6 +141,17 @@ and the statistics. It runs no model, so `pnpm test` runs it.
 A grader that passes on the starting files would report progress that did not
 happen. A grader that fails on the solution would hide a real improvement.
 Both make the baseline worthless, so the self test guards them.
+
+## An incomplete run
+
+A case that cannot run is not a case that scored zero. The harness records
+every such case, marks the report incomplete, and exits non-zero. Thus a
+missing sign-in cannot produce a clean-looking report with nothing in it.
+
+A trial that reports no usage at all did not run either. It counts against the
+pass rate, because it did not do the task, but it stays out of the call and
+cost statistics, where its zeros would look like a cheap trial that needed no
+exploration. The Measured column says how many trials reported usage.
 
 ## Reading a result
 

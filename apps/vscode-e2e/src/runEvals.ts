@@ -7,7 +7,7 @@ import { downloadAndUnzipVSCode, runTests, runVSCodeCommand } from "@vscode/test
 import { EVAL_CASES } from "./evals/cases"
 import { evalProfileDir, profileLaunchArgs, REQUIRED_EXTENSIONS } from "./evals/profile"
 import { renderReport } from "./evals/report"
-import type { CaseSummary, EvalRun, TrialResult } from "./evals/types"
+import type { CaseFailure, CaseSummary, EvalRun, TrialResult } from "./evals/types"
 import { EXTENSION_PATH, readExtensionVersion, vsCodeVersion } from "./evals/vscodeVersion"
 
 /**
@@ -133,6 +133,7 @@ async function main() {
 
 	const summaries: CaseSummary[] = []
 	const trialResults: TrialResult[] = []
+	const failures: CaseFailure[] = []
 
 	for (const evalCase of cases) {
 		const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), `kitpilot-eval-${evalCase.id}-`))
@@ -164,7 +165,11 @@ async function main() {
 			summaries.push(parsed.summary)
 			trialResults.push(...parsed.results)
 		} catch (error) {
-			console.error(`Case ${evalCase.id} did not finish:`, error)
+			// A case that could not run is not a case that scored zero. Record it,
+			// so the report cannot read as a complete run with fewer cases.
+			const reason = error instanceof Error ? error.message : String(error)
+			console.error(`Case ${evalCase.id} did not run: ${reason}`)
+			failures.push({ caseId: evalCase.id, reason })
 		} finally {
 			await fs.rm(workspaceDir, { recursive: true, force: true })
 		}
@@ -179,6 +184,7 @@ async function main() {
 		trialsPerCase: trials,
 		cases: summaries,
 		trialResults,
+		failures,
 	}
 
 	await fs.writeFile(path.join(outDir, "run.json"), JSON.stringify(run, null, 2), "utf8")
@@ -187,6 +193,17 @@ async function main() {
 
 	console.log(`\n${report}`)
 	console.log(`Report written to ${outDir}`)
+
+	// An incomplete run must not look like a finished one. A missing sign-in, a
+	// VS Code that will not start, or any other harness fault ends here with a
+	// non-zero code, so a script or a person cannot read the report as a result.
+	if (failures.length > 0) {
+		console.error(
+			`\n${failures.length} of ${cases.length} case(s) did not run: ${failures.map((f) => f.caseId).join(", ")}.` +
+				"\nThis run is incomplete and must not be compared with another run.",
+		)
+		process.exit(1)
+	}
 }
 
 function argValue(flag: string): string | undefined {

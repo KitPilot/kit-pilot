@@ -114,12 +114,62 @@ describe("hooks/executor", () => {
 			expect(result.error).toContain("failure line 500")
 		})
 
+		// The verification hook is the only thing that runs the project's check.
+		// A command that a signal stopped reports a null exit code, and reading
+		// that as 0 would let the completion through as if the check had passed.
+		it("blocks when a signal stops the command", async () => {
+			const hook = makeHookConfig({
+				matcher: "*",
+				command: 'echo "starting"; kill -TERM $$; echo "never"',
+				contract: "plain-command",
+			})
+			const result = await executeHook(hook, baseEvent)
+
+			expect(result.blocked).toBe(true)
+			expect(result.error).toContain("stopped by SIGTERM")
+			expect(result.error).toContain("did not report a result")
+		})
+
+		it("keeps the output when a signal stops the command", async () => {
+			const hook = makeHookConfig({
+				matcher: "*",
+				command: 'echo "src/a.ts: error TS2304"; kill -TERM $$',
+				contract: "plain-command",
+			})
+			const result = await executeHook(hook, baseEvent)
+
+			expect(result.blocked).toBe(true)
+			expect(result.error).toContain("error TS2304")
+		})
+
+		// A command that cannot start has not passed either.
+		it("blocks when the command cannot start", async () => {
+			const hook = makeHookConfig({
+				matcher: "*",
+				command: "kitpilot-no-such-command-exists",
+				contract: "plain-command",
+			})
+			const result = await executeHook(hook, baseEvent)
+
+			expect(result.blocked).toBe(true)
+		})
+
 		it("leaves the default hook contract unchanged", async () => {
 			const hook = makeHookConfig({ matcher: "*", command: 'echo "on stdout"; exit 2' })
 			const result = await executeHook(hook, baseEvent)
 			expect(hook.contract).toBe("hook")
 			expect(result.blocked).toBe(false)
 			expect(result.error).toBeUndefined()
+		})
+
+		// A user's hook script keeps the Claude Code contract exactly. A signal
+		// there still reports exit 0 and does not block, as it did before.
+		it("leaves a signal under the hook contract unchanged", async () => {
+			const hook = makeHookConfig({ matcher: "*", command: "kill -TERM $$" })
+			const result = await executeHook(hook, baseEvent)
+
+			expect(result.exitCode).toBe(0)
+			expect(result.blocked).toBe(false)
 		})
 	})
 

@@ -12,6 +12,7 @@ export function isReadOnlyToolAction(tool: ClineSayTool): boolean {
 		"listFilesRecursive",
 		"searchFiles",
 		"codebaseSearch",
+		"findSymbol",
 		"runSlashCommand",
 	].includes(tool.tool)
 }

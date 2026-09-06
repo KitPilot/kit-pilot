@@ -59,6 +59,8 @@ export interface TrialResult {
 	/** True when the task was aborted. */
 	aborted: boolean
 	error?: string
+	/** True when no usage event arrived, thus the trial produced no measurement. */
+	usageMissing: boolean
 	tools: ToolSummary
 	tokensIn: number
 	tokensOut: number
@@ -80,6 +82,8 @@ export interface CaseSummary {
 	trials: number
 	passed: number
 	passRate: number
+	/** Trials that reported usage. Only these feed the call and cost statistics. */
+	measured: number
 	elapsedMs: Stat
 	exploratoryCalls: Stat
 	editCalls: Stat
@@ -98,6 +102,13 @@ export interface EvalRun {
 	trialsPerCase: number
 	cases: CaseSummary[]
 	trialResults: TrialResult[]
+	/** Cases that could not run at all, for example when VS Code failed to start. */
+	failures: CaseFailure[]
+}
+
+export interface CaseFailure {
+	caseId: string
+	reason: string
 }
 
 export interface RawTaskMetrics {

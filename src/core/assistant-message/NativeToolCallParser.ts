@@ -629,6 +629,15 @@ export class NativeToolCallParser {
 				}
 				break
 
+			case "find_symbol":
+				if (partialArgs.symbol !== undefined || partialArgs.lookup !== undefined) {
+					nativeArgs = {
+						symbol: partialArgs.symbol,
+						lookup: partialArgs.lookup,
+					}
+				}
+				break
+
 			case "new_task":
 				if (partialArgs.mode !== undefined || partialArgs.message !== undefined) {
 					nativeArgs = {
@@ -992,6 +1001,15 @@ export class NativeToolCallParser {
 						nativeArgs = {
 							path: args.path,
 							recursive: this.coerceOptionalBoolean(args.recursive),
+						} as NativeArgsFor<TName>
+					}
+					break
+
+				case "find_symbol":
+					if (args.symbol !== undefined && args.lookup !== undefined) {
+						nativeArgs = {
+							symbol: args.symbol,
+							lookup: args.lookup,
 						} as NativeArgsFor<TName>
 					}
 					break

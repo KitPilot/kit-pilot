@@ -2,8 +2,12 @@ import * as assert from "assert"
 
 import type { ToolUsage } from "@kit-pilot/types"
 
-import { stat, summarizeCase, summarizeToolUsage } from "../metrics"
+import { mergeToolUsage, stat, summarizeCase, summarizeToolUsage } from "../metrics"
 import type { TrialResult } from "../types"
+
+function toolsWith(exploratoryCalls: number) {
+	return { exploratoryCalls, editCalls: 0, shellCalls: 0, totalCalls: exploratoryCalls, failedCalls: 0, byTool: {} }
+}
 
 function trial(overrides: Partial<TrialResult> & { trial: number }): TrialResult {
 	return {
@@ -13,6 +17,7 @@ function trial(overrides: Partial<TrialResult> & { trial: number }): TrialResult
 		elapsedMs: 1000,
 		timedOut: false,
 		aborted: false,
+		usageMissing: false,
 		tools: { exploratoryCalls: 0, editCalls: 0, shellCalls: 0, totalCalls: 0, failedCalls: 0, byTool: {} },
 		tokensIn: 0,
 		tokensOut: 0,
@@ -74,6 +79,47 @@ suite("evals/metrics", () => {
 
 	test("takes the median of an even number of trials", () => {
 		assert.strictEqual(stat([1, 2, 3, 4]).median, 2.5)
+	})
+
+	// A trial that reported no usage did not run. Its zeros would lower the
+	// median number of calls, which would make a worse implementation look
+	// cheaper than it is.
+	test("leaves a trial that reported no usage out of the call statistics", () => {
+		const trials = [
+			trial({ trial: 1, passed: true, tools: toolsWith(10) }),
+			trial({ trial: 2, passed: false, usageMissing: true, elapsedMs: 600_000 }),
+			trial({ trial: 3, passed: true, tools: toolsWith(12) }),
+		]
+
+		const summary = summarizeCase("case", "bug-fix", trials)
+
+		assert.strictEqual(summary.trials, 3)
+		assert.strictEqual(summary.measured, 2)
+		// The pass rate still counts the trial that did not run.
+		assert.ok(Math.abs(summary.passRate - 2 / 3) < 0.0001)
+		assert.strictEqual(summary.exploratoryCalls.median, 11)
+		assert.strictEqual(summary.exploratoryCalls.min, 10)
+	})
+
+	test("adds the usage of a task and its subtasks", () => {
+		const merged = mergeToolUsage(
+			{ read_file: { attempts: 3, failures: 1 } } as unknown as ToolUsage,
+			{
+				read_file: { attempts: 4, failures: 0 },
+				apply_diff: { attempts: 2, failures: 0 },
+			} as unknown as ToolUsage,
+		)
+
+		assert.deepStrictEqual(merged, {
+			read_file: { attempts: 7, failures: 1 },
+			apply_diff: { attempts: 2, failures: 0 },
+		})
+	})
+
+	test("merges when one side is missing", () => {
+		const merged = mergeToolUsage(undefined, { read_file: { attempts: 2, failures: 0 } } as unknown as ToolUsage)
+
+		assert.deepStrictEqual(merged, { read_file: { attempts: 2, failures: 0 } })
 	})
 
 	test("summarizes a case", () => {
