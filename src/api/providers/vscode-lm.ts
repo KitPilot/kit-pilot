@@ -187,6 +187,16 @@ function convertToVsCodeLmTools(tools: OpenAI.Chat.ChatCompletionTool[]): vscode
  * }
  * ```
  */
+/**
+ * Says whether a selector names a particular model.
+ *
+ * `vendor` alone does not. Asking for every Copilot model is not a choice
+ * between them, so the caller has to make one.
+ */
+function namesAModel(selector: vscode.LanguageModelChatSelector): boolean {
+	return Boolean(selector.id || selector.family || selector.version)
+}
+
 export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHandler {
 	protected options: ApiHandlerOptions
 	private client: vscode.LanguageModelChat | null
@@ -273,7 +283,7 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 	 * Creates a language model chat client based on the provided selector.
 	 *
 	 * @param selector - Selector criteria to filter language model chat instances
-	 * @returns Promise resolving to the first matching language model chat instance
+	 * @returns Promise resolving to a matching language model chat instance
 	 * @throws Error when no matching models are found with the given selector
 	 *
 	 * @example
@@ -284,9 +294,19 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 		try {
 			const models = await vscode.lm.selectChatModels(selector)
 
-			// Use first available model or create a minimal model object
 			if (models && Array.isArray(models) && models.length > 0) {
-				return models[0]
+				// A selector that names a model gets that model. A selector that
+				// names none matches everything, and the order is the provider's,
+				// not a ranking, so taking the first is a guess.
+				//
+				// Measured on 2026-09-06: a task with no model chosen ran against a
+				// model with a 12,078 token context while a 935,793 token model sat
+				// in the same list. It condensed 62 times, repeated the same two
+				// lookups 124 times, spent 668,339 tokens and never finished.
+				// Nothing said which model was in use.
+				//
+				// Choose the largest context instead, and say so.
+				return namesAModel(selector) ? models[0] : this.widestContext(models, selector)
 			}
 
 			// No model matched. This used to return a stand-in model whose only
@@ -460,6 +480,33 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 			this.currentRequestCancellation.dispose()
 			this.currentRequestCancellation = null
 		}
+	}
+
+	/**
+	 * Picks the model with the most room, for a selector that named none.
+	 *
+	 * A provider can offer models it never means a person to choose, such as the
+	 * small ones it uses for its own housekeeping. Those sit in the same list.
+	 * The widest context is not always the best model, but it does not strand a
+	 * task in a window too small to hold its own work.
+	 */
+	private widestContext(
+		models: vscode.LanguageModelChat[],
+		selector: vscode.LanguageModelChatSelector,
+	): vscode.LanguageModelChat {
+		const chosen = models.reduce((best, model) =>
+			(model.maxInputTokens ?? 0) > (best.maxInputTokens ?? 0) ? model : best,
+		)
+
+		if (models.length > 1) {
+			console.info(
+				`KitPilot <Language Model API>: no model chosen in ${stringifyVsCodeLmModelSelector(selector) || "the settings"}. ` +
+					`Using ${chosen.id} with a ${chosen.maxInputTokens} token context, ` +
+					`the widest of ${models.length}. Choose a model in the settings to pin it.`,
+			)
+		}
+
+		return chosen
 	}
 
 	private async getClient(): Promise<vscode.LanguageModelChat> {

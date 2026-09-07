@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## Unreleased
+
+### Fixed
+
+- **KitPilot no longer picks a model that is too small to work in.** If you had not chosen a model, KitPilot took whichever one the provider listed first. Copilot lists models it uses for its own housekeeping beside the ones you would choose, and one of them holds about 12,000 tokens. A task that landed on it filled the window, condensed what it had, forgot its progress, and started again. One task did that 62 times and never finished. KitPilot now takes the model with the most room when you have not chosen one, and says which it took. Choosing a model in the settings still overrides this.
+
 ## 0.2.6
 
 ### Changed

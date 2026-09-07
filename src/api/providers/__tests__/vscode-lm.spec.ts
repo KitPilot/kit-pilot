@@ -150,6 +150,60 @@ describe("VsCodeLmHandler", () => {
 		// A stand-in model used to be returned here. It answered every request
 		// with one sentence, so a task ran, produced text, called no tool,
 		// retried, and filled its time while nothing named the cause.
+		// Measured on 2026-09-06: with no model chosen, a task ran against a
+		// 12,078 token model while a 935,793 token model sat in the same list. It
+		// condensed 62 times, repeated two lookups 124 times and never finished.
+		it("takes the widest context when the selector names no model", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([
+				{ ...mockLanguageModelChat, id: "utility-small", maxInputTokens: 12078 },
+				{ ...mockLanguageModelChat, id: "big", maxInputTokens: 935793 },
+				{ ...mockLanguageModelChat, id: "utility", maxInputTokens: 127790 },
+			])
+
+			const client = await handler["createClient"]({ vendor: "copilot" })
+
+			expect(client.id).toBe("big")
+		})
+
+		it("takes the widest context when the selector is empty", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([
+				{ ...mockLanguageModelChat, id: "small", maxInputTokens: 8000 },
+				{ ...mockLanguageModelChat, id: "large", maxInputTokens: 200000 },
+			])
+
+			expect((await handler["createClient"]({})).id).toBe("large")
+		})
+
+		// A selector that names a model is a choice the user made. Overriding it
+		// with a wider one would ignore that choice.
+		it("honours a model that the selector names, whatever its context", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([
+				{ ...mockLanguageModelChat, id: "chosen", maxInputTokens: 12078 },
+				{ ...mockLanguageModelChat, id: "wider", maxInputTokens: 900000 },
+			])
+
+			const client = await handler["createClient"]({ vendor: "copilot", id: "chosen" })
+
+			expect(client.id).toBe("chosen")
+		})
+
+		it("honours a family selector the same way", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([
+				{ ...mockLanguageModelChat, id: "first", maxInputTokens: 5000 },
+				{ ...mockLanguageModelChat, id: "second", maxInputTokens: 500000 },
+			])
+
+			expect((await handler["createClient"]({ family: "gpt-4o" })).id).toBe("first")
+		})
+
+		it("handles a single model without comparing anything", async () => {
+			;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([
+				{ ...mockLanguageModelChat, id: "only", maxInputTokens: 4096 },
+			])
+
+			expect((await handler["createClient"]({})).id).toBe("only")
+		})
+
 		it("reports that no model matched, rather than standing in for one", async () => {
 			;(vscode.lm.selectChatModels as Mock).mockResolvedValueOnce([])
 
