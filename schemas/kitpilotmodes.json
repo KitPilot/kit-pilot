@@ -90,7 +90,7 @@
 	"required": ["customModes"],
 	"additionalProperties": false,
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://github.com/KitPilotInc/KitPilot/blob/main/schemas/kitpilotmodes.json",
+	"$id": "https://github.com/KitPilot/kit-pilot/blob/main/schemas/kitpilotmodes.json",
 	"title": "KitPilot Custom Modes",
 	"description": "Schema for .kitpilotmodes configuration files used by KitPilot to define custom modes."
 }
