@@ -10,11 +10,12 @@ specified by ASD-STE100. This applies to documentation, the changelog, commit
 messages, pull request descriptions, code comments, and all strings that the
 user sees.
 
-The full rules are in `~/.claude/CLAUDE.md` on this machine. Get the
-specification from https://asd-ste100.org. The Part 2 dictionary is the
+Get the specification from https://asd-ste100.org. Part 1 gives the writing
+rules and Part 2 gives the dictionary of approved words. The dictionary is the
 authority on a word.
 
-The rules that apply most often:
+These are the rules that apply most often here. The specification is the full
+standard:
 
 1. Give one meaning to one word. Do not use a synonym for variety.
 2. Use the active voice.

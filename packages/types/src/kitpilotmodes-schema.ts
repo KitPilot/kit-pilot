@@ -50,7 +50,7 @@ export function generateRoomodesJsonSchema(): Record<string, unknown> {
 		target: "jsonSchema7",
 	}) as Record<string, unknown>
 
-	jsonSchema["$id"] = "https://github.com/KitPilotInc/KitPilot/blob/main/schemas/kitpilotmodes.json"
+	jsonSchema["$id"] = "https://github.com/KitPilot/kit-pilot/blob/main/schemas/kitpilotmodes.json"
 	jsonSchema["title"] = "KitPilot Custom Modes"
 	jsonSchema["description"] = "Schema for .kitpilotmodes configuration files used by KitPilot to define custom modes."
 

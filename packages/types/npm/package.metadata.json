@@ -11,10 +11,10 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/KitPilotInc/KitPilot.git"
+		"url": "git+https://github.com/KitPilot/kit-pilot.git"
 	},
 	"bugs": {
-		"url": "https://github.com/KitPilotInc/KitPilot/issues"
+		"url": "https://github.com/KitPilot/kit-pilot/issues"
 	},
 	"homepage": "https://kitpilot.com",
 	"keywords": ["kitpilot", "kit-pilot", "ai"],
