@@ -27,7 +27,7 @@ import { StandardTooltip } from "@src/components/ui"
 import Thumbnails from "../common/Thumbnails"
 import { ModeSelector } from "./ModeSelector"
 import { ModelSelector } from "./ModelSelector"
-import { ThinkingEffortBadge } from "./ThinkingEffortBadge"
+import { ThinkingEffortSelector } from "./ThinkingEffortSelector"
 import { AutoApproveDropdown } from "./AutoApproveDropdown"
 import { MAX_IMAGES_PER_MESSAGE } from "./ChatView"
 import ContextMenu from "./ContextMenu"
@@ -72,7 +72,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			placeholderText,
 			selectedImages,
 			setSelectedImages,
-			onSend,
+			onSend: sendMessage,
 			onSelectImages,
 			shouldDisableImages,
 			onHeightChange,
@@ -106,6 +106,10 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 		const [gitCommits, setGitCommits] = useState<any[]>([])
 		const [showDropdown, setShowDropdown] = useState(false)
+		const [isEffortSaving, setIsEffortSaving] = useState(false)
+		const onSend = useCallback(() => {
+			if (!isEffortSaving) sendMessage()
+		}, [isEffortSaving, sendMessage])
 		const [fileSearchResults, setFileSearchResults] = useState<SearchResult[]>([])
 		const [searchLoading, setSearchLoading] = useState(false)
 		const [searchRequestId, setSearchRequestId] = useState<string>("")
@@ -1240,7 +1244,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 										<StandardTooltip content={label}>
 											<button
 												aria-label={label}
-												disabled={isInterrupting}
+												disabled={isInterrupting || (isEffortSaving && !isStreaming)}
 												onClick={
 													isInterrupting
 														? undefined
@@ -1332,12 +1336,17 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 						/>
 						<ModelSelector
 							value={apiConfiguration?.vsCodeLmModelSelector}
-							disabled={selectApiConfigDisabled}
+							disabled={selectApiConfigDisabled || isEffortSaving}
 							title={t("chat:selectModel")}
 							onChange={handleModelChange}
 							triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink"
 						/>
-						<ThinkingEffortBadge modelSelector={apiConfiguration?.vsCodeLmModelSelector} />
+						<ThinkingEffortSelector
+							apiConfiguration={apiConfiguration}
+							profileName={currentApiConfigName}
+							disabled={selectApiConfigDisabled}
+							onSavingChange={setIsEffortSaving}
+						/>
 						<AutoApproveDropdown triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink" />
 					</div>
 					<div className={cn("flex flex-shrink-0 items-center gap-0.5 h-5 leading-none", "pr-2")}>

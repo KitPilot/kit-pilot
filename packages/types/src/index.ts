@@ -27,6 +27,7 @@ export * from "./tool-params.js"
 export * from "./type-fu.js"
 export * from "./vscode-extension-host.js"
 export * from "./vscode.js"
+export * from "./vscode-lm-effort.js"
 export * from "./worktree.js"
 
 export * from "./providers/index.js"

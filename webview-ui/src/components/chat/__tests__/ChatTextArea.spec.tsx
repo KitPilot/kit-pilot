@@ -1,6 +1,6 @@
 import { defaultModeSlug } from "@kitpilot/modes"
 
-import { render, fireEvent, screen } from "@src/utils/test-utils"
+import { render, fireEvent, screen, act } from "@src/utils/test-utils"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { vscode } from "@src/utils/vscode"
 import * as pathMentions from "@src/utils/path-mentions"
@@ -73,6 +73,55 @@ describe("ChatTextArea", () => {
 			taskHistory: [],
 			cwd: "/test/workspace",
 		})
+	})
+
+	it("waits for the effort save before a model switch or a new request", () => {
+		vi.mocked(useExtensionState).mockReturnValue({
+			filePaths: [],
+			openedTabs: [],
+			taskHistory: [],
+			cwd: "/test/workspace",
+			currentApiConfigName: "Work",
+			apiConfiguration: {
+				apiProvider: "vscode-lm",
+				vsCodeLmModelSelector: { vendor: "copilot", family: "claude-opus-5" },
+			},
+		} as unknown as ReturnType<typeof useExtensionState>)
+		const onSend = vi.fn()
+		render(<ChatTextArea {...defaultProps} inputValue="Hello" onSend={onSend} />)
+		act(() => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "vsCodeLmModels",
+						vsCodeLmModels: [
+							{ vendor: "copilot", family: "claude-opus-5", effortLevels: ["low", "medium", "high"] },
+						],
+					},
+				}),
+			)
+		})
+		fireEvent.keyDown(screen.getByRole("combobox"), { key: "Enter" })
+		fireEvent.click(screen.getByRole("option", { name: /low/i }))
+		const request = mockPostMessage.mock.calls.at(-1)![0]
+		expect(request.type).toBe("setVsCodeLmEffort")
+		expect(screen.getByTestId("model-selector-trigger")).toBeDisabled()
+		fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" })
+		expect(onSend).not.toHaveBeenCalled()
+		act(() => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "vsCodeLmEffortSaved",
+						requestId: request.requestId,
+						success: true,
+					},
+				}),
+			)
+		})
+		expect(screen.getByTestId("model-selector-trigger")).toBeEnabled()
+		fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" })
+		expect(onSend).toHaveBeenCalledTimes(1)
 	})
 
 	describe("enhance prompt button", () => {

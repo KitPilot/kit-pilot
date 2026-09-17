@@ -314,6 +314,7 @@ export const ACTIVE_PROVIDER_STATE_KEYS = [
 	"modelMaxThinkingTokens",
 	"verbosity",
 	"vsCodeLmModelSelector",
+	"vsCodeLmModelEfforts",
 	"codeIndexQdrantApiKey",
 ] as const satisfies readonly (keyof ProviderSettings)[]
 

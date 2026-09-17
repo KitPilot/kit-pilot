@@ -26,6 +26,7 @@ import { ApiStream } from "../transform/stream"
 import { convertToVsCodeLmMessages, extractTextCountFromMessage } from "../transform/vscode-lm-format"
 
 import { BaseProvider } from "./base-provider"
+import { getVsCodeLmEffortOptions } from "./vscode-lm-effort"
 import { parseVsCodeLmUsage, type VsCodeLmReportedUsage } from "./vscode-lm-usage"
 import { recordUsage } from "../usageMetrics"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
@@ -599,6 +600,7 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 		try {
 			// Create the response stream with required options
 			const requestOptions: vscode.LanguageModelChatRequestOptions = {
+				...getVsCodeLmEffortOptions(client, this.options),
 				justification: `KitPilot would like to use '${client.name}' from '${client.vendor}', Click 'Allow' to proceed.`,
 				tools: convertToVsCodeLmTools(metadata?.tools ?? []),
 			}
@@ -819,7 +821,7 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 			const client = await this.getClient()
 			const response = await client.sendRequest(
 				[vscode.LanguageModelChatMessage.User(prompt)],
-				{},
+				getVsCodeLmEffortOptions(client, this.options),
 				new vscode.CancellationTokenSource().token,
 			)
 			let result = ""

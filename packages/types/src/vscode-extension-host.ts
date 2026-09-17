@@ -14,6 +14,7 @@ import type { McpServer } from "./mcp.js"
 import type { ModelInfo, ModelRecord, RouterModels } from "./model.js"
 import type { SkillMetadata } from "./skills.js"
 import type { WorktreeIncludeStatus } from "./worktree.js"
+import type { VsCodeLmEffort } from "./vscode-lm-effort.js"
 
 /**
  * ExtensionMessage
@@ -41,6 +42,7 @@ export interface ExtensionMessage {
 		| "vsCodeLmModels"
 		| "vsCodeLmApiAvailable"
 		| "copilotThinkingEffort"
+		| "vsCodeLmEffortSaved"
 		| "updatePrompt"
 		| "systemPrompt"
 		| "autoApprovalEnabled"
@@ -125,7 +127,15 @@ export interface ExtensionMessage {
 	openAiModels?: string[]
 	ollamaModels?: ModelRecord
 	lmStudioModels?: ModelRecord
-	vsCodeLmModels?: { vendor?: string; family?: string; version?: string; id?: string; info?: ModelInfo }[]
+	vsCodeLmModels?: {
+		vendor?: string
+		family?: string
+		version?: string
+		id?: string
+		info?: ModelInfo
+		maxInputTokens?: number
+		effortLevels?: readonly VsCodeLmEffort[]
+	}[]
 	// For copilotThinkingEffort: a level string ("low"|"medium"|"high"|"xhigh"|"none"),
 	// undefined = model default, null = unknown (indicator hides).
 	copilotThinkingEffort?: string | null
@@ -407,6 +417,7 @@ export interface WebviewMessage {
 		| "requestLmStudioModels"
 		| "requestVsCodeLmModels"
 		| "requestCopilotThinkingEffort"
+		| "setVsCodeLmEffort"
 		| "openImage"
 		| "saveImage"
 		| "openFile"
@@ -567,6 +578,7 @@ export interface WebviewMessage {
 	skillModeSlugs?: string[] // For skill operations (mode restrictions)
 	/** Target mode slugs for updateSkillModes */
 	newSkillModeSlugs?: string[] // For updateSkillModes (new mode restrictions)
+	vsCodeLmEffortSelection?: { vendor: string; family: string; effort: VsCodeLmEffort | "default" }
 	requestId?: string
 	ids?: string[]
 	terminalOperation?: "continue" | "abort"

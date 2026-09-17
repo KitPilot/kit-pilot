@@ -36,6 +36,7 @@ vi.mock("vscode", () => {
 	}
 
 	return {
+		version: "1.136.1",
 		workspace: {
 			onDidChangeConfiguration: vi.fn((_callback) => ({
 				dispose: vi.fn(),
@@ -82,6 +83,7 @@ vi.mock("vscode", () => {
 })
 
 import * as vscode from "vscode"
+import { getVsCodeLmEffortKey } from "@kit-pilot/types"
 import { VsCodeLmHandler, getVsCodeLmModels } from "../vscode-lm"
 import type { ApiHandlerOptions } from "../../../shared/api"
 import type { Anthropic } from "@anthropic-ai/sdk"
@@ -812,6 +814,35 @@ describe("VsCodeLmHandler", () => {
 
 			expect(result).toBe(7 + 1000)
 			expect(mockLanguageModelChat.countTokens).toHaveBeenCalledWith("describe this", expect.any(Object))
+		})
+	})
+
+	describe("model effort requests", () => {
+		it.each(["createMessage", "completePrompt"] as const)("applies model effort to %s", async (method) => {
+			const model = { ...mockLanguageModelChat, vendor: "copilot", family: "claude-opus-5" }
+			handler["client"] = model
+			handler["options"] = { vsCodeLmModelEfforts: { [getVsCodeLmEffortKey(model)!]: "high" } }
+			model.countTokens.mockResolvedValue(10)
+			model.sendRequest.mockResolvedValueOnce({
+				stream: (async function* () {
+					yield new vscode.LanguageModelTextPart("Done")
+				})(),
+			})
+			if (method === "createMessage") {
+				for await (const _chunk of handler.createMessage("System", [{ role: "user", content: "Hello" }])) {
+					// Consume the complete response.
+				}
+			} else {
+				await handler.completePrompt("Hello")
+			}
+			expect(model.sendRequest).toHaveBeenCalledWith(
+				expect.any(Array),
+				expect.objectContaining({
+					configuration: { reasoningEffort: "high" },
+					modelOptions: { _enableThinking: true },
+				}),
+				expect.any(Object),
+			)
 		})
 	})
 

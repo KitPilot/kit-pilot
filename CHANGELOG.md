@@ -1,6 +1,12 @@
 # KitPilot Changelog
 
-## Unreleased
+## 0.2.7
+
+### Added
+
+- **The chat model selector now shows a model logo.** Before, the selector showed only the model name. Claude now has its flower logo, and Gemini has its star logo. The logo has the same height as the model text.
+- **You can now select the effort level in the chat box.** Before, KitPilot only showed the effort level. Supported Copilot Claude and GPT models now offer Default, Low, Medium, and High on VS Code 1.136 or later. KitPilot saves the level for each model family in each settings profile. Default uses the VS Code model settings.
+- **The model selector now shows the input context limit.** Before, you had to find the limit elsewhere. Each model now shows its reported limit, such as 200K or 1M. Point to the limit to see the exact token count. KitPilot hides the limit if VS Code does not report it.
 
 ### Fixed
 
