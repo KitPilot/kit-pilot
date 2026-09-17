@@ -139,9 +139,12 @@
 	"selectMode": "Select mode for interaction",
 	"selectApiConfig": "Select API configuration",
 	"selectModel": "Select model",
+	"modelContextLimit": "Input context limit: {{count}} tokens",
 	"loadingModels": "Loading models…",
 	"noModelSelected": "Select model",
 	"thinkingEffort": {
+		"selectorTooltip": "Set the effort for this model in KitPilot. Default uses the Copilot setting.",
+		"saveFailed": "Cannot save the effort. Try again.",
 		"tooltip": "Thinking effort for this model. Set it in VS Code's Copilot model picker — the level you pick there applies to KitPilot too.",
 		"aria": "Thinking effort: {{level}}",
 		"levels": {

@@ -6,9 +6,8 @@ import * as vscode from "vscode"
  * Best-effort reader for the Thinking Effort that VS Code's Copilot model
  * picker applies to a model.
  *
- * KitPilot cannot SET reasoning effort through the LM API (Copilot reads it
- * only from `modelConfiguration`, which isn't exposed to consumers), but the
- * value the user picks is persisted to a plain JSON file in the user profile:
+ * This legacy message reports the native Copilot setting. KitPilot overrides
+ * use separate profile settings and do not change this file:
  * `<UserDir>/chatLanguageModels.json`, as provider groups shaped like
  * `{ vendor, name, settings: { [modelId]: { reasoningEffort: "low", … } } }`
  * (see `updateModelConfiguration` in VS Code's languageModels.ts). VS Code

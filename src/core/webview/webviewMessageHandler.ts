@@ -18,6 +18,7 @@ import {
 	ExperimentId,
 	checkoutDiffPayloadSchema,
 	checkoutRestorePayloadSchema,
+	getVsCodeLmEffortLevels,
 } from "@kit-pilot/types"
 import { customToolRegistry } from "@kit-pilot/core"
 
@@ -25,6 +26,7 @@ import { type ApiMessage } from "../task-persistence/apiMessages"
 import { saveTaskMessages } from "../task-persistence"
 
 import { ClineProvider } from "./ClineProvider"
+import { setVsCodeLmEffort } from "./vscodeLmEffortHandler"
 import { handleCheckpointRestoreOperation } from "./checkpointRestoreHandler"
 import { generateErrorDiagnostics } from "./diagnosticsHandler"
 import {
@@ -77,10 +79,8 @@ import { getCommand } from "../../utils/commands"
 const ALLOWED_VSCODE_SETTINGS = new Set(["terminal.integrated.inheritEnv"])
 
 /**
- * Read the current model's Copilot Thinking Effort and ship it to the webview.
- * Effort is user-set in VS Code's model picker (KitPilot can't set it via the
- * LM API) and persisted to chatLanguageModels.json — see
- * vscode-lm-thinking-effort.ts for the value semantics.
+ * Report the native Copilot effort for older webviews.
+ * KitPilot overrides use separate profile settings.
  */
 async function sendCopilotThinkingEffort(provider: ClineProvider): Promise<void> {
 	const { apiConfiguration } = await provider.getState()
@@ -968,9 +968,15 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				version: model.version,
 				id: model.id,
 				info: buildVsCodeLmModelInfo(model).info,
+				maxInputTokens: model.maxInputTokens,
+				effortLevels: getVsCodeLmEffortLevels(model, vscode.version),
 			}))
 			// TODO: Cache like we do for OpenRouter, etc?
 			provider.postMessageToWebview({ type: "vsCodeLmModels", vsCodeLmModels })
+			break
+		}
+		case "setVsCodeLmEffort": {
+			await setVsCodeLmEffort(provider, message)
 			break
 		}
 		case "requestCopilotThinkingEffort": {

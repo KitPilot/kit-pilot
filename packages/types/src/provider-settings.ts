@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { modelInfoSchema, reasoningEffortSettingSchema, verbosityLevelsSchema } from "./model.js"
+import { vsCodeLmEffortSchema } from "./vscode-lm-effort.js"
 import { codebaseIndexProviderSchema } from "./codebase-index.js"
 import { vscodeLlmModels } from "./providers/index.js"
 
@@ -188,6 +189,7 @@ export type OpenAiCodexRateLimitInfo = {
 }
 
 const vsCodeLmSchema = baseProviderSettingsSchema.extend({
+	vsCodeLmModelEfforts: z.record(vsCodeLmEffortSchema).optional(),
 	vsCodeLmModelSelector: z
 		.object({
 			vendor: z.string().optional(),

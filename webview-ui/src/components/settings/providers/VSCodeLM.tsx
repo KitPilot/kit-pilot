@@ -93,7 +93,7 @@ export const VSCodeLM = ({ apiConfiguration, setApiConfigurationField }: VSCodeL
 					{t("settings:providers.vscodeLmThinkingEffortTitle")}
 				</div>
 				<div className="text-sm text-vscode-descriptionForeground">
-					{t("settings:providers.vscodeLmThinkingEffortDescription")}
+					{t("settings:providers.vscodeLmEffortSelectorDescription")}
 				</div>
 			</div>
 		</>

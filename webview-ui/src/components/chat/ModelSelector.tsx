@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react"
 import { useEvent } from "react-use"
 import { Fzf } from "fzf"
-import type { LanguageModelChatSelector } from "vscode"
+import { SiClaude, SiGoogle, SiGooglegemini, SiOpenai } from "react-icons/si"
 
 import type { ExtensionMessage } from "@kit-pilot/types"
 
@@ -10,6 +10,27 @@ import { useKitPilotPortal } from "@/components/ui/hooks/useKitPilotPortal"
 import { Popover, PopoverContent, PopoverTrigger, StandardTooltip } from "@/components/ui"
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { vscode } from "@/utils/vscode"
+import { formatLargeNumber } from "@/utils/format"
+
+type ChatModel = NonNullable<ExtensionMessage["vsCodeLmModels"]>[number]
+
+function getContextLength(model?: ChatModel): number | undefined {
+	const limit = model?.maxInputTokens
+	return typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? limit : undefined
+}
+
+function ModelContextLength({ value }: { value?: number }) {
+	const { t } = useAppTranslation()
+	if (value === undefined) return null
+	const label = t("chat:modelContextLimit", { count: value.toLocaleString() })
+	return (
+		<span className="shrink-0 text-xs opacity-60 tabular-nums" title={label} aria-label={label}>
+			{formatLargeNumber(value)
+				.replace(/\.0([kmb])$/, "$1")
+				.toUpperCase()}
+		</span>
+	)
+}
 
 interface ModelSelectorProps {
 	value?: { vendor?: string; family?: string }
@@ -19,12 +40,37 @@ interface ModelSelectorProps {
 	disabled?: boolean
 }
 
+function getModelIcon(family?: string, vendor?: string) {
+	if (!family) return null
+
+	const modelFamily = family.toLowerCase()
+	if (/\b(claude|opus|sonnet|haiku)\b/.test(modelFamily)) return SiClaude
+	if (/\b(gpt|chatgpt|codex|o\d+)\b/.test(modelFamily)) return SiOpenai
+	if (/\bgemini\b/.test(modelFamily)) return SiGooglegemini
+	if (/\bgemma\b/.test(modelFamily)) return SiGoogle
+
+	switch (vendor?.toLowerCase()) {
+		case "anthropic":
+			return SiClaude
+		case "openai":
+			return SiOpenai
+		case "google":
+			return SiGoogle
+		default:
+			return null
+	}
+}
+
 export const ModelSelector = ({ value, title, onChange, triggerClassName, disabled = false }: ModelSelectorProps) => {
 	const { t } = useAppTranslation()
 	const [open, setOpen] = useState(false)
 	const [searchValue, setSearchValue] = useState("")
-	const [models, setModels] = useState<LanguageModelChatSelector[]>([])
+	const [models, setModels] = useState<ChatModel[]>([])
 	const portalContainer = useKitPilotPortal("kitpilot-portal")
+	const ModelIcon = getModelIcon(value?.family, value?.vendor)
+	const contextLength = getContextLength(
+		models.find((model) => model.vendor === value?.vendor && model.family === value?.family),
+	)
 
 	useEffect(() => {
 		vscode.postMessage({ type: "requestVsCodeLmModels" })
@@ -75,7 +121,7 @@ export const ModelSelector = ({ value, title, onChange, triggerClassName, disabl
 	}, [models])
 
 	const sortedModels = useMemo(() => {
-		const familyKey = (m: LanguageModelChatSelector) => (m.family ?? "").split("-")[0]
+		const familyKey = (m: ChatModel) => (m.family ?? "").split("-")[0]
 		return filtered
 			.map((m, idx) => ({ m, idx }))
 			.sort((a, b) => {
@@ -86,7 +132,7 @@ export const ModelSelector = ({ value, title, onChange, triggerClassName, disabl
 	}, [filtered])
 
 	const handleSelect = useCallback(
-		(model: LanguageModelChatSelector) => {
+		(model: ChatModel) => {
 			if (model.vendor && model.family) {
 				onChange({ vendor: model.vendor, family: model.family })
 			}
@@ -96,19 +142,21 @@ export const ModelSelector = ({ value, title, onChange, triggerClassName, disabl
 		[onChange],
 	)
 
-	const isSelected = useCallback(
-		(m: LanguageModelChatSelector) => value?.vendor === m.vendor && value?.family === m.family,
-		[value],
-	)
+	const isSelected = useCallback((m: ChatModel) => value?.vendor === m.vendor && value?.family === m.family, [value])
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
-			<StandardTooltip content={title}>
+			<StandardTooltip
+				content={
+					contextLength === undefined
+						? title
+						: `${title} · ${t("chat:modelContextLimit", { count: contextLength.toLocaleString() })}`
+				}>
 				<PopoverTrigger
 					disabled={disabled}
 					data-testid="model-selector-trigger"
 					className={cn(
-						"min-w-0 inline-flex items-center relative whitespace-nowrap px-1.5 py-1 text-xs",
+						"min-w-0 inline-flex items-center gap-1 relative whitespace-nowrap px-1.5 py-1 text-xs",
 						"bg-transparent border border-[rgba(255,255,255,0.08)] rounded-md text-vscode-foreground",
 						"transition-all duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-vscode-focusBorder focus-visible:ring-inset",
 						disabled
@@ -116,7 +164,9 @@ export const ModelSelector = ({ value, title, onChange, triggerClassName, disabl
 							: "opacity-90 hover:opacity-100 hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)] cursor-pointer",
 						triggerClassName,
 					)}>
+					{ModelIcon && <ModelIcon size="1em" className="shrink-0" aria-hidden="true" focusable="false" />}
 					<span className="truncate">{displayName}</span>
+					<ModelContextLength value={contextLength} />
 				</PopoverTrigger>
 			</StandardTooltip>
 			<PopoverContent
@@ -165,6 +215,7 @@ export const ModelSelector = ({ value, title, onChange, triggerClassName, disabl
 												"bg-vscode-list-activeSelectionBackground text-vscode-list-activeSelectionForeground",
 										)}>
 										<span className="flex-1 min-w-0 truncate">{m.family}</span>
+										<ModelContextLength value={getContextLength(m)} />
 										{showVendor && m.vendor && (
 											<span className="text-xs text-vscode-descriptionForeground opacity-60 shrink-0">
 												{m.vendor}
