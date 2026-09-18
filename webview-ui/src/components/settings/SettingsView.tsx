@@ -13,22 +13,22 @@ import {
 	CheckCheck,
 	GitBranch,
 	Bell,
-	Database,
+	Layers3,
 	SquareTerminal,
 	FlaskConical,
 	AlertTriangle,
-	Globe,
+	Languages,
 	Info,
 	MessageSquare,
 	LucideIcon,
 	SquareSlash,
-	Glasses,
+	PanelsTopLeft,
 	Plug,
 	Server,
-	Users2,
+	Shapes,
 	ArrowLeft,
 	GitCommitVertical,
-	GraduationCap,
+	WandSparkles,
 } from "lucide-react"
 
 import { type ProviderSettings, type ExperimentId, DEFAULT_CHECKPOINT_TIMEOUT_SECONDS } from "@kit-pilot/types"
@@ -460,20 +460,20 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	const sections: { id: SectionName; icon: LucideIcon }[] = useMemo(
 		() => [
 			{ id: "providers", icon: Plug },
-			{ id: "modes", icon: Users2 },
-			{ id: "skills", icon: GraduationCap },
+			{ id: "modes", icon: Shapes },
+			{ id: "skills", icon: WandSparkles },
 			{ id: "slashCommands", icon: SquareSlash },
 			{ id: "autoApprove", icon: CheckCheck },
 			{ id: "mcp", icon: Server },
 			{ id: "checkpoints", icon: GitCommitVertical },
 			{ id: "notifications", icon: Bell },
-			{ id: "contextManagement", icon: Database },
+			{ id: "contextManagement", icon: Layers3 },
 			{ id: "terminal", icon: SquareTerminal },
 			{ id: "prompts", icon: MessageSquare },
 			{ id: "worktrees", icon: GitBranch },
-			{ id: "ui", icon: Glasses },
+			{ id: "ui", icon: PanelsTopLeft },
 			{ id: "experimental", icon: FlaskConical },
-			{ id: "language", icon: Globe },
+			{ id: "language", icon: Languages },
 			{ id: "about", icon: Info },
 		],
 		[], // No dependencies needed now
@@ -649,7 +649,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 								data-testid={`tab-${id}`}
 								data-compact={isCompactMode}>
 								<div className={cn("flex items-center gap-2", isCompactMode && "justify-center")}>
-									<Icon className="w-4 h-4" />
+									<Icon className="w-4 h-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
 									<span className="tab-label">{t(`settings:sections.${id}`)}</span>
 								</div>
 							</TabTrigger>

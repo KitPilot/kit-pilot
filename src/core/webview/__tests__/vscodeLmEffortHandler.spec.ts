@@ -43,6 +43,33 @@ describe("setVsCodeLmEffort", () => {
 		})
 	})
 
+	it.each(["xhigh", "max"] as const)("saves Claude %s without conversion", async (effort) => {
+		const provider = makeProvider()
+		await setVsCodeLmEffort(provider as unknown as ClineProvider, {
+			...request,
+			vsCodeLmEffortSelection: { ...selector, effort },
+		})
+		expect(provider.upsertProviderProfile).toHaveBeenCalledWith("Work", {
+			...configuration,
+			vsCodeLmModelEfforts: { [key]: effort, [otherKey]: "medium" },
+		})
+	})
+
+	it("rejects Max for a selected GPT-5.5 model", async () => {
+		const provider = makeProvider()
+		const gpt = { vendor: "copilot", family: "gpt-5.5" }
+		provider.getState.mockResolvedValue({
+			apiConfiguration: { ...configuration, vsCodeLmModelSelector: gpt },
+			currentApiConfigName: "Work",
+		})
+		await setVsCodeLmEffort(provider as unknown as ClineProvider, {
+			...request,
+			vsCodeLmEffortSelection: { ...gpt, effort: "max" },
+		})
+		expect(provider.upsertProviderProfile).not.toHaveBeenCalled()
+		expect(provider.postMessageToWebview).toHaveBeenCalledWith(expect.objectContaining({ success: false }))
+	})
+
 	it("Default removes only this model's override", async () => {
 		const provider = makeProvider()
 		await setVsCodeLmEffort(provider as unknown as ClineProvider, {

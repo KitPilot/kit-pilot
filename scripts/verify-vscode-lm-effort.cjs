@@ -42,7 +42,7 @@ export async function run() {
   const modelInfo = {
     id: "effort-test", name: "Effort test", family: "effort-test", version: "1",
     maxInputTokens: 4096, maxOutputTokens: 1024, capabilities: { toolCalling: false, imageInput: false },
-    configurationSchema: { properties: { reasoningEffort: { type: "string", enum: ["low", "medium", "high"], default: "medium" } } },
+    configurationSchema: { properties: { reasoningEffort: { type: "string", enum: ["low", "medium", "high", "xhigh", "max"], default: "medium" } } },
   }
   const registration = vscode.lm.registerLanguageModelChatProvider("kitpilot-effort-test", {
     provideLanguageModelChatInformation: async () => [modelInfo],
@@ -57,7 +57,7 @@ export async function run() {
     assert.ok(transport, "The local test model must be available.")
     const model = { vendor: "copilot", family: "claude-opus-5" }
     const key = getVsCodeLmEffortKey(model)
-    for (const effort of ["low", "high", undefined]) {
+    for (const effort of ["low", "high", "xhigh", "max", undefined]) {
       const options = getVsCodeLmEffortOptions(model, { vsCodeLmModelEfforts: effort ? { [key]: effort } : {} })
       const response = await transport.sendRequest([vscode.LanguageModelChatMessage.User("test")], options)
       for await (const _part of response.stream) {}
