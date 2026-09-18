@@ -1,5 +1,16 @@
 # KitPilot Changelog
 
+## 0.2.8
+
+### Changed
+
+- **Five settings sections now use clearer icons.** Before, Modes, Skills, Context, UI, and Language used less specific symbols. Their new icons follow the same outline style as the mode selector. The settings sidebar and search results use the same symbols.
+- **The mode selector now uses matching outline icons.** Before, the default modes used emoji with different colors and sizes. Architect, Code, Ask, Debug, and Orchestrator now use icons that follow the VS Code theme. The icons appear in the mode list and the selected-mode button. Custom mode names keep their existing appearance.
+
+### Fixed
+
+- **The effort selector now uses a separate list for each model.** Before, each supported model showed only Low, Medium, and High. KitPilot now includes the additional levels in the model documentation. Extra High and Max are separate choices. Copilot can restrict the levels that its service accepts.
+
 ## 0.2.7
 
 ### Added

@@ -14,6 +14,7 @@ import { useKitPilotPortal } from "@/components/ui/hooks/useKitPilotPortal"
 import { Popover, PopoverContent, PopoverTrigger, StandardTooltip } from "@/components/ui"
 
 import { IconButton } from "./IconButton"
+import { ModeName } from "./ModeName"
 
 const SEARCH_THRESHOLD = 6
 
@@ -229,7 +230,7 @@ export const ModeSelector = ({
 							? "bg-primary opacity-90 hover:bg-primary-hover text-vscode-button-foreground"
 							: null,
 					)}>
-					<span className="truncate">{selectedMode?.name || ""}</span>
+					<ModeName mode={selectedMode} />
 				</PopoverTrigger>
 			</StandardTooltip>
 			<PopoverContent
@@ -289,7 +290,9 @@ export const ModeSelector = ({
 											)}
 											data-testid="mode-selector-item">
 											<div className="flex-1 min-w-0">
-												<div className="font-bold truncate">{mode.name}</div>
+												<div className="font-bold truncate">
+													<ModeName mode={mode} />
+												</div>
 												{mode.description && (
 													<div className="text-xs text-vscode-descriptionForeground truncate">
 														{mode.description}

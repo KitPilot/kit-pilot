@@ -143,16 +143,18 @@
 	"loadingModels": "Loading models…",
 	"noModelSelected": "Select model",
 	"thinkingEffort": {
-		"selectorTooltip": "Set the effort for this model in KitPilot. Default uses the Copilot setting.",
+		"selectorTooltip": "Set the effort for this model in KitPilot. The levels follow model documentation; Copilot support can differ. Default uses the Copilot setting.",
 		"saveFailed": "Cannot save the effort. Try again.",
 		"tooltip": "Thinking effort for this model. Set it in VS Code's Copilot model picker — the level you pick there applies to KitPilot too.",
 		"aria": "Thinking effort: {{level}}",
 		"levels": {
 			"none": "None",
+			"minimal": "Minimal",
 			"low": "Low",
 			"medium": "Medium",
 			"high": "High",
-			"xhigh": "Max",
+			"xhigh": "Extra High",
+			"max": "Max",
 			"default": "Default"
 		}
 	},

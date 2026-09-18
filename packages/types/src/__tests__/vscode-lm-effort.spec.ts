@@ -25,19 +25,39 @@ describe("VS Code model effort", () => {
 		expect(providerSettingsSchema.safeParse({ vsCodeLmModelEfforts: { model: "invalid" } }).success).toBe(false)
 	})
 
-	it.each(["claude-opus-5", "claude-sonnet-4.6", "gpt-5.5", "gpt-5.6-sol"])(
-		"exposes the common effort levels for %s",
-		(family) => {
-			expect(getVsCodeLmEffortLevels({ vendor: "copilot", family }, "1.136.1")).toEqual(["low", "medium", "high"])
-		},
-	)
+	it.each([
+		["claude-opus-4.5", ["low", "medium", "high"]],
+		["claude-opus-4.6", ["low", "medium", "high", "max"]],
+		["claude-sonnet-4.6", ["low", "medium", "high", "max"]],
+		["claude-opus-5", ["low", "medium", "high", "xhigh", "max"]],
+		["claude-sonnet-5", ["low", "medium", "high", "xhigh", "max"]],
+		["gpt-5", ["minimal", "low", "medium", "high"]],
+		["gpt-5-codex", ["low", "medium", "high"]],
+		["gpt-5.1", ["none", "low", "medium", "high"]],
+		["gpt-5.1-codex-max", ["low", "medium", "high", "xhigh"]],
+		["gpt-5.5", ["none", "low", "medium", "high", "xhigh"]],
+		["gpt-5.6-sol", ["none", "low", "medium", "high", "xhigh", "max"]],
+	])("returns the documented levels for %s", (family, levels) => {
+		expect(getVsCodeLmEffortLevels({ vendor: "copilot", family: family as string }, "1.136.1")).toEqual(levels)
+	})
 
-	it.each(["gpt-4o", "claude-sonnet-4", "gemini-2.5-pro", "gpt-5.5-pro", "gpt-99", "auto"])(
-		"does not invent support for %s",
-		(family) => {
-			expect(getVsCodeLmEffortLevels({ vendor: "copilot", family }, "1.136.1")).toEqual([])
-		},
-	)
+	it("preserves Extra High and Max as distinct profile values", () => {
+		const settings = providerSettingsSchema.parse({ vsCodeLmModelEfforts: { opus: "max", gpt: "xhigh" } })
+		expect(settings.vsCodeLmModelEfforts).toEqual({ opus: "max", gpt: "xhigh" })
+	})
+
+	it.each([
+		"gpt-4o",
+		"claude-sonnet-4",
+		"gemini-2.5-pro",
+		"gpt-5.5-pro",
+		"gpt-99",
+		"auto",
+		"constructor",
+		"__proto__",
+	])("does not invent support for %s", (family) => {
+		expect(getVsCodeLmEffortLevels({ vendor: "copilot", family }, "1.136.1")).toEqual([])
+	})
 
 	it("does not apply Copilot capabilities to another vendor", () => {
 		expect(getVsCodeLmEffortLevels({ vendor: "custom", family: "claude-opus-5" }, "1.136.1")).toEqual([])

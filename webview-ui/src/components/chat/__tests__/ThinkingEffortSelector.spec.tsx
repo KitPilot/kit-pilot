@@ -5,9 +5,18 @@ import { vscode } from "@/utils/vscode"
 import { ThinkingEffortSelector } from "../ThinkingEffortSelector"
 
 vi.mock("@/utils/vscode", () => ({ vscode: { postMessage: vi.fn() } }))
-vi.mock("@/i18n/TranslationContext", () => ({
-	useAppTranslation: () => ({ t: (key: string) => key }),
-}))
+vi.mock("@/i18n/TranslationContext", async () => {
+	const { default: chat } = await import("@/i18n/locales/en/chat.json")
+	return {
+		useAppTranslation: () => ({
+			t: (key: string) => {
+				if (key === "chat:thinkingEffort.levels.xhigh") return chat.thinkingEffort.levels.xhigh
+				if (key === "chat:thinkingEffort.levels.max") return chat.thinkingEffort.levels.max
+				return key
+			},
+		}),
+	}
+})
 
 const claude = { vendor: "copilot", family: "claude-opus-5" }
 const gpt = { vendor: "copilot", family: "gpt-5.5" }
@@ -22,8 +31,8 @@ const configuration: ProviderSettings = {
 const models: ExtensionMessage = {
 	type: "vsCodeLmModels",
 	vsCodeLmModels: [
-		{ ...claude, effortLevels: ["low", "medium", "high"] },
-		{ ...gpt, effortLevels: ["low", "medium", "high"] },
+		{ ...claude, effortLevels: ["low", "medium", "high", "xhigh", "max"] },
+		{ ...gpt, effortLevels: ["none", "low", "medium", "high", "xhigh"] },
 		{ vendor: "copilot", family: "gpt-4o", effortLevels: [] },
 	],
 }
@@ -135,6 +144,36 @@ describe("ThinkingEffortSelector", () => {
 		receive({ type: "vsCodeLmEffortSaved", requestId: request.requestId, success: false })
 		expect(screen.queryByRole("alert")).not.toBeInTheDocument()
 		expect(screen.getByRole("combobox")).toHaveTextContent("chat:thinkingEffort.levels.low")
+	})
+
+	it.each([
+		["Extra High", "xhigh"],
+		["Max", "max"],
+	] as const)("sends the exact value for %s", (label, effort) => {
+		render(<ThinkingEffortSelector apiConfiguration={configuration} profileName="Work" />)
+		receive(models)
+		fireEvent.keyDown(screen.getByRole("combobox"), { key: "Enter" })
+		expect(screen.getByRole("option", { name: "Extra High" })).toBeInTheDocument()
+		expect(screen.getByRole("option", { name: "Max" })).toBeInTheDocument()
+		fireEvent.click(screen.getByRole("option", { name: label }))
+		expect(vscode.postMessage).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				vsCodeLmEffortSelection: { ...claude, effort },
+			}),
+		)
+	})
+
+	it("shows GPT's options without Claude's Max level", () => {
+		render(
+			<ThinkingEffortSelector
+				apiConfiguration={{ ...configuration, vsCodeLmModelSelector: gpt }}
+				profileName="Work"
+			/>,
+		)
+		receive(models)
+		fireEvent.keyDown(screen.getByRole("combobox"), { key: "Enter" })
+		expect(screen.getByRole("option", { name: "Extra High" })).toBeInTheDocument()
+		expect(screen.queryByRole("option", { name: "Max" })).not.toBeInTheDocument()
 	})
 
 	it("respects the disabled state", () => {

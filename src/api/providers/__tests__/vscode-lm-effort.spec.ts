@@ -13,6 +13,28 @@ describe("getVsCodeLmEffortOptions", () => {
 		host.version = "1.136.1"
 	})
 
+	it.each(["xhigh", "max"] as const)("sends Claude %s without conversion", (effort) => {
+		expect(
+			getVsCodeLmEffortOptions(claude, { vsCodeLmModelEfforts: { [getVsCodeLmEffortKey(claude)!]: effort } }),
+		).toEqual({
+			configuration: { reasoningEffort: effort },
+			modelOptions: { _enableThinking: true },
+		})
+	})
+
+	it("does not send Max to GPT-5.5", () => {
+		expect(
+			getVsCodeLmEffortOptions(gpt, { vsCodeLmModelEfforts: { [getVsCodeLmEffortKey(gpt)!]: "max" } }),
+		).toEqual({})
+	})
+
+	it("does not send Extra High to Claude Opus 4.6", () => {
+		const model = { vendor: "copilot", family: "claude-opus-4.6" }
+		expect(
+			getVsCodeLmEffortOptions(model, { vsCodeLmModelEfforts: { [getVsCodeLmEffortKey(model)!]: "xhigh" } }),
+		).toEqual({ modelOptions: { _enableThinking: true } })
+	})
+
 	it("does not send Claude's effort after a model switch", () => {
 		expect(getVsCodeLmEffortOptions(gpt, settings)).toEqual({})
 	})
