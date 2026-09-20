@@ -220,17 +220,13 @@ export const ModeSelector = ({
 					data-testid="mode-selector-trigger"
 					className={cn(
 						"inline-flex items-center relative whitespace-nowrap px-1.5 py-1 text-xs",
-						"bg-transparent border border-[rgba(255,255,255,0.08)] rounded-md text-vscode-foreground",
+						"kitpilot-chat-control border rounded-md",
 						"transition-all duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-vscode-focusBorder focus-visible:ring-inset",
-						disabled
-							? "opacity-50 cursor-not-allowed"
-							: "opacity-90 hover:opacity-100 hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)] cursor-pointer",
+						disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
 						triggerClassName,
-						!disabled && !hasOpenedModeSelector
-							? "bg-primary opacity-90 hover:bg-primary-hover text-vscode-button-foreground"
-							: null,
+						!disabled && !hasOpenedModeSelector ? "kitpilot-chat-control-attention" : null,
 					)}>
-					<ModeName mode={selectedMode} />
+					<ModeName mode={selectedMode} selected={!disabled && !hasOpenedModeSelector} />
 				</PopoverTrigger>
 			</StandardTooltip>
 			<PopoverContent
@@ -269,7 +265,7 @@ export const ModeSelector = ({
 					{/* Mode List */}
 					<div ref={scrollContainerRef} className="max-h-[300px] overflow-y-auto">
 						{filteredModes.length === 0 && searchValue ? (
-							<div className="py-2 px-3 text-sm text-vscode-foreground/70">
+							<div className="py-2 px-3 text-sm text-vscode-foreground">
 								{t("chat:modeSelector.noResults")}
 							</div>
 						) : (
@@ -291,10 +287,14 @@ export const ModeSelector = ({
 											data-testid="mode-selector-item">
 											<div className="flex-1 min-w-0">
 												<div className="font-bold truncate">
-													<ModeName mode={mode} />
+													<ModeName mode={mode} selected={isSelected} />
 												</div>
 												{mode.description && (
-													<div className="text-xs text-vscode-descriptionForeground truncate">
+													<div
+														className={cn(
+															"text-xs truncate",
+															!isSelected && "text-vscode-descriptionForeground",
+														)}>
 														{mode.description}
 													</div>
 												)}

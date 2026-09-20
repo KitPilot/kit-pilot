@@ -101,7 +101,7 @@ export function ThinkingEffortSelector({
 					<SelectTrigger
 						aria-label={t("chat:thinkingEffort.aria", { level: label })}
 						aria-busy={!!pendingRequest}
-						className="h-auto gap-1 rounded-md px-1.5 py-1 text-xs bg-transparent border-[rgba(255,255,255,0.08)] text-vscode-foreground [&_svg]:size-3">
+						className="h-auto gap-1 rounded-md px-1.5 py-1 text-xs kitpilot-chat-control [&_svg]:size-3 [&_svg]:text-inherit [&_svg]:opacity-100">
 						<span aria-hidden="true">✻</span>
 						<SelectValue />
 					</SelectTrigger>

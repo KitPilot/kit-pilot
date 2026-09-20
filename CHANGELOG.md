@@ -1,5 +1,12 @@
 # KitPilot Changelog
 
+## 0.2.9
+
+### Changed
+
+- **Mode icons now use distinct colors.** Before, all default mode icons used the same color. Architect, Code, Ask, Debug, and Orchestrator now have separate colors for light and dark themes. Selected rows and high-contrast themes use the theme's text color.
+- **Chat input text and controls now have stronger contrast.** Before, the background tint and reduced text opacity made some labels difficult to read. The background now has a lighter tint, and active labels, context limits, placeholders, and hints use opaque text. The controls use the theme's input colors. The controls wrap to another row when the sidebar is narrow.
+
 ## 0.2.8
 
 ### Changed

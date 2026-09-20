@@ -24,7 +24,7 @@ function ModelContextLength({ value }: { value?: number }) {
 	if (value === undefined) return null
 	const label = t("chat:modelContextLimit", { count: value.toLocaleString() })
 	return (
-		<span className="shrink-0 text-xs opacity-60 tabular-nums" title={label} aria-label={label}>
+		<span className="shrink-0 text-xs tabular-nums" title={label} aria-label={label}>
 			{formatLargeNumber(value)
 				.replace(/\.0([kmb])$/, "$1")
 				.toUpperCase()}
@@ -157,11 +157,9 @@ export const ModelSelector = ({ value, title, onChange, triggerClassName, disabl
 					data-testid="model-selector-trigger"
 					className={cn(
 						"min-w-0 inline-flex items-center gap-1 relative whitespace-nowrap px-1.5 py-1 text-xs",
-						"bg-transparent border border-[rgba(255,255,255,0.08)] rounded-md text-vscode-foreground",
+						"kitpilot-chat-control border rounded-md",
 						"transition-all duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-vscode-focusBorder focus-visible:ring-inset",
-						disabled
-							? "opacity-50 cursor-not-allowed"
-							: "opacity-90 hover:opacity-100 hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)] cursor-pointer",
+						disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
 						triggerClassName,
 					)}>
 					{ModelIcon && <ModelIcon size="1em" className="shrink-0" aria-hidden="true" focusable="false" />}
@@ -197,9 +195,9 @@ export const ModelSelector = ({ value, title, onChange, triggerClassName, disabl
 					) : null}
 
 					{models.length === 0 ? (
-						<div className="py-3 px-3 text-sm text-vscode-foreground/70">{t("chat:loadingModels")}</div>
+						<div className="py-3 px-3 text-sm text-vscode-foreground">{t("chat:loadingModels")}</div>
 					) : filtered.length === 0 ? (
-						<div className="py-2 px-3 text-sm text-vscode-foreground/70">{t("common:ui.no_results")}</div>
+						<div className="py-2 px-3 text-sm text-vscode-foreground">{t("common:ui.no_results")}</div>
 					) : (
 						<div className="max-h-[300px] overflow-y-auto py-1">
 							{sortedModels.map((m) => {
@@ -216,11 +214,7 @@ export const ModelSelector = ({ value, title, onChange, triggerClassName, disabl
 										)}>
 										<span className="flex-1 min-w-0 truncate">{m.family}</span>
 										<ModelContextLength value={getContextLength(m)} />
-										{showVendor && m.vendor && (
-											<span className="text-xs text-vscode-descriptionForeground opacity-60 shrink-0">
-												{m.vendor}
-											</span>
-										)}
+										{showVendor && m.vendor && <span className="text-xs shrink-0">{m.vendor}</span>}
 										{selected && <span className="codicon codicon-check text-xs shrink-0" />}
 									</div>
 								)
