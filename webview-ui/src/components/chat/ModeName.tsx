@@ -10,7 +10,7 @@ const modeIcons: Readonly<Record<string, LucideIcon>> = {
 	orchestrator: Workflow,
 }
 
-export function ModeName({ mode }: { mode?: Pick<ModeConfig, "slug" | "name"> }) {
+export function ModeName({ mode, selected = false }: { mode?: Pick<ModeConfig, "slug" | "name">; selected?: boolean }) {
 	if (!mode) return null
 
 	const defaultMode = DEFAULT_MODES.find((item) => item.slug === mode.slug)
@@ -19,8 +19,19 @@ export function ModeName({ mode }: { mode?: Pick<ModeConfig, "slug" | "name"> })
 	const name = Icon ? mode.name.slice(mode.name.indexOf(" ") + 1) : mode.name
 
 	return (
-		<span className="inline-flex items-center gap-1.5 min-w-0 max-w-full">
-			{Icon && <Icon size="1em" strokeWidth={1.75} className="shrink-0" aria-hidden="true" focusable="false" />}
+		<span
+			className="inline-flex items-center gap-1.5 min-w-0 max-w-full"
+			data-mode-selected={selected || undefined}>
+			{Icon && (
+				<Icon
+					size="1em"
+					strokeWidth={1.75}
+					className="kitpilot-mode-icon shrink-0"
+					data-mode={mode.slug}
+					aria-hidden="true"
+					focusable="false"
+				/>
+			)}
 			<span className="truncate">{name}</span>
 		</span>
 	)

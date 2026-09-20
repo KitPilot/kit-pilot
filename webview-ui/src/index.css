@@ -730,20 +730,93 @@ input[cmdk-input]:focus {
 
 /* ---------- KitPilot chat input box ---------- */
 
-/* The whole input group (textarea + control pills) reads as one spacious
-   rounded container with a soft indigo→sea-green diagonal gradient. Hues are
-   fixed brand colors blended into the theme's input background, so dark
-   themes get a deep muted wash and light themes a pastel one, while text
-   keeps using the theme's input foreground. */
+/* Use a light tint so input text retains the theme's contrast. */
 .kitpilot-chatbox {
 	border-radius: 14px;
 	padding: 6px 6px 4px;
+	color: var(--vscode-input-foreground);
 	background: linear-gradient(
 		135deg,
-		color-mix(in srgb, #5b7cfa 32%, var(--vscode-input-background)) 0%,
-		color-mix(in srgb, #2ea88a 32%, var(--vscode-input-background)) 100%
+		color-mix(in srgb, #5b7cfa 12%, var(--vscode-input-background)) 0%,
+		color-mix(in srgb, #2ea88a 12%, var(--vscode-input-background)) 100%
 	);
-	border: 1px solid color-mix(in srgb, var(--vscode-foreground) 14%, transparent);
+	border: 1px solid
+		var(--vscode-input-border, var(--vscode-dropdown-border, var(--vscode-contrastBorder, transparent)));
+}
+
+/* Give each control the matching input foreground and background. */
+.kitpilot-chat-control {
+	color: var(--vscode-input-foreground);
+	background: var(--vscode-input-background);
+	border-color: var(--vscode-input-border, var(--vscode-dropdown-border, var(--vscode-contrastBorder, transparent)));
+}
+
+.kitpilot-chat-control:hover:not(:disabled) {
+	border-color: var(--vscode-focusBorder);
+}
+
+.kitpilot-chat-control-attention {
+	color: var(--vscode-button-foreground);
+	background: var(--vscode-button-background);
+}
+
+.kitpilot-chat-control-attention:hover:not(:disabled) {
+	background: var(--vscode-button-hoverBackground);
+}
+
+/* Use distinct icon colors. Keep mode labels in the theme's text color. */
+:root {
+	--kitpilot-mode-architect: #c4b5fd;
+	--kitpilot-mode-code: #93c5fd;
+	--kitpilot-mode-ask: #5eead4;
+	--kitpilot-mode-debug: #fcd34d;
+	--kitpilot-mode-orchestrator: #fda4af;
+}
+
+body.vscode-light {
+	--kitpilot-mode-architect: #6d28d9;
+	--kitpilot-mode-code: #1d4ed8;
+	--kitpilot-mode-ask: #0f766e;
+	--kitpilot-mode-debug: #92400e;
+	--kitpilot-mode-orchestrator: #be123c;
+}
+
+.kitpilot-mode-icon[data-mode="architect"] {
+	color: var(--kitpilot-mode-architect);
+}
+.kitpilot-mode-icon[data-mode="code"] {
+	color: var(--kitpilot-mode-code);
+}
+.kitpilot-mode-icon[data-mode="ask"] {
+	color: var(--kitpilot-mode-ask);
+}
+.kitpilot-mode-icon[data-mode="debug"] {
+	color: var(--kitpilot-mode-debug);
+}
+.kitpilot-mode-icon[data-mode="orchestrator"] {
+	color: var(--kitpilot-mode-orchestrator);
+}
+
+/* Selection and high contrast themes use the theme's foreground color. */
+[data-mode-selected="true"] .kitpilot-mode-icon,
+body.vscode-high-contrast .kitpilot-mode-icon,
+body.vscode-high-contrast-light .kitpilot-mode-icon {
+	color: inherit;
+}
+
+body.vscode-high-contrast .kitpilot-chatbox,
+body.vscode-high-contrast-light .kitpilot-chatbox {
+	background: var(--vscode-input-background);
+}
+
+@media (forced-colors: active) {
+	.kitpilot-mode-icon[data-mode] {
+		color: inherit;
+	}
+	.kitpilot-chatbox {
+		background: Canvas;
+		color: CanvasText;
+	}
 }
 
 /* One focus ring on the container instead of an inner rectangle on the
@@ -757,13 +830,9 @@ input[cmdk-input]:focus {
 	outline: none;
 }
 
-/* Placeholder / hint text sits on the gradient wash, so the browser's default
-   dimmed placeholder (~54% of the text color) washes out. Lift it to a firmer,
-   theme-aware opacity + medium weight so it stays legible on both the deep dark
-   wash and the light pastel one. `opacity: 1` overrides the UA's own dimming so
-   the color-mix alpha is the single source of truth. */
-.kitpilot-chatbox textarea::placeholder {
-	color: color-mix(in oklab, var(--vscode-input-foreground) 72%, transparent);
+/* Keep placeholder text opaque so the browser does not dim it again. */
+.chat-text-area textarea::placeholder {
+	color: var(--vscode-input-foreground);
 	opacity: 1;
 	font-weight: 500;
 }

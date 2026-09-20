@@ -1142,12 +1142,12 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 											"relative inline-flex items-center justify-center",
 											"bg-transparent border-none p-1.5",
 											"rounded-md min-w-[28px] min-h-[28px]",
-											"text-vscode-descriptionForeground hover:text-vscode-foreground",
+											"text-vscode-input-foreground",
 											"transition-opacity duration-150",
 											"focus:outline-none focus-visible:ring-1 focus-visible:ring-vscode-focusBorder",
 											shouldDisableImages
 												? "opacity-40 cursor-not-allowed grayscale-[30%]"
-												: "opacity-50 hover:opacity-100 cursor-pointer hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)] active:bg-[rgba(255,255,255,0.1)]",
+												: "cursor-pointer hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)] active:bg-[rgba(255,255,255,0.1)]",
 										)}>
 										<Image className="w-4 h-4" />
 									</button>
@@ -1162,7 +1162,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 												"relative inline-flex items-center justify-center",
 												"bg-transparent border-none p-1.5",
 												"rounded-md min-w-[28px] min-h-[28px]",
-												"opacity-60 hover:opacity-100 text-vscode-descriptionForeground hover:text-vscode-foreground",
+												"text-vscode-input-foreground",
 												"transition-all duration-150",
 												"hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)]",
 												"focus:outline-none focus-visible:ring-1 focus-visible:ring-vscode-focusBorder",
@@ -1182,11 +1182,11 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 												"relative inline-flex items-center justify-center",
 												"bg-transparent border-none p-1.5",
 												"rounded-md min-w-[28px] min-h-[28px]",
-												"text-vscode-descriptionForeground hover:text-vscode-foreground",
+												"text-vscode-input-foreground",
 												"transition-all duration-1000",
 												"cursor-pointer",
 												hasInputContent
-													? "opacity-50 hover:opacity-100 delay-750 pointer-events-auto"
+													? "opacity-100 delay-750 pointer-events-auto"
 													: "opacity-0 pointer-events-none duration-200 delay-0",
 												hasInputContent &&
 													"hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)]",
@@ -1210,7 +1210,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 												"relative inline-flex items-center justify-center",
 												"bg-transparent border-none p-1.5",
 												"rounded-md min-w-[28px] min-h-[28px]",
-												"text-vscode-descriptionForeground hover:text-vscode-foreground",
+												"text-vscode-input-foreground",
 												"transition-all duration-200",
 												"opacity-100 hover:opacity-100 pointer-events-auto",
 												"hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)]",
@@ -1258,7 +1258,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 													"relative inline-flex items-center justify-center",
 													"bg-transparent border-none p-1.5",
 													"rounded-full min-w-[28px] min-h-[28px]",
-													"text-vscode-descriptionForeground hover:text-vscode-foreground",
+													"text-vscode-input-foreground",
 													"transition-all duration-200",
 													isEditMode || isStreaming || hasInputContent
 														? "opacity-100 hover:opacity-100 pointer-events-auto"
@@ -1299,7 +1299,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 									)}
 									style={{
 										bottom: "0.75rem",
-										color: "color-mix(in oklab, var(--vscode-input-foreground) 72%, transparent)",
+										color: "var(--vscode-input-foreground)",
 										fontWeight: 500,
 										userSelect: "none",
 										pointerEvents: "none",
@@ -1324,12 +1324,12 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 				)}
 
 				<div className="flex items-center gap-2">
-					<div className="flex items-center gap-2 min-w-0 overflow-clip flex-1">
+					<div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
 						<ModeSelector
 							value={mode}
 							title={t("chat:selectMode")}
 							onChange={handleModeChange}
-							triggerClassName="text-ellipsis overflow-hidden flex-shrink-0"
+							triggerClassName="max-w-full text-ellipsis overflow-hidden flex-shrink-0"
 							modeShortcutText={modeShortcutText}
 							customModes={customModes}
 							customModePrompts={customModePrompts}
@@ -1339,7 +1339,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							disabled={selectApiConfigDisabled || isEffortSaving}
 							title={t("chat:selectModel")}
 							onChange={handleModelChange}
-							triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink"
+							triggerClassName="min-w-[28px] max-w-full text-ellipsis overflow-hidden flex-shrink"
 						/>
 						<ThinkingEffortSelector
 							apiConfiguration={apiConfiguration}
@@ -1347,7 +1347,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							disabled={selectApiConfigDisabled}
 							onSavingChange={setIsEffortSaving}
 						/>
-						<AutoApproveDropdown triggerClassName="min-w-[28px] text-ellipsis overflow-hidden flex-shrink" />
+						<AutoApproveDropdown triggerClassName="min-w-[28px] max-w-full text-ellipsis overflow-hidden flex-shrink" />
 					</div>
 					<div className={cn("flex flex-shrink-0 items-center gap-0.5 h-5 leading-none", "pr-2")}>
 						{isTtsPlaying && (
@@ -1359,7 +1359,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 										"relative inline-flex items-center justify-center",
 										"bg-transparent border-none p-1.5",
 										"rounded-md min-w-[28px] min-h-[28px]",
-										"text-vscode-foreground opacity-85",
+										"text-vscode-input-foreground",
 										"transition-all duration-150",
 										"hover:opacity-100 hover:bg-[rgba(255,255,255,0.03)] hover:border-[rgba(255,255,255,0.15)]",
 										"focus:outline-none focus-visible:ring-1 focus-visible:ring-vscode-focusBorder",
