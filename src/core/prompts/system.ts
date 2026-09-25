@@ -25,6 +25,7 @@ import {
 	getSkillsSection,
 	getUserMemorySection,
 } from "./sections"
+import { readPlainReplyEndsTurn } from "../task/plainReplies"
 
 // Helper function to get prompt component, filtering out empty objects
 export function getPromptComponent(
@@ -83,12 +84,13 @@ async function generatePrompt(
 
 	// Tools catalog is not included in the system prompt.
 	const toolsCatalog = ""
+	const plainReplies = readPlainReplyEndsTurn()
 
 	const basePrompt = `${roleDefinition}
 
 ${markdownFormattingSection()}
 
-${getSharedToolUseSection()}${toolsCatalog}
+${getSharedToolUseSection(plainReplies)}${toolsCatalog}
 
 	${getToolUseGuidelinesSection()}
 
@@ -96,11 +98,11 @@ ${getCapabilitiesSection(cwd, shouldIncludeMcp ? mcpHub : undefined)}
 
 ${modesSection}
 ${skillsSection ? `\n${skillsSection}` : ""}
-${getRulesSection(cwd, settings)}
+${getRulesSection(cwd, settings, plainReplies)}
 
 ${getSystemInfoSection(cwd)}
 
-${getObjectiveSection(vscode.workspace.getConfiguration("kit-pilot").get<string>("verifyCommand", ""))}
+${getObjectiveSection(vscode.workspace.getConfiguration("kit-pilot").get<string>("verifyCommand", ""), plainReplies)}
 ${userMemorySection ? `\n${userMemorySection}\n` : ""}
 ${await addCustomInstructions(baseInstructions, globalCustomInstructions || "", cwd, mode, {
 	language: language ?? formatLanguage(vscode.env.language),

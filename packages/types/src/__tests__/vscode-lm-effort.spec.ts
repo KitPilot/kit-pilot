@@ -59,6 +59,16 @@ describe("VS Code model effort", () => {
 		expect(getVsCodeLmEffortLevels({ vendor: "copilot", family }, "1.136.1")).toEqual([])
 	})
 
+	it.each(["claude-fable-5.1", "claude-opus-4.8-fast"])("gives %s the levels that Copilot reports", (family) => {
+		expect(getVsCodeLmEffortLevels({ vendor: "copilot", family }, "1.136.1")).toEqual([
+			"low",
+			"medium",
+			"high",
+			"xhigh",
+			"max",
+		])
+	})
+
 	it("does not apply Copilot capabilities to another vendor", () => {
 		expect(getVsCodeLmEffortLevels({ vendor: "custom", family: "claude-opus-5" }, "1.136.1")).toEqual([])
 	})

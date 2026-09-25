@@ -442,3 +442,78 @@ describe("extractTextCountFromMessage", () => {
 		expect(result).toBe("result-id")
 	})
 })
+
+describe("convertToVsCodeLmMessages with reasoning replay", () => {
+	class ThinkingPart {
+		constructor(
+			public value: string,
+			public id?: string,
+			public metadata?: Record<string, unknown>,
+		) {}
+	}
+
+	const target = { modelId: "claude-sonnet", vendor: "copilot", ThinkingPart }
+	const replay = {
+		modelId: "claude-sonnet",
+		vendor: "copilot",
+		parts: [{ id: "t1", value: "I should read the file first.", metadata: { signature: "sig" } }],
+	}
+
+	const assistantWithTool = {
+		role: "assistant",
+		content: [
+			{ type: "text", text: "Reading it." },
+			{ type: "tool_use", id: "tool-1", name: "read_file", input: { path: "a.ts" } },
+		],
+		vscodeLmReplay: replay,
+	} as Anthropic.Messages.MessageParam
+
+	it("puts the replayed thinking before the text and the tool call", () => {
+		const [message] = convertToVsCodeLmMessages([assistantWithTool], target)
+		expect(message.content).toHaveLength(3)
+		expect(message.content[0]).toBeInstanceOf(ThinkingPart)
+		expect(message.content[0]).toMatchObject({
+			value: "I should read the file first.",
+			id: "t1",
+			metadata: { signature: "sig" },
+		})
+		expect((message.content[1] as MockLanguageModelTextPart).value).toBe("Reading it.")
+		expect((message.content[2] as MockLanguageModelToolCallPart).name).toBe("read_file")
+	})
+
+	it("replays the thinking of an assistant message with string content", () => {
+		const [message] = convertToVsCodeLmMessages(
+			[{ role: "assistant", content: "Done.", vscodeLmReplay: replay } as Anthropic.Messages.MessageParam],
+			target,
+		)
+		expect(message.content).toHaveLength(2)
+		expect(message.content[0]).toBeInstanceOf(ThinkingPart)
+		expect((message.content[1] as MockLanguageModelTextPart).value).toBe("Done.")
+	})
+
+	it("does not replay when replay is off or the model is different", () => {
+		expect(convertToVsCodeLmMessages([assistantWithTool])[0].content).toHaveLength(2)
+		expect(convertToVsCodeLmMessages([assistantWithTool], { ...target, modelId: "gpt-5" })[0].content).toHaveLength(
+			2,
+		)
+	})
+
+	it("counts the replayed reasoning of a BYOK part in the token estimate", () => {
+		const byok = {
+			role: "assistant",
+			content: "Done.",
+			vscodeLmReplay: {
+				modelId: "claude-sonnet",
+				vendor: "copilot",
+				parts: [{ value: "", metadata: { signature: "sig", _completeThinking: "BYOK reasoning." } }],
+			},
+		} as Anthropic.Messages.MessageParam
+		const [message] = convertToVsCodeLmMessages([byok], target)
+		expect(extractTextCountFromMessage(message)).toContain("BYOK reasoning.")
+	})
+
+	it("counts the replayed thinking text in the token estimate", () => {
+		const [message] = convertToVsCodeLmMessages([assistantWithTool], target)
+		expect(extractTextCountFromMessage(message)).toContain("I should read the file first.")
+	})
+})

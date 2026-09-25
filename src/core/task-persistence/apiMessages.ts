@@ -5,6 +5,7 @@ import * as fs from "fs/promises"
 import { Anthropic } from "@anthropic-ai/sdk"
 
 import { fileExistsAtPath } from "../../utils/fs"
+import type { VsCodeLmReplayRecord } from "../../api/providers/vscode-lm-reasoning"
 
 import { GlobalFileNames } from "../../shared/globalFileNames"
 import { getTaskDirectoryPath } from "../../utils/storage"
@@ -23,6 +24,9 @@ export type ApiMessage = Anthropic.MessageParam & {
 	// For DeepSeek/Z.ai interleaved thinking: reasoning_content that must be preserved during tool call sequences
 	// See: https://api-docs.deepseek.com/guides/thinking_mode#tool-calls
 	reasoning_content?: string
+	// For the VS Code LM provider: the model's reasoning, replayed on later turns
+	// when the experimentalPreserveReasoning setting is on
+	vscodeLmReplay?: VsCodeLmReplayRecord
 	// For non-destructive condense: unique identifier for summary messages
 	condenseId?: string
 	// For non-destructive condense: points to the condenseId of the summary that replaces this message

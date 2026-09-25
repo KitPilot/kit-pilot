@@ -21,6 +21,8 @@ export function getVsCodeLmEffortKey(model?: VsCodeLmEffortModel): string | unde
 // https://platform.claude.com/docs/en/build-with-claude/effort
 // https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/reasoning
 // https://developers.openai.com/api/docs/models (individual model pages)
+// claude-fable-5.1 and claude-opus-4.8-fast: the reasoning_effort list in the
+// Copilot model metadata (checked 2026-09-25).
 const COMMON = ["low", "medium", "high"] as const
 const WITH_MAX = [...COMMON, "max"] as const
 const WITH_EXTRA_HIGH = [...COMMON, "xhigh"] as const
@@ -33,10 +35,12 @@ const COPILOT_EFFORT_MODELS: Readonly<Record<string, readonly VsCodeLmEffort[]>>
 	"claude-opus-4.6": WITH_MAX,
 	"claude-opus-4.7": WITH_BOTH,
 	"claude-opus-4.8": WITH_BOTH,
+	"claude-opus-4.8-fast": WITH_BOTH,
 	"claude-opus-5": WITH_BOTH,
 	"claude-sonnet-4.6": WITH_MAX,
 	"claude-sonnet-5": WITH_BOTH,
 	"claude-fable-5": WITH_BOTH,
+	"claude-fable-5.1": WITH_BOTH,
 	"claude-mythos-5": WITH_BOTH,
 	"gpt-5": ["minimal", ...COMMON],
 	"gpt-5-mini": ["minimal", ...COMMON],

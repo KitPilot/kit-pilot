@@ -1,7 +1,19 @@
 import type { Mock } from "vitest"
 
 // Mocks must come first, before imports
+const settings = vi.hoisted(() => ({ values: {} as Record<string, unknown> }))
+// KitPilot creates the diagnostic channel one time, so every test shares it.
+const diagnosticChannel = vi.hoisted(() => ({ appendLine: vi.fn() }))
+
 vi.mock("vscode", () => {
+	class MockLanguageModelThinkingPart {
+		constructor(
+			public value: string | string[],
+			public id?: string,
+			public metadata?: Record<string, unknown>,
+		) {}
+	}
+
 	class MockLanguageModelTextPart {
 		type = "text"
 		constructor(public value: string) {}
@@ -38,12 +50,18 @@ vi.mock("vscode", () => {
 	return {
 		version: "1.136.1",
 		workspace: {
+			getConfiguration: vi.fn(() => ({
+				get: vi.fn((key: string, defaultValue?: unknown) =>
+					key in settings.values ? settings.values[key] : defaultValue,
+				),
+			})),
 			onDidChangeConfiguration: vi.fn((_callback) => ({
 				dispose: vi.fn(),
 			})),
 		},
 		window: {
 			showWarningMessage: vi.fn(),
+			createOutputChannel: vi.fn(() => diagnosticChannel),
 		},
 		CancellationTokenSource: vi.fn(() => ({
 			token: {
@@ -59,6 +77,7 @@ vi.mock("vscode", () => {
 				this.name = "CancellationError"
 			}
 		},
+		LanguageModelChatMessageRole: { User: "user", Assistant: "assistant" },
 		LanguageModelChatMessage: {
 			Assistant: vi.fn((content) => ({
 				role: "assistant",
@@ -70,6 +89,7 @@ vi.mock("vscode", () => {
 			})),
 		},
 		LanguageModelTextPart: MockLanguageModelTextPart,
+		LanguageModelThinkingPart: MockLanguageModelThinkingPart,
 		LanguageModelDataPart: MockLanguageModelDataPart,
 		LanguageModelToolCallPart: MockLanguageModelToolCallPart,
 		LanguageModelToolResultPart: MockLanguageModelToolResultPart,
@@ -84,7 +104,7 @@ vi.mock("vscode", () => {
 
 import * as vscode from "vscode"
 import { getVsCodeLmEffortKey } from "@kit-pilot/types"
-import { VsCodeLmHandler, getVsCodeLmModels } from "../vscode-lm"
+import { VsCodeLmHandler, getVsCodeLmModels, placeSystemPrompt } from "../vscode-lm"
 import type { ApiHandlerOptions } from "../../../shared/api"
 import type { Anthropic } from "@anthropic-ai/sdk"
 
@@ -993,5 +1013,259 @@ describe("getVsCodeLmModels", () => {
 		;(vscode.lm.selectChatModels as Mock).mockRejectedValueOnce(new Error("boom"))
 		const result = await getVsCodeLmModels()
 		expect(result).toEqual([])
+	})
+})
+
+describe("placeSystemPrompt", () => {
+	const user = (text: string) => vscode.LanguageModelChatMessage.User(text)
+	const assistant = (text: string) => vscode.LanguageModelChatMessage.Assistant(text)
+
+	it("sends the prompt as an Assistant message by default", () => {
+		const result = placeSystemPrompt("rules", [user("hello")], false)
+		expect(result).toHaveLength(2)
+		expect(result[0].role).toBe("assistant")
+		expect((result[0].content[0] as vscode.LanguageModelTextPart).value).toBe("rules")
+	})
+
+	it("puts the prompt at the start of the first User message when the experiment is on", () => {
+		const result = placeSystemPrompt("rules", [user("hello"), assistant("hi")], true)
+		expect(result).toHaveLength(2)
+		expect(result[0].role).toBe("user")
+		expect(result[0].content.map((p) => (p as vscode.LanguageModelTextPart).value)).toEqual([
+			"<system_instructions>\nrules\n</system_instructions>\n\n",
+			"hello",
+		])
+	})
+
+	it("adds a separate User message when the history does not start with one", () => {
+		const result = placeSystemPrompt("rules", [assistant("hi")], true)
+		expect(result).toHaveLength(2)
+		expect(result[0].role).toBe("user")
+		expect(result[1].role).toBe("assistant")
+	})
+})
+
+describe("VsCodeLmHandler reasoning replay", () => {
+	const ThinkingPart = (vscode as any).LanguageModelThinkingPart
+	const model = {
+		...mockLanguageModelChat,
+		id: "claude-sonnet",
+		vendor: "copilot",
+		family: "claude-sonnet",
+		sendRequest: vi.fn(),
+		countTokens: vi.fn().mockResolvedValue(10),
+	}
+	const replay = {
+		modelId: "claude-sonnet",
+		vendor: "copilot",
+		parts: [{ id: "t1", value: "Earlier plan.", metadata: { signature: "sig" } }],
+	}
+	const history = [
+		{ role: "user", content: "Fix the bug" },
+		{ role: "assistant", content: "Looking.", vscodeLmReplay: replay },
+		{ role: "user", content: "Go on" },
+	] as Anthropic.Messages.MessageParam[]
+
+	let handler: VsCodeLmHandler
+
+	const respond = (...parts: unknown[]) => ({
+		stream: (async function* () {
+			yield* parts
+		})(),
+		text: (async function* () {})(),
+	})
+
+	const drain = async (stream: AsyncIterable<unknown>) => {
+		const chunks: any[] = []
+		for await (const chunk of stream) chunks.push(chunk)
+		return chunks
+	}
+
+	const sentMessages = (call: number) => model.sendRequest.mock.calls[call][0] as vscode.LanguageModelChatMessage[]
+	const hasThinking = (messages: vscode.LanguageModelChatMessage[]) =>
+		messages.some((m) => m.content.some((p) => p instanceof ThinkingPart))
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+		settings.values = { experimentalPreserveReasoning: true }
+		;(vscode.lm.selectChatModels as Mock).mockResolvedValue([model])
+		handler = new VsCodeLmHandler({ vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet" } })
+		handler["client"] = model as any
+	})
+
+	afterEach(() => {
+		handler.dispose()
+		settings.values = {}
+	})
+
+	it("stores the reasoning of a response one time, merged by id", async () => {
+		model.sendRequest.mockResolvedValueOnce(
+			respond(
+				new ThinkingPart("Read ", "t1"),
+				new ThinkingPart("the file.", "t1"),
+				new ThinkingPart("", "t1", { signature: "sig" }),
+				new vscode.LanguageModelTextPart("ok"),
+			),
+		)
+
+		const chunks = await drain(handler.createMessage("rules", [{ role: "user", content: "hi" }]))
+
+		expect(chunks.filter((c) => c.type === "text")).toEqual([{ type: "text", text: "ok" }])
+		expect(model.sendRequest.mock.calls[0][1]).toMatchObject({ includeEncryptedThinking: true })
+		expect(handler.takeVsCodeLmReplayRecord()).toEqual({
+			modelId: "claude-sonnet",
+			vendor: "copilot",
+			parts: [{ id: "t1", value: "Read the file.", metadata: { signature: "sig" } }],
+		})
+		expect(handler.takeVsCodeLmReplayRecord()).toBeUndefined()
+	})
+
+	it("replays stored reasoning at the start of the assistant message", async () => {
+		model.sendRequest.mockResolvedValueOnce(respond(new vscode.LanguageModelTextPart("ok")))
+
+		await drain(handler.createMessage("rules", history))
+
+		const assistant = sentMessages(0).find((m) => (m.role as unknown) === "assistant" && m.content.length === 2)!
+		expect(assistant.content[0]).toBeInstanceOf(ThinkingPart)
+		expect(assistant.content[0]).toMatchObject({ value: "Earlier plan.", id: "t1" })
+	})
+
+	it("retries once without reasoning when Copilot rejects it before any output", async () => {
+		model.sendRequest
+			.mockRejectedValueOnce(new Error("invalid thinking block"))
+			.mockResolvedValueOnce(respond(new vscode.LanguageModelTextPart("ok")))
+			.mockResolvedValueOnce(respond(new vscode.LanguageModelTextPart("again")))
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+		const chunks = await drain(handler.createMessage("rules", history))
+
+		expect(chunks.filter((c) => c.type === "text")).toEqual([{ type: "text", text: "ok" }])
+		expect(model.sendRequest).toHaveBeenCalledTimes(2)
+		expect(hasThinking(sentMessages(0))).toBe(true)
+		expect(hasThinking(sentMessages(1))).toBe(false)
+		expect(warn).toHaveBeenCalled()
+
+		// Replay stays off for the rest of the task.
+		await drain(handler.createMessage("rules", history))
+		expect(hasThinking(sentMessages(2))).toBe(false)
+		warn.mockRestore()
+	})
+
+	it("does not retry when the stored reasoning is from a different model", async () => {
+		const otherModelHistory = history.map((m: any) =>
+			m.vscodeLmReplay ? { ...m, vscodeLmReplay: { ...replay, modelId: "gpt-5" } } : m,
+		) as Anthropic.Messages.MessageParam[]
+		model.sendRequest
+			.mockRejectedValueOnce(new Error("rate limited"))
+			.mockResolvedValueOnce(respond(new vscode.LanguageModelTextPart("ok")))
+		vi.spyOn(console, "error").mockImplementation(() => {})
+
+		await expect(drain(handler.createMessage("rules", otherModelHistory))).rejects.toThrow("rate limited")
+		expect(model.sendRequest).toHaveBeenCalledTimes(1)
+		expect(hasThinking(sentMessages(0))).toBe(false)
+
+		// Replay is still on for reasoning from the current model.
+		await drain(handler.createMessage("rules", history))
+		expect(hasThinking(sentMessages(1))).toBe(true)
+	})
+
+	it("writes a diagnostic line for a failed request with replayed reasoning", async () => {
+		model.sendRequest
+			.mockRejectedValueOnce(new Error("invalid thinking block"))
+			.mockResolvedValueOnce(respond(new vscode.LanguageModelTextPart("ok")))
+		vi.spyOn(console, "warn").mockImplementation(() => {})
+
+		await drain(handler.createMessage("rules", history))
+
+		const lines = diagnosticChannel.appendLine.mock.calls.map((call) => call[0] as string)
+		expect(lines.some((line) => line.includes("outcome=error") && line.includes("replayedParts=yes"))).toBe(true)
+		expect(lines.some((line) => line.includes("errorName=Error"))).toBe(true)
+		expect(lines.some((line) => line.includes("outcome=ok"))).toBe(true)
+	})
+
+	it("does not log the error message, which can quote the reasoning", async () => {
+		model.sendRequest
+			.mockRejectedValueOnce(new Error("rejected thinking: Earlier plan."))
+			.mockResolvedValueOnce(respond(new vscode.LanguageModelTextPart("ok")))
+		vi.spyOn(console, "warn").mockImplementation(() => {})
+
+		await drain(handler.createMessage("rules", history))
+
+		const lines = diagnosticChannel.appendLine.mock.calls.map((call) => call[0] as string)
+		expect(lines.some((line) => line.includes("Earlier plan."))).toBe(false)
+	})
+
+	it("writes a diagnostic line for a cancelled request", async () => {
+		model.sendRequest.mockRejectedValueOnce(new vscode.CancellationError())
+
+		await expect(drain(handler.createMessage("rules", history))).rejects.toThrow("Request cancelled by user")
+
+		const lines = diagnosticChannel.appendLine.mock.calls.map((call) => call[0] as string)
+		expect(lines.some((line) => line.includes("outcome=cancelled"))).toBe(true)
+	})
+
+	it("does not retry after output has streamed", async () => {
+		model.sendRequest.mockResolvedValueOnce({
+			stream: (async function* () {
+				yield new vscode.LanguageModelTextPart("partial")
+				throw new Error("stream broke")
+			})(),
+			text: (async function* () {})(),
+		})
+		vi.spyOn(console, "error").mockImplementation(() => {})
+
+		await expect(drain(handler.createMessage("rules", history))).rejects.toThrow("stream broke")
+		expect(model.sendRequest).toHaveBeenCalledTimes(1)
+	})
+
+	it("does not store reasoning from a condense request", async () => {
+		model.sendRequest.mockResolvedValueOnce(
+			respond(new ThinkingPart("summary thoughts", "t9"), new vscode.LanguageModelTextPart("summary")),
+		)
+
+		await drain(
+			handler.createMessage("rules", [{ role: "user", content: "hi" }], { taskId: "t", purpose: "condense" }),
+		)
+
+		expect(handler.takeVsCodeLmReplayRecord()).toBeUndefined()
+	})
+
+	it("does nothing when the setting is off", async () => {
+		settings.values = {}
+		model.sendRequest.mockResolvedValueOnce(
+			respond(new ThinkingPart("x", "t1"), new vscode.LanguageModelTextPart("ok")),
+		)
+
+		await drain(handler.createMessage("rules", history))
+
+		expect(model.sendRequest.mock.calls[0][1]).not.toHaveProperty("includeEncryptedThinking")
+		expect(hasThinking(sentMessages(0))).toBe(false)
+		expect(handler.takeVsCodeLmReplayRecord()).toBeUndefined()
+	})
+
+	it("keeps reasoning when the id is auto but the family names the model", async () => {
+		// Seen on a free Copilot plan: every model has the id "auto".
+		handler["client"] = { ...model, id: "auto", family: "claude-fable-5.1" } as any
+		model.sendRequest.mockResolvedValueOnce(
+			respond(new ThinkingPart("why", "t1"), new vscode.LanguageModelTextPart("ok")),
+		)
+
+		await drain(handler.createMessage("rules", [{ role: "user", content: "hi" }]))
+
+		expect(model.sendRequest.mock.calls[0][1]).toMatchObject({ includeEncryptedThinking: true })
+		expect(handler.takeVsCodeLmReplayRecord()).toMatchObject({ modelId: "claude-fable-5.1" })
+	})
+
+	it("does nothing for the Auto model", async () => {
+		const auto = { ...model, id: "auto", family: "auto" }
+		handler["client"] = auto as any
+		model.sendRequest.mockResolvedValueOnce(
+			respond(new ThinkingPart("x", "t1"), new vscode.LanguageModelTextPart("ok")),
+		)
+
+		await drain(handler.createMessage("rules", history))
+
+		expect(hasThinking(sentMessages(0))).toBe(false)
+		expect(handler.takeVsCodeLmReplayRecord()).toBeUndefined()
 	})
 })

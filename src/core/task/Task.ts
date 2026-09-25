@@ -114,6 +114,8 @@ import {
 	saveTaskMessages,
 	taskMetadata,
 } from "../task-persistence"
+import type { VsCodeLmReplayRecord } from "../../api/providers/vscode-lm-reasoning"
+import { isPlainReplyTurnEnd, readPlainReplyEndsTurn } from "./plainReplies"
 import { getEnvironmentDetails } from "../environment/getEnvironmentDetails"
 import { checkContextWindowExceededError } from "../context/context-management/context-error-handling"
 import { getInitialWorkspaceContext } from "./workspaceContext"
@@ -174,6 +176,28 @@ export function extractUserPromptText(content: Anthropic.Messages.ContentBlockPa
 		if (match) return match[1].trim()
 	}
 	return undefined
+}
+
+/**
+ * Builds the text of the first user message of a task. By default the
+ * workspace overview comes before the user text. When `userMessageFirst` is
+ * true, the user text comes first. This is an experiment to compare how well
+ * the model understands the request in each order.
+ *
+ * @internal Exported for testing only.
+ */
+export function buildFirstUserMessageText(
+	task: string | undefined,
+	workspaceContext: string,
+	userMessageFirst: boolean,
+): string {
+	const userMessage = `<user_message>\n${task}\n</user_message>`
+	if (!userMessageFirst) return `${workspaceContext}${userMessage}`
+	return workspaceContext ? `${userMessage}\n\n${workspaceContext.trimEnd()}` : userMessage
+}
+
+function readUserMessageFirst(): boolean {
+	return vscode.workspace.getConfiguration("kit-pilot").get<boolean>("experimentalUserMessageFirst", false)
 }
 
 export class Task extends EventEmitter<TaskEvents> implements TaskLike {
@@ -750,6 +774,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			getThoughtSignature?: () => string | undefined
 			getSummary?: () => any[] | undefined
 			getReasoningDetails?: () => any[] | undefined
+			takeVsCodeLmReplayRecord?: () => VsCodeLmReplayRecord | undefined
 		}
 
 		if (message.role === "assistant") {
@@ -775,6 +800,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				...message,
 				...(responseId ? { id: responseId } : {}),
 				ts: Date.now(),
+			}
+
+			// Store the VS Code LM reasoning, so that later requests can replay it
+			const vscodeLmReplay = handler.takeVsCodeLmReplayRecord?.()
+			if (vscodeLmReplay) {
+				messageWithTs.vscodeLmReplay = vscodeLmReplay
 			}
 
 			// Store reasoning_details array if present (for models like Gemini 3)
@@ -1837,7 +1868,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			await this.initiateTaskLoop([
 				{
 					type: "text",
-					text: `${workspaceContext}<user_message>\n${task}\n</user_message>`,
+					text: buildFirstUserMessageText(task, workspaceContext, readUserMessageFirst()),
 				},
 				...imageBlocks,
 			]).catch((error) => {
@@ -2379,6 +2410,40 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			} else {
 				nextUserContent = [{ type: "text", text: formatResponse.noToolsUsed() }]
 			}
+		}
+	}
+
+	/**
+	 * A plain reply ends the turn. KitPilot waits for the user and does not tell
+	 * the model that it made an error. The empty followup ask opens the input.
+	 * The chat view hides its row, because the reply is already on the screen.
+	 *
+	 * The user's answer is a new prompt, so the UserPromptSubmit hook examines
+	 * it, as it does at the start of a task. If the hook blocks the answer,
+	 * KitPilot shows the reason, does not send the answer, and waits again.
+	 */
+	private async waitForUserAfterPlainReply(): Promise<void> {
+		this.consecutiveNoToolUseCount = 0
+		while (true) {
+			const { text, images } = await this.ask("followup", "", false)
+			await this.say("user_feedback", text ?? "", images)
+
+			const hookResult = await processHookEvent(this.cwd, {
+				eventType: "UserPromptSubmit",
+				toolName: "user_prompt",
+				toolArgs: { prompt: text ?? "" },
+				context: { session_id: this.taskId },
+			})
+			if (hookResult.blocked) {
+				await this.say("error", hookResult.blockingReason ?? "Blocked by UserPromptSubmit hook.")
+				continue
+			}
+
+			this.userMessageContent.push(
+				{ type: "text", text: `<user_message>\n${text ?? ""}\n</user_message>` },
+				...formatResponse.imageBlocks(images),
+			)
+			return
 		}
 	}
 
@@ -3438,7 +3503,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						(block) => block.type === "tool_use" || block.type === "mcp_tool_use",
 					)
 
-					if (!didToolUse) {
+					if (isPlainReplyTurnEnd(didToolUse, assistantMessage, readPlainReplyEndsTurn())) {
+						await this.waitForUserAfterPlainReply()
+					} else if (!didToolUse) {
 						// Increment consecutive no-tool-use counter
 						this.consecutiveNoToolUseCount++
 
@@ -4492,6 +4559,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				cleanConversationHistory.push({
 					role: msg.role,
 					content,
+					// The VS Code LM provider replays this reasoning. It is part of
+					// the message, so a removed message takes its reasoning with it.
+					...(msg.role === "assistant" && msg.vscodeLmReplay ? { vscodeLmReplay: msg.vscodeLmReplay } : {}),
 				})
 			}
 		}
