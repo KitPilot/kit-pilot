@@ -1,5 +1,15 @@
 # KitPilot Changelog
 
+## 0.2.10
+
+### Added
+
+- **Four experimental settings can help the model understand your prompts.** All four are off by default, and they apply to the VS Code Language Model provider. `kit-pilot.experimentalPlainReplyEndsTurn` lets the model answer you or ask you a question in plain text. Before, KitPilot told the model that a reply without a tool was an error, and sent more requests. `kit-pilot.experimentalPreserveReasoning` keeps the reasoning of the model between turns. `kit-pilot.experimentalSystemPromptAsUserMessage` and `kit-pilot.experimentalUserMessageFirst` change where KitPilot puts its instructions and your message.
+
+### Fixed
+
+- **Claude Fable 5.1 and Claude Opus 4.8 Fast now think before they answer.** Before, KitPilot did not turn on thinking for these models, and it did not show their effort selector. Now they have the same effort levels as in Copilot.
+
 ## 0.2.9
 
 ### Changed
