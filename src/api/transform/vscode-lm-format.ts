@@ -1,6 +1,8 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import * as vscode from "vscode"
 
+import { buildReplayParts, getThinkingPartText, type VsCodeLmReplayTarget } from "../providers/vscode-lm-reasoning"
+
 // Conservative ceiling matching the VS Code LM API's per-part data limit and
 // `imageHelpers.DEFAULT_MAX_IMAGE_FILE_SIZE_MB`. Oversized images are dropped
 // with a placeholder so the request body stays valid.
@@ -76,19 +78,42 @@ function asObjectSafe(value: any): object {
 	}
 }
 
+/**
+ * @param replayTarget When set, the stored reasoning (`vscodeLmReplay`) of an
+ * assistant message goes back to the model as thinking parts at the start of
+ * the Assistant message. Only reasoning from the same model is replayed.
+ */
 export function convertToVsCodeLmMessages(
 	anthropicMessages: Anthropic.Messages.MessageParam[],
+	replayTarget?: VsCodeLmReplayTarget,
 ): vscode.LanguageModelChatMessage[] {
 	const vsCodeLmMessages: vscode.LanguageModelChatMessage[] = []
 
 	for (const anthropicMessage of anthropicMessages) {
+		// The thinking parts are not in the public typings, so the Assistant
+		// content is typed loosely here.
+		const replayParts =
+			anthropicMessage.role === "assistant"
+				? (buildReplayParts(
+						(anthropicMessage as { vscodeLmReplay?: unknown }).vscodeLmReplay,
+						replayTarget,
+					) as any[])
+				: []
+
 		// Handle simple string messages
 		if (typeof anthropicMessage.content === "string") {
-			vsCodeLmMessages.push(
-				anthropicMessage.role === "assistant"
-					? vscode.LanguageModelChatMessage.Assistant(anthropicMessage.content)
-					: vscode.LanguageModelChatMessage.User(anthropicMessage.content),
-			)
+			if (anthropicMessage.role === "assistant") {
+				vsCodeLmMessages.push(
+					replayParts.length
+						? vscode.LanguageModelChatMessage.Assistant([
+								...replayParts,
+								new vscode.LanguageModelTextPart(anthropicMessage.content),
+							])
+						: vscode.LanguageModelChatMessage.Assistant(anthropicMessage.content),
+				)
+			} else {
+				vsCodeLmMessages.push(vscode.LanguageModelChatMessage.User(anthropicMessage.content))
+			}
 			continue
 		}
 
@@ -115,9 +140,7 @@ export function convertToVsCodeLmMessages(
 					// Convert tool messages to ToolResultParts
 					...toolMessages.map((toolMessage) => {
 						// Process tool result content into text + data parts
-						const toolContentParts: Array<
-							vscode.LanguageModelTextPart | vscode.LanguageModelDataPart
-						> =
+						const toolContentParts: Array<vscode.LanguageModelTextPart | vscode.LanguageModelDataPart> =
 							typeof toolMessage.content === "string"
 								? [new vscode.LanguageModelTextPart(toolMessage.content)]
 								: (toolMessage.content?.map((part) => {
@@ -163,6 +186,10 @@ export function convertToVsCodeLmMessages(
 				// Process non-tool messages first, then tool messages
 				// Tool calls must come at the end so they are properly followed by user message with tool results
 				const contentParts = [
+					// Replayed reasoning comes first. Copilot puts it in this position,
+					// and Anthropic requires thinking before the text and tool calls.
+					...replayParts,
+
 					// Convert non-tool messages to text/data parts first.
 					// Note: Anthropic assistants don't emit image blocks in practice; this branch
 					// exists for symmetry with the user-message path.
@@ -224,6 +251,10 @@ export function extractTextCountFromMessage(message: vscode.LanguageModelChatMes
 						text += part.value
 					}
 				}
+			}
+			const thinkingText = getThinkingPartText(item)
+			if (thinkingText !== undefined && !(item instanceof vscode.LanguageModelTextPart)) {
+				text += thinkingText
 			}
 			if (item instanceof vscode.LanguageModelToolCallPart) {
 				text += item.name

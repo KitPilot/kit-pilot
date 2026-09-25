@@ -292,6 +292,26 @@
 					"default": "",
 					"description": "Optional shell command (e.g. `pnpm check-types` or `npm test`) that KitPilot runs before it finishes any task. KitPilot runs the command itself when the model calls attempt_completion, and the model is told not to run it again. A non-zero exit blocks the completion and returns the command output to the model. Leave empty to disable."
 				},
+				"kit-pilot.experimentalSystemPromptAsUserMessage": {
+					"type": "boolean",
+					"default": false,
+					"description": "Experimental. Applies to the VS Code Language Model provider only. The VS Code API gives KitPilot no system role, so KitPilot sends its instructions as an assistant message. When you enable this setting, KitPilot puts its instructions in the first user message. Use it to compare how well the model follows your prompts."
+				},
+				"kit-pilot.experimentalUserMessageFirst": {
+					"type": "boolean",
+					"default": false,
+					"description": "Experimental. At the start of a task, KitPilot adds a workspace overview before your message. When you enable this setting, your message comes first and the overview comes after it. Use it to compare how well the model understands your request."
+				},
+				"kit-pilot.experimentalPreserveReasoning": {
+					"type": "boolean",
+					"default": false,
+					"description": "Experimental. Applies to the VS Code Language Model provider only. KitPilot keeps the reasoning of the model and sends it back on later turns. Thus the model keeps its earlier reasoning, as it does in Claude Code and the Codex CLI. KitPilot writes the reasoning text and encrypted reasoning to the task history on disk. KitPilot does not keep the reasoning when you select the Auto model. If Copilot rejects the reasoning, KitPilot sends the request again without it."
+				},
+				"kit-pilot.experimentalPlainReplyEndsTurn": {
+					"type": "boolean",
+					"default": false,
+					"description": "Experimental. When the model replies without a tool, KitPilot shows the reply and waits for your next message, as Claude Code does. The model can then answer you or ask you a question in plain text. When this setting is off, KitPilot tells the model that a reply without a tool is an error, and asks it to try again. A finished task still ends with attempt_completion, so kit-pilot.verifyCommand still runs."
+				},
 				"kit-pilot.destructiveCommandGuard": {
 					"type": "string",
 					"enum": [

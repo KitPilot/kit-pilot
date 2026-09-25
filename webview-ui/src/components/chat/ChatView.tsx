@@ -1075,6 +1075,11 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				case "completion_result":
 					if (message.text === "") return false
 					break
+				case "followup":
+					// An empty followup waits for the user after a plain reply. The
+					// reply is already on the screen, so the ask has no row.
+					if ((message.text ?? "") === "") return false
+					break
 				case "api_req_failed":
 				case "resume_task":
 				case "resume_completed_task":

@@ -27,6 +27,18 @@ import { convertToVsCodeLmMessages, extractTextCountFromMessage } from "../trans
 
 import { BaseProvider } from "./base-provider"
 import { getVsCodeLmEffortOptions } from "./vscode-lm-effort"
+import {
+	ThinkingPartCollector,
+	getReplayModelKey,
+	getThinkingPartConstructor,
+	isAutoModel,
+	isThinkingPart,
+	describePartShape,
+	logReasoningDiagnostic,
+	readPreserveReasoning,
+	type VsCodeLmReplayRecord,
+	type VsCodeLmReplayTarget,
+} from "./vscode-lm-reasoning"
 import { parseVsCodeLmUsage, type VsCodeLmReportedUsage } from "./vscode-lm-usage"
 import { recordUsage } from "../usageMetrics"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
@@ -204,6 +216,12 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 	private disposable: vscode.Disposable | null
 	private modelChangeDisposable: vscode.Disposable | null
 	private currentRequestCancellation: vscode.CancellationTokenSource | null
+	// Reasoning of the last completed main-loop response, until Task stores it.
+	private pendingReplayRecord: VsCodeLmReplayRecord | undefined
+	// Set when Copilot rejects a request with replayed reasoning. Replay then
+	// stays off for this handler, so a steady failure does not retry each turn.
+	private replayDisabled = false
+	private replayUnsupportedLogged = false
 
 	constructor(options: ApiHandlerOptions) {
 		super()
@@ -557,6 +575,31 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 		return content
 	}
 
+	/**
+	 * Gives the reasoning of the last completed main-loop response one time.
+	 * Task calls this when it stores the assistant message.
+	 */
+	takeVsCodeLmReplayRecord(): VsCodeLmReplayRecord | undefined {
+		const record = this.pendingReplayRecord
+		this.pendingReplayRecord = undefined
+		return record
+	}
+
+	private getReplayTarget(client: vscode.LanguageModelChat): VsCodeLmReplayTarget | undefined {
+		if (this.replayDisabled || !readPreserveReasoning() || isAutoModel(client)) return undefined
+		const ThinkingPart = getThinkingPartConstructor()
+		if (!ThinkingPart) {
+			if (!this.replayUnsupportedLogged) {
+				this.replayUnsupportedLogged = true
+				console.warn(
+					"KitPilot <Language Model API>: experimentalPreserveReasoning is on, but this VS Code has no LanguageModelThinkingPart. Reasoning is not kept.",
+				)
+			}
+			return undefined
+		}
+		return { modelId: getReplayModelKey(client), vendor: client.vendor, ThinkingPart }
+	}
+
 	override async *createMessage(
 		systemPrompt: string,
 		messages: Anthropic.Messages.MessageParam[],
@@ -579,10 +622,28 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 		)
 
 		// Convert Anthropic messages to VS Code LM messages
-		const vsCodeLmMessages: vscode.LanguageModelChatMessage[] = [
-			vscode.LanguageModelChatMessage.Assistant(systemPrompt),
-			...convertToVsCodeLmMessages(cleanedMessages),
-		]
+		const replayTarget = this.getReplayTarget(client)
+		// Only the main loop records reasoning. A condense request can use this
+		// handler too, and its reasoning must not attach to a task message.
+		const recordReasoning = !!replayTarget && (metadata?.purpose ?? "main") === "main"
+		this.pendingReplayRecord = undefined
+		const thinkingParts = new ThinkingPartCollector()
+		let yieldedOutput = false
+		// For the diagnostic line: the shapes of the parts that are not text,
+		// tool calls or usage.
+		const otherPartShapes: string[] = []
+		let thinkingPartsReceived = 0
+
+		const vsCodeLmMessages = placeSystemPrompt(
+			systemPrompt,
+			convertToVsCodeLmMessages(cleanedMessages, replayTarget),
+			readSystemPromptAsUserMessage(),
+		)
+		// True only if thinking parts were actually sent. Stored reasoning from a
+		// different model is not sent, so it cannot cause the retry below.
+		const replayed =
+			!!replayTarget &&
+			vsCodeLmMessages.some((m) => m.content.some((part) => part instanceof replayTarget.ThinkingPart))
 
 		// Initialize cancellation token for the request
 		this.currentRequestCancellation = new vscode.CancellationTokenSource()
@@ -598,11 +659,15 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 		let reportedUsage: VsCodeLmReportedUsage | undefined
 
 		try {
+			const effortOptions = getVsCodeLmEffortOptions(client, this.options)
 			// Create the response stream with required options
 			const requestOptions: vscode.LanguageModelChatRequestOptions = {
-				...getVsCodeLmEffortOptions(client, this.options),
+				...effortOptions,
 				justification: `KitPilot would like to use '${client.name}' from '${client.vendor}', Click 'Allow' to proceed.`,
 				tools: convertToVsCodeLmTools(metadata?.tools ?? []),
+				// Not in the public typings. VS Code forwards it to Copilot, which
+				// then also streams GPT encrypted reasoning.
+				...(replayTarget ? ({ includeEncryptedThinking: true } as object) : {}),
 			}
 
 			const response: vscode.LanguageModelChatResponse = await client.sendRequest(
@@ -621,6 +686,7 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 					}
 
 					accumulatedText += chunk.value
+					yieldedOutput = true
 					yield {
 						type: "text",
 						text: chunk.value,
@@ -655,6 +721,7 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 						if (metadata?.tools?.length) {
 							const argumentsString = JSON.stringify(chunk.input)
 							accumulatedText += argumentsString
+							yieldedOutput = true
 							yield {
 								type: "tool_call",
 								id: chunk.callId,
@@ -685,13 +752,38 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 							error instanceof Error ? error.message : error,
 						)
 					}
+				} else if (recordReasoning && isThinkingPart(chunk, replayTarget?.ThinkingPart)) {
+					thinkingPartsReceived++
+					thinkingParts.add(chunk)
 				} else {
+					if (otherPartShapes.length < 20) otherPartShapes.push(describePartShape(chunk))
 					// Other parts (e.g. reasoning/thinking parts, non-usage data
 					// parts) aren't consumed here. Debug-logged for diagnosis.
 					console.debug(
 						`KitPilot <Language Model API>: ignoring stream chunk: ${JSON.stringify(describeChunk(chunk))}`,
 					)
 				}
+			}
+
+			// The response is complete, so its reasoning can be stored.
+			const parts = thinkingParts.result()
+			if (recordReasoning && replayTarget && parts.length) {
+				this.pendingReplayRecord = { modelId: replayTarget.modelId, vendor: replayTarget.vendor, parts }
+			}
+			if (readPreserveReasoning()) {
+				logReasoningDiagnostic(
+					[
+						"outcome=ok",
+						`model=${client.vendor}/${client.family}/${client.id}`,
+						`purpose=${metadata?.purpose ?? "main"}`,
+						`replay=${replayTarget ? "on" : this.replayDisabled ? "disabled-after-error" : "off"}`,
+						`effortOptions=${JSON.stringify(effortOptions)}`,
+						`replayedParts=${replayed ? "yes" : "no"}`,
+						`thinkingReceived=${thinkingPartsReceived}`,
+						`stored=${JSON.stringify(parts.map((p) => ({ id: !!p.id, valueLength: p.value.length, metadata: Object.keys(p.metadata ?? {}) })))}`,
+						`otherParts=${JSON.stringify(otherPartShapes)}`,
+					].join(" "),
+				)
 			}
 
 			// Prefer Copilot's reported token counts; fall back to a
@@ -726,6 +818,26 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 		} catch (error: unknown) {
 			this.ensureCleanState()
 
+			// A failed or cancelled request also gets a diagnostic line, because a
+			// rejection of replayed reasoning is the case that matters most. The
+			// line has the error name and code only. The message can quote the
+			// rejected reasoning, so it is not logged.
+			if (readPreserveReasoning()) {
+				const failure = error as { name?: unknown; code?: unknown }
+				logReasoningDiagnostic(
+					[
+						error instanceof vscode.CancellationError ? "outcome=cancelled" : "outcome=error",
+						`model=${client.vendor}/${client.family}/${client.id}`,
+						`purpose=${metadata?.purpose ?? "main"}`,
+						`replayedParts=${replayed ? "yes" : "no"}`,
+						`outputBeforeError=${yieldedOutput ? "yes" : "no"}`,
+						`thinkingReceived=${thinkingPartsReceived}`,
+						`errorName=${typeof failure?.name === "string" ? failure.name : typeof error}`,
+						`errorCode=${typeof failure?.code === "string" || typeof failure?.code === "number" ? failure.code : "none"}`,
+					].join(" "),
+				)
+			}
+
 			if (error instanceof vscode.CancellationError) {
 				throw new Error("KitPilot <Language Model API>: Request cancelled by user")
 			}
@@ -737,6 +849,19 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 			// window is reloaded. selectChatModels is in-process, so
 			// re-acquiring is essentially free.
 			this.client = null
+
+			// Copilot can reject replayed reasoning. If nothing has streamed yet,
+			// no text is shown and no tool has run, so one retry without the
+			// reasoning is safe. After any output, the error propagates as usual.
+			if (replayed && !yieldedOutput) {
+				this.replayDisabled = true
+				console.warn(
+					"KitPilot <Language Model API>: a request with replayed reasoning failed before any output. KitPilot retries it once without the reasoning, and replay stays off for this task.",
+					error instanceof Error ? error.message : error,
+				)
+				yield* this.createMessage(systemPrompt, messages, metadata)
+				return
+			}
 
 			if (error instanceof Error) {
 				console.error("KitPilot <Language Model API>: Stream error details:", {
@@ -887,6 +1012,41 @@ function isUsableVsCodeLmModel(model: { vendor?: string; id: string }): boolean 
 		return false
 	}
 	return VSCODE_LM_USABLE_VENDORS.includes((model.vendor ?? "").toLowerCase())
+}
+
+/**
+ * Puts the system prompt into the request. The VS Code LM API gives a
+ * Marketplace extension no system role, so the default sends the prompt as an
+ * Assistant message. When `asUser` is true, the prompt goes into the first User
+ * message instead, inside `<system_instructions>` tags. This is an experiment
+ * to compare how well the model follows the prompt in each position.
+ *
+ * @internal Exported for testing only.
+ */
+export function placeSystemPrompt(
+	systemPrompt: string,
+	messages: vscode.LanguageModelChatMessage[],
+	asUser: boolean,
+): vscode.LanguageModelChatMessage[] {
+	if (!asUser) {
+		return [vscode.LanguageModelChatMessage.Assistant(systemPrompt), ...messages]
+	}
+
+	const instructions = new vscode.LanguageModelTextPart(
+		`<system_instructions>\n${systemPrompt}\n</system_instructions>\n\n`,
+	)
+	const first = messages[0]
+	if (first && first.role === vscode.LanguageModelChatMessageRole.User) {
+		// The converted messages are new objects for each request, so a change
+		// here does not touch the task history.
+		first.content = [instructions, ...first.content]
+		return messages
+	}
+	return [vscode.LanguageModelChatMessage.User([instructions]), ...messages]
+}
+
+function readSystemPromptAsUserMessage(): boolean {
+	return vscode.workspace.getConfiguration("kit-pilot").get<boolean>("experimentalSystemPromptAsUserMessage", false)
 }
 
 export async function getVsCodeLmModels() {

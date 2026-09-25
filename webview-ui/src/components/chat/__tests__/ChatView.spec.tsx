@@ -514,6 +514,40 @@ describe("ChatView - Focus Grabbing Tests", () => {
 		// Should not grab focus for follow-up questions
 		expect(mockFocus).not.toHaveBeenCalled()
 	})
+
+	it("hides the empty follow-up that waits after a plain reply, and shows a real question", async () => {
+		const { queryAllByTestId, getByTestId } = renderChatView()
+		const base = Date.now()
+
+		mockPostMessage({
+			clineMessages: [
+				{ type: "say", say: "task", ts: base - 3000, text: "Initial task" },
+				{ type: "say", say: "text", ts: base - 2000, text: "Which config file do you mean?" },
+				{ type: "ask", ask: "followup", ts: base - 1000, text: "" },
+			],
+		})
+
+		await waitFor(() => {
+			expect(getByTestId("chat-textarea")).toBeInTheDocument()
+		})
+		await waitFor(() => {
+			const rows = queryAllByTestId("chat-row").map((row) => row.textContent ?? "")
+			expect(rows.some((row) => row.includes("Which config file do you mean?"))).toBe(true)
+			expect(rows.some((row) => row.includes('"ask":"followup"'))).toBe(false)
+		})
+
+		mockPostMessage({
+			clineMessages: [
+				{ type: "say", say: "task", ts: base - 3000, text: "Initial task" },
+				{ type: "ask", ask: "followup", ts: base, text: '{"question":"Continue?","suggest":[]}' },
+			],
+		})
+
+		await waitFor(() => {
+			const rows = queryAllByTestId("chat-row").map((row) => row.textContent ?? "")
+			expect(rows.some((row) => row.includes('"ask":"followup"'))).toBe(true)
+		})
+	})
 })
 
 describe("ChatView - Version Indicator Tests", () => {
