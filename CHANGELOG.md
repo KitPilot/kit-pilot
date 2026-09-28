@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## 0.2.11
+
+### Fixed
+
+- **The KitPilot sidebar now loads again by itself after an update.** Before, the sidebar sometimes stayed blank after an update, mostly on Windows. You then had to reload the window. Now KitPilot loads the sidebar again after 10 seconds. KitPilot offers a window reload only if the second load also fails.
+
 ## 0.2.10
 
 ### Added
