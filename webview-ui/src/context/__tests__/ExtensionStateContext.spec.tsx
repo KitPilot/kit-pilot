@@ -70,7 +70,21 @@ describe("ExtensionStateContext", () => {
 		)
 
 		expect(mockPostMessage).toHaveBeenCalledTimes(1)
-		expect(mockPostMessage).toHaveBeenCalledWith({ type: "webviewDidLaunch" })
+		expect(mockPostMessage).toHaveBeenCalledWith({ type: "webviewDidLaunch", value: undefined })
+	})
+
+	it("sends the load attempt of the page with webviewDidLaunch", () => {
+		;(window as { KITPILOT_LOAD_ATTEMPT?: number }).KITPILOT_LOAD_ATTEMPT = 1
+		try {
+			render(
+				<ExtensionStateContextProvider>
+					<TestComponent />
+				</ExtensionStateContextProvider>,
+			)
+			expect(mockPostMessage).toHaveBeenCalledWith({ type: "webviewDidLaunch", value: 1 })
+		} finally {
+			delete (window as { KITPILOT_LOAD_ATTEMPT?: number }).KITPILOT_LOAD_ATTEMPT
+		}
 	})
 
 	it("initializes with empty allowedCommands array", () => {

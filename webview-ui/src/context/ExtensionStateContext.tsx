@@ -428,7 +428,13 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 	}, [handleMessage])
 
 	useEffect(() => {
-		vscode.postMessage({ type: "webviewDidLaunch" })
+		// The load attempt tells the extension which page launched. See
+		// ClineProvider.handleWebviewDidLaunch.
+		const loadAttempt = (window as { KITPILOT_LOAD_ATTEMPT?: unknown }).KITPILOT_LOAD_ATTEMPT
+		vscode.postMessage({
+			type: "webviewDidLaunch",
+			value: typeof loadAttempt === "number" ? loadAttempt : undefined,
+		})
 	}, [])
 
 	const contextValue: ExtensionStateContextType = {

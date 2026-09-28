@@ -22,6 +22,7 @@ import { safeWriteJson } from "../../../utils/safeWriteJson"
 
 import { ClineProvider } from "../ClineProvider"
 import { MessageManager } from "../../message-manager"
+import { Package } from "../../../shared/package"
 
 // Mock setup must come before imports.
 vi.mock("../../prompts/sections/custom-instructions")
@@ -458,7 +459,10 @@ describe("ClineProvider", () => {
 			vi.useFakeTimers()
 			liveWebviewView = {
 				...(mockWebviewView as any),
-				webview: { ...(mockWebviewView as any).webview },
+				webview: {
+					...(mockWebviewView as any).webview,
+					asWebviewUri: vi.fn((uri: any) => `webview-resource:${uri?.path ?? uri?.fsPath ?? String(uri)}`),
+				},
 				onDidDispose: vi.fn().mockImplementation(() => ({ dispose: vi.fn() })),
 			} as unknown as vscode.WebviewView
 		})
@@ -467,12 +471,27 @@ describe("ClineProvider", () => {
 			vi.useRealTimers()
 		})
 
-		test("offers a window reload when the webview never reports webviewDidLaunch", async () => {
+		test("loads the webview again after 10s, then offers a window reload if it still does not launch", async () => {
 			await provider.resolveWebviewView(liveWebviewView)
+			expect(liveWebviewView.webview.html).toContain("load=0")
 
+			vi.advanceTimersByTime(10_000)
+			await vi.waitFor(() => expect(liveWebviewView.webview.html).toContain("load=1"))
 			expect(vscode.window.showWarningMessage).not.toHaveBeenCalled()
+
 			vi.advanceTimersByTime(21_000)
 			expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1)
+		})
+
+		test("does not offer a reload when the webview launches after the second load", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+
+			vi.advanceTimersByTime(10_000)
+			await vi.waitFor(() => expect(liveWebviewView.webview.html).toContain("load=1"))
+			provider.clearWebviewLaunchWatchdog()
+
+			vi.advanceTimersByTime(60_000)
+			expect(vscode.window.showWarningMessage).not.toHaveBeenCalled()
 		})
 
 		test("stays quiet when webviewDidLaunch arrives in time", async () => {
@@ -481,16 +500,86 @@ describe("ClineProvider", () => {
 			provider.clearWebviewLaunchWatchdog()
 			vi.advanceTimersByTime(60_000)
 			expect(vscode.window.showWarningMessage).not.toHaveBeenCalled()
+			expect(liveWebviewView.webview.html).toContain("load=0")
 		})
 
 		test("notifies at most once per session across re-resolves", async () => {
 			await provider.resolveWebviewView(liveWebviewView)
+			vi.advanceTimersByTime(10_000)
+			await vi.waitFor(() => expect(liveWebviewView.webview.html).toContain("load=1"))
 			vi.advanceTimersByTime(21_000)
 			expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1)
 
 			await provider.resolveWebviewView(liveWebviewView)
 			vi.advanceTimersByTime(60_000)
 			expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1)
+		})
+
+		test("a late launch message from the first page does not stop the watchdog for the second page", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+			vi.advanceTimersByTime(10_000)
+			await vi.waitFor(() => expect(liveWebviewView.webview.html).toContain("load=1"))
+
+			// The first page (attempt 0) reports its launch after the retry.
+			provider.handleWebviewDidLaunch(0)
+
+			vi.advanceTimersByTime(21_000)
+			expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1)
+		})
+
+		test("a launch message from the second page stops the watchdog", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+			vi.advanceTimersByTime(10_000)
+			await vi.waitFor(() => expect(liveWebviewView.webview.html).toContain("load=1"))
+			expect(liveWebviewView.webview.html).toContain("window.KITPILOT_LOAD_ATTEMPT = 1")
+
+			provider.handleWebviewDidLaunch(1)
+
+			vi.advanceTimersByTime(60_000)
+			expect(vscode.window.showWarningMessage).not.toHaveBeenCalled()
+		})
+
+		test("the retry does not replace the page if the webview launched while the HTML was built", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+			let finishBuild: (html: string) => void = () => {}
+			vi.spyOn(provider as any, "buildWebviewHtml").mockImplementation(
+				() => new Promise<string>((resolve) => (finishBuild = resolve)),
+			)
+
+			vi.advanceTimersByTime(10_000)
+			// The first page launches before the retry HTML is ready.
+			provider.handleWebviewDidLaunch()
+			finishBuild("<html>retry</html>")
+			await Promise.resolve()
+			await Promise.resolve()
+
+			expect(liveWebviewView.webview.html).toContain("load=0")
+			vi.advanceTimersByTime(60_000)
+			expect(vscode.window.showWarningMessage).not.toHaveBeenCalled()
+		})
+
+		test("the retry does not replace the page if the view changed while the HTML was built", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+			let finishBuild: (html: string) => void = () => {}
+			vi.spyOn(provider as any, "buildWebviewHtml").mockImplementation(
+				() => new Promise<string>((resolve) => (finishBuild = resolve)),
+			)
+
+			vi.advanceTimersByTime(10_000)
+			;(provider as any).view = { webview: { html: "" } }
+			finishBuild("<html>retry</html>")
+			await Promise.resolve()
+			await Promise.resolve()
+
+			expect(liveWebviewView.webview.html).toContain("load=0")
+		})
+
+		test("adds the version to each asset URL, so an update requests new assets", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+
+			// The stylesheet, the codicons stylesheet and the script.
+			const stamped = liveWebviewView.webview.html.split(`?v=${Package.version}&load=0`).length - 1
+			expect(stamped).toBe(3)
 		})
 	})
 

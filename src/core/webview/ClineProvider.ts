@@ -572,23 +572,65 @@ export class ClineProvider
 	}
 
 	/**
-	 * Webview boot watchdog. After a VS Code extension update, a live webview
-	 * can be left pointing at the previous version's resource URIs / service
-	 * worker, so its bundle never loads and the panel sits blank until the
-	 * window is reloaded (VS Code platform behavior — nothing extension code
-	 * can prevent). Detect it instead: if the webview hasn't reported
-	 * `webviewDidLaunch` within the grace period, offer a one-click reload.
+	 * Webview boot watchdog. After a VS Code extension update, the webview
+	 * bundle can fail to load, and the panel stays blank. One update failed
+	 * with a 408 (timeout) on a bundled asset. On Windows, a scan of the newly
+	 * installed files can make the first requests time out.
+	 *
+	 * If the webview has not reported `webviewDidLaunch` after
+	 * WEBVIEW_RETRY_AFTER_MS, KitPilot loads the webview HTML one more time.
+	 * Each asset URL has a new query, so the webview requests every asset
+	 * again. If the webview still has not reported `webviewDidLaunch` after
+	 * WEBVIEW_LAUNCH_GRACE_MS more, KitPilot offers a window reload.
 	 */
+	private static readonly WEBVIEW_RETRY_AFTER_MS = 10_000
 	private static readonly WEBVIEW_LAUNCH_GRACE_MS = 20_000
 	private webviewLaunchWatchdog?: ReturnType<typeof setTimeout>
 	private webviewLaunchWatchdogNotified = false
+	private webviewLoadAttempt = 0
+	private webviewWatchdogGeneration = 0
 
-	private startWebviewLaunchWatchdog() {
+	private startWebviewLaunchWatchdog(webviewView: vscode.WebviewView | vscode.WebviewPanel) {
 		this.clearWebviewLaunchWatchdog()
 		// One notification per extension-host session is enough.
 		if (this.webviewLaunchWatchdogNotified) {
 			return
 		}
+		this.webviewLaunchWatchdog = setTimeout(() => {
+			this.webviewLaunchWatchdog = undefined
+			void this.retryWebviewLoad(webviewView)
+		}, ClineProvider.WEBVIEW_RETRY_AFTER_MS)
+	}
+
+	/**
+	 * Loads the webview HTML one more time. The generation changes when the
+	 * webview launches or the watchdog is cleared. Thus, if either happens or
+	 * the view changes while the HTML is built, the retry does not replace the
+	 * page. The grace period before the reload offer starts after the new
+	 * HTML is set.
+	 */
+	private async retryWebviewLoad(webviewView: vscode.WebviewView | vscode.WebviewPanel) {
+		if (this.view !== webviewView) {
+			return
+		}
+		const generation = this.webviewWatchdogGeneration
+		this.webviewLoadAttempt++
+		this.log(
+			`Webview did not finish loading within ${ClineProvider.WEBVIEW_RETRY_AFTER_MS / 1000}s. Loading it again (attempt ${this.webviewLoadAttempt + 1}).`,
+		)
+		try {
+			const html = await this.buildWebviewHtml(webviewView.webview)
+			if (this.view !== webviewView || this.webviewWatchdogGeneration !== generation) {
+				return
+			}
+			webviewView.webview.html = html
+		} catch (error) {
+			this.log(`Could not load the webview again: ${error instanceof Error ? error.message : String(error)}`)
+		}
+		this.startWebviewReloadOffer()
+	}
+
+	private startWebviewReloadOffer() {
 		this.webviewLaunchWatchdog = setTimeout(() => {
 			this.webviewLaunchWatchdog = undefined
 			this.webviewLaunchWatchdogNotified = true
@@ -606,8 +648,33 @@ export class ClineProvider
 		}, ClineProvider.WEBVIEW_LAUNCH_GRACE_MS)
 	}
 
+	private async renderWebviewHtml(webview: vscode.Webview) {
+		webview.html = await this.buildWebviewHtml(webview)
+	}
+
+	private async buildWebviewHtml(webview: vscode.Webview): Promise<string> {
+		return this.contextProxy.extensionMode === vscode.ExtensionMode.Development
+			? await this.getHMRHtmlContent(webview)
+			: await this.getHtmlContent(webview)
+	}
+
+	/**
+	 * Called when the webview reports `webviewDidLaunch`. A page sends the load
+	 * attempt that it came from. A late message from an earlier page must not
+	 * stop the watchdog for the current page. A message without an attempt
+	 * counts as the current page.
+	 */
+	public handleWebviewDidLaunch(loadAttempt?: number) {
+		if (typeof loadAttempt === "number" && loadAttempt !== this.webviewLoadAttempt) {
+			this.log(`Ignored a launch message from load attempt ${loadAttempt + 1}.`)
+			return
+		}
+		this.clearWebviewLaunchWatchdog()
+	}
+
 	/** Called when the webview reports `webviewDidLaunch` (and on teardown). */
 	public clearWebviewLaunchWatchdog() {
+		this.webviewWatchdogGeneration++
 		if (this.webviewLaunchWatchdog) {
 			clearTimeout(this.webviewLaunchWatchdog)
 			this.webviewLaunchWatchdog = undefined
@@ -820,10 +887,7 @@ export class ClineProvider
 			localResourceRoots: resourceRoots,
 		}
 
-		webviewView.webview.html =
-			this.contextProxy.extensionMode === vscode.ExtensionMode.Development
-				? await this.getHMRHtmlContent(webviewView.webview)
-				: await this.getHtmlContent(webviewView.webview)
+		await this.renderWebviewHtml(webviewView.webview)
 
 		// Sets up an event listener to listen for messages passed from the webview view context
 		// and executes code based on the message that is received.
@@ -832,7 +896,7 @@ export class ClineProvider
 		// Arm the boot watchdog: cleared when the webview reports
 		// webviewDidLaunch; fires a reload-window offer if it never does
 		// (stale webview after an extension update).
-		this.startWebviewLaunchWatchdog()
+		this.startWebviewLaunchWatchdog(webviewView)
 
 		// Initialize code index status subscription for the current workspace.
 		this.updateCodeIndexStatusSubscription()
@@ -1216,6 +1280,7 @@ export class ClineProvider
 					<link rel="stylesheet" type="text/css" href="${stylesUri}">
 					<link href="${codiconsUri}" rel="stylesheet" />
 					<script nonce="${nonce}">
+						window.KITPILOT_LOAD_ATTEMPT = ${this.webviewLoadAttempt}
 						window.IMAGES_BASE_URI = "${imagesUri}"
 						window.AUDIO_BASE_URI = "${audioUri}"
 						window.MATERIAL_ICONS_BASE_URI = "${materialIconsUri}"
@@ -1243,19 +1308,17 @@ export class ClineProvider
 	 * rendered within the webview panel
 	 */
 	private async getHtmlContent(webview: vscode.Webview): Promise<string> {
+		// The query makes each version and each load attempt request its assets
+		// again, instead of using a failed or stale earlier request.
+		const loadQuery = `?v=${encodeURIComponent(Package.version)}&load=${this.webviewLoadAttempt}`
 		// Get the local path to main script run in the webview,
 		// then convert it to a uri we can use in the webview.
 
 		// The CSS file from the React build output
-		const stylesUri = getUri(webview, this.contextProxy.extensionUri, [
-			"webview-ui",
-			"build",
-			"assets",
-			"index.css",
-		])
+		const stylesUri = `${getUri(webview, this.contextProxy.extensionUri, ["webview-ui", "build", "assets", "index.css"])}${loadQuery}`
 
-		const scriptUri = getUri(webview, this.contextProxy.extensionUri, ["webview-ui", "build", "assets", "index.js"])
-		const codiconsUri = getUri(webview, this.contextProxy.extensionUri, ["assets", "codicons", "codicon.css"])
+		const scriptUri = `${getUri(webview, this.contextProxy.extensionUri, ["webview-ui", "build", "assets", "index.js"])}${loadQuery}`
+		const codiconsUri = `${getUri(webview, this.contextProxy.extensionUri, ["assets", "codicons", "codicon.css"])}${loadQuery}`
 		const materialIconsUri = getUri(webview, this.contextProxy.extensionUri, [
 			"assets",
 			"vscode-material-icons",
@@ -1289,6 +1352,7 @@ export class ClineProvider
             <link rel="stylesheet" type="text/css" href="${stylesUri}">
 			<link href="${codiconsUri}" rel="stylesheet" />
 			<script nonce="${nonce}">
+				window.KITPILOT_LOAD_ATTEMPT = ${this.webviewLoadAttempt}
 				window.IMAGES_BASE_URI = "${imagesUri}"
 				window.AUDIO_BASE_URI = "${audioUri}"
 				window.MATERIAL_ICONS_BASE_URI = "${materialIconsUri}"
