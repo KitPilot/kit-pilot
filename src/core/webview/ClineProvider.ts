@@ -588,6 +588,7 @@ export class ClineProvider
 	private webviewLaunchWatchdog?: ReturnType<typeof setTimeout>
 	private webviewLaunchWatchdogNotified = false
 	private webviewLoadAttempt = 0
+	private webviewWatchdogGeneration = 0
 
 	private startWebviewLaunchWatchdog(webviewView: vscode.WebviewView | vscode.WebviewPanel) {
 		this.clearWebviewLaunchWatchdog()
@@ -597,18 +598,36 @@ export class ClineProvider
 		}
 		this.webviewLaunchWatchdog = setTimeout(() => {
 			this.webviewLaunchWatchdog = undefined
-			if (this.view !== webviewView) {
+			void this.retryWebviewLoad(webviewView)
+		}, ClineProvider.WEBVIEW_RETRY_AFTER_MS)
+	}
+
+	/**
+	 * Loads the webview HTML one more time. The generation changes when the
+	 * webview launches or the watchdog is cleared. Thus, if either happens or
+	 * the view changes while the HTML is built, the retry does not replace the
+	 * page. The grace period before the reload offer starts after the new
+	 * HTML is set.
+	 */
+	private async retryWebviewLoad(webviewView: vscode.WebviewView | vscode.WebviewPanel) {
+		if (this.view !== webviewView) {
+			return
+		}
+		const generation = this.webviewWatchdogGeneration
+		this.webviewLoadAttempt++
+		this.log(
+			`Webview did not finish loading within ${ClineProvider.WEBVIEW_RETRY_AFTER_MS / 1000}s. Loading it again (attempt ${this.webviewLoadAttempt + 1}).`,
+		)
+		try {
+			const html = await this.buildWebviewHtml(webviewView.webview)
+			if (this.view !== webviewView || this.webviewWatchdogGeneration !== generation) {
 				return
 			}
-			this.webviewLoadAttempt++
-			this.log(
-				`Webview did not finish loading within ${ClineProvider.WEBVIEW_RETRY_AFTER_MS / 1000}s. Loading it again (attempt ${this.webviewLoadAttempt + 1}).`,
-			)
-			void this.renderWebviewHtml(webviewView.webview).catch((error) =>
-				this.log(`Could not load the webview again: ${error instanceof Error ? error.message : String(error)}`),
-			)
-			this.startWebviewReloadOffer()
-		}, ClineProvider.WEBVIEW_RETRY_AFTER_MS)
+			webviewView.webview.html = html
+		} catch (error) {
+			this.log(`Could not load the webview again: ${error instanceof Error ? error.message : String(error)}`)
+		}
+		this.startWebviewReloadOffer()
 	}
 
 	private startWebviewReloadOffer() {
@@ -630,14 +649,32 @@ export class ClineProvider
 	}
 
 	private async renderWebviewHtml(webview: vscode.Webview) {
-		webview.html =
-			this.contextProxy.extensionMode === vscode.ExtensionMode.Development
-				? await this.getHMRHtmlContent(webview)
-				: await this.getHtmlContent(webview)
+		webview.html = await this.buildWebviewHtml(webview)
+	}
+
+	private async buildWebviewHtml(webview: vscode.Webview): Promise<string> {
+		return this.contextProxy.extensionMode === vscode.ExtensionMode.Development
+			? await this.getHMRHtmlContent(webview)
+			: await this.getHtmlContent(webview)
+	}
+
+	/**
+	 * Called when the webview reports `webviewDidLaunch`. A page sends the load
+	 * attempt that it came from. A late message from an earlier page must not
+	 * stop the watchdog for the current page. A message without an attempt
+	 * counts as the current page.
+	 */
+	public handleWebviewDidLaunch(loadAttempt?: number) {
+		if (typeof loadAttempt === "number" && loadAttempt !== this.webviewLoadAttempt) {
+			this.log(`Ignored a launch message from load attempt ${loadAttempt + 1}.`)
+			return
+		}
+		this.clearWebviewLaunchWatchdog()
 	}
 
 	/** Called when the webview reports `webviewDidLaunch` (and on teardown). */
 	public clearWebviewLaunchWatchdog() {
+		this.webviewWatchdogGeneration++
 		if (this.webviewLaunchWatchdog) {
 			clearTimeout(this.webviewLaunchWatchdog)
 			this.webviewLaunchWatchdog = undefined
@@ -1243,6 +1280,7 @@ export class ClineProvider
 					<link rel="stylesheet" type="text/css" href="${stylesUri}">
 					<link href="${codiconsUri}" rel="stylesheet" />
 					<script nonce="${nonce}">
+						window.KITPILOT_LOAD_ATTEMPT = ${this.webviewLoadAttempt}
 						window.IMAGES_BASE_URI = "${imagesUri}"
 						window.AUDIO_BASE_URI = "${audioUri}"
 						window.MATERIAL_ICONS_BASE_URI = "${materialIconsUri}"
@@ -1314,6 +1352,7 @@ export class ClineProvider
             <link rel="stylesheet" type="text/css" href="${stylesUri}">
 			<link href="${codiconsUri}" rel="stylesheet" />
 			<script nonce="${nonce}">
+				window.KITPILOT_LOAD_ATTEMPT = ${this.webviewLoadAttempt}
 				window.IMAGES_BASE_URI = "${imagesUri}"
 				window.AUDIO_BASE_URI = "${audioUri}"
 				window.MATERIAL_ICONS_BASE_URI = "${materialIconsUri}"

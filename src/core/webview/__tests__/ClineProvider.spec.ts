@@ -505,12 +505,73 @@ describe("ClineProvider", () => {
 
 		test("notifies at most once per session across re-resolves", async () => {
 			await provider.resolveWebviewView(liveWebviewView)
-			vi.advanceTimersByTime(31_000)
+			vi.advanceTimersByTime(10_000)
+			await vi.waitFor(() => expect(liveWebviewView.webview.html).toContain("load=1"))
+			vi.advanceTimersByTime(21_000)
 			expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1)
 
 			await provider.resolveWebviewView(liveWebviewView)
 			vi.advanceTimersByTime(60_000)
 			expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1)
+		})
+
+		test("a late launch message from the first page does not stop the watchdog for the second page", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+			vi.advanceTimersByTime(10_000)
+			await vi.waitFor(() => expect(liveWebviewView.webview.html).toContain("load=1"))
+
+			// The first page (attempt 0) reports its launch after the retry.
+			provider.handleWebviewDidLaunch(0)
+
+			vi.advanceTimersByTime(21_000)
+			expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1)
+		})
+
+		test("a launch message from the second page stops the watchdog", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+			vi.advanceTimersByTime(10_000)
+			await vi.waitFor(() => expect(liveWebviewView.webview.html).toContain("load=1"))
+			expect(liveWebviewView.webview.html).toContain("window.KITPILOT_LOAD_ATTEMPT = 1")
+
+			provider.handleWebviewDidLaunch(1)
+
+			vi.advanceTimersByTime(60_000)
+			expect(vscode.window.showWarningMessage).not.toHaveBeenCalled()
+		})
+
+		test("the retry does not replace the page if the webview launched while the HTML was built", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+			let finishBuild: (html: string) => void = () => {}
+			vi.spyOn(provider as any, "buildWebviewHtml").mockImplementation(
+				() => new Promise<string>((resolve) => (finishBuild = resolve)),
+			)
+
+			vi.advanceTimersByTime(10_000)
+			// The first page launches before the retry HTML is ready.
+			provider.handleWebviewDidLaunch()
+			finishBuild("<html>retry</html>")
+			await Promise.resolve()
+			await Promise.resolve()
+
+			expect(liveWebviewView.webview.html).toContain("load=0")
+			vi.advanceTimersByTime(60_000)
+			expect(vscode.window.showWarningMessage).not.toHaveBeenCalled()
+		})
+
+		test("the retry does not replace the page if the view changed while the HTML was built", async () => {
+			await provider.resolveWebviewView(liveWebviewView)
+			let finishBuild: (html: string) => void = () => {}
+			vi.spyOn(provider as any, "buildWebviewHtml").mockImplementation(
+				() => new Promise<string>((resolve) => (finishBuild = resolve)),
+			)
+
+			vi.advanceTimersByTime(10_000)
+			;(provider as any).view = { webview: { html: "" } }
+			finishBuild("<html>retry</html>")
+			await Promise.resolve()
+			await Promise.resolve()
+
+			expect(liveWebviewView.webview.html).toContain("load=0")
 		})
 
 		test("adds the version to each asset URL, so an update requests new assets", async () => {
