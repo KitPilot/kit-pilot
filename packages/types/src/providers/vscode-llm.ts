@@ -20,7 +20,6 @@ export const vscodeLlmDefaultModelId: VscodeLlmModelId = "claude-3.5-sonnet"
 export const VISION_MODEL_ALLOWLIST = [
 	"gpt-4o",
 	"gpt-4.1",
-	"gpt-4-turbo",
 	"gpt-5",
 	"claude-3.5-sonnet",
 	"claude-3-5-sonnet",
@@ -43,7 +42,8 @@ export const VISION_MODEL_ALLOWLIST = [
 
 // Explicit deny list for text-only variants that would otherwise be caught by
 // the allowlist substrings above (e.g. "o3-mini" matches "o3").
-export const VISION_MODEL_DENYLIST = ["o1-mini", "o3-mini", "gpt-3.5"] as const
+// gpt-4o-mini: Copilot reports no vision for it (checked 2026-10-08).
+export const VISION_MODEL_DENYLIST = ["o1-mini", "o3-mini", "gpt-3.5", "gpt-4o-mini"] as const
 
 export function modelSupportsVision(family?: string, id?: string): boolean {
 	const haystack = `${family ?? ""} ${id ?? ""}`.toLowerCase()

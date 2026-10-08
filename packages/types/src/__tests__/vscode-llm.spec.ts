@@ -63,3 +63,16 @@ describe("modelSupportsVision fallback list", () => {
 		expect(modelSupportsVision(family, family)).toBe(true)
 	})
 })
+
+describe("modelSupportsVision fallback list for models without vision", () => {
+	it.each(["gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo", "text-embedding-3-small"])(
+		"does not enable images for %s, for which Copilot reports no vision",
+		(family) => {
+			expect(modelSupportsVision(family, family)).toBe(false)
+		},
+	)
+
+	it("still enables images for gpt-4o", () => {
+		expect(modelSupportsVision("gpt-4o", "gpt-4o")).toBe(true)
+	})
+})
