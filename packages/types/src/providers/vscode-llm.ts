@@ -9,9 +9,11 @@ export const vscodeLlmDefaultModelId: VscodeLlmModelId = "claude-3.5-sonnet"
 // flipping `supportsImages: true` for a text-only model breaks requests instead
 // of falling back to the upstream `[IMAGE]` placeholder.
 //
-// This is the single source of truth for vision detection: the backend
-// (vscode-lm provider) uses it to build ModelInfo, and the webview uses it to
-// decide whether the chat image button is enabled. Keying off the static
+// This list is the fallback for vision detection. On VS Code 1.136 the provider
+// reads `capabilities.supportsImageToText` from the model, which Copilot sets
+// from its own model data (see getReportedVisionSupport in vscode-lm.ts). The
+// list applies when VS Code reports nothing, and in the webview before the
+// runtime model list arrives. Keying off the static
 // `vscodeLlmModels` registry is unreliable because the `family` strings Copilot
 // reports (e.g. "claude-sonnet-4") don't match the registry keys (e.g.
 // "claude-4-sonnet"), so registry misses wrongly disabled the image button.
@@ -25,10 +27,15 @@ export const VISION_MODEL_ALLOWLIST = [
 	"claude-3.7-sonnet",
 	"claude-3-7-sonnet",
 	"claude-sonnet-4",
+	"claude-sonnet-5",
 	"claude-opus-4",
+	"claude-opus-5",
+	"claude-fable-5",
 	"claude-haiku-4-5",
+	"claude-haiku-4.5",
 	"gemini-1.5",
 	"gemini-2",
+	"gemini-3",
 	"o1",
 	"o3",
 	"o4",

@@ -104,7 +104,7 @@ vi.mock("vscode", () => {
 
 import * as vscode from "vscode"
 import { getVsCodeLmEffortKey } from "@kit-pilot/types"
-import { VsCodeLmHandler, getVsCodeLmModels, placeSystemPrompt } from "../vscode-lm"
+import { VsCodeLmHandler, buildVsCodeLmModelInfo, getVsCodeLmModels, placeSystemPrompt } from "../vscode-lm"
 import type { ApiHandlerOptions } from "../../../shared/api"
 import type { Anthropic } from "@anthropic-ai/sdk"
 
@@ -1267,5 +1267,32 @@ describe("VsCodeLmHandler reasoning replay", () => {
 
 		expect(hasThinking(sentMessages(0))).toBe(false)
 		expect(handler.takeVsCodeLmReplayRecord()).toBeUndefined()
+	})
+})
+
+describe("buildVsCodeLmModelInfo image support", () => {
+	const base = { id: "claude-opus-5", vendor: "copilot", family: "claude-opus-5", maxInputTokens: 936_000 }
+
+	it("uses the image support that VS Code reports for the model", () => {
+		// Copilot reports vision for claude-opus-5. The old name list missed it.
+		expect(
+			buildVsCodeLmModelInfo({ ...base, capabilities: { supportsImageToText: true } }).info.supportsImages,
+		).toBe(true)
+	})
+
+	it("trusts a reported false over the name list", () => {
+		const model = { id: "gpt-4o-mini", vendor: "copilot", family: "gpt-4o-mini" }
+		expect(
+			buildVsCodeLmModelInfo({ ...model, capabilities: { supportsImageToText: false } }).info.supportsImages,
+		).toBe(false)
+	})
+
+	it("falls back to the name list when VS Code reports nothing", () => {
+		expect(buildVsCodeLmModelInfo(base).info.supportsImages).toBe(true)
+		expect(buildVsCodeLmModelInfo({ ...base, capabilities: {} }).info.supportsImages).toBe(true)
+		expect(
+			buildVsCodeLmModelInfo({ id: "x", vendor: "copilot", family: "text-embedding-3-small" }).info
+				.supportsImages,
+		).toBe(false)
 	})
 })

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 
-import { getVsCodeLmModelRates } from "../providers/vscode-llm.js"
+import { getVsCodeLmModelRates, modelSupportsVision } from "../providers/vscode-llm.js"
 
 describe("getVsCodeLmModelRates", () => {
 	it("returns rates for known Anthropic families", () => {
@@ -48,5 +48,18 @@ describe("getVsCodeLmModelRates", () => {
 			const rate = getVsCodeLmModelRates(family)!
 			expect(rate.cacheReadsPrice).toBeCloseTo(rate.inputPrice * 0.1, 5)
 		}
+	})
+})
+
+describe("modelSupportsVision fallback list", () => {
+	it.each([
+		"claude-opus-5",
+		"claude-sonnet-5",
+		"claude-fable-5",
+		"claude-fable-5.1",
+		"claude-haiku-4.5",
+		"gemini-3.5-flash",
+	])("recognizes %s, which Copilot reports with vision", (family) => {
+		expect(modelSupportsVision(family, family)).toBe(true)
 	})
 })
