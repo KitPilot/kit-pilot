@@ -109,6 +109,9 @@ export function buildVsCodeLmModelInfo(model: {
 	family?: string
 	version?: string
 	maxInputTokens?: number
+	// Not in the public typings. VS Code 1.136 fills it from the vision flag of
+	// the provider (Copilot). See getReportedVisionSupport.
+	capabilities?: unknown
 }): { id: string; info: ModelInfo } {
 	const modelParts = [model.vendor, model.family, model.version].filter(Boolean)
 	const modelId = model.id || modelParts.join(SELECTOR_SEPARATOR)
@@ -124,7 +127,7 @@ export function buildVsCodeLmModelInfo(model: {
 			typeof model.maxInputTokens === "number"
 				? Math.max(0, model.maxInputTokens)
 				: openAiModelInfoSaneDefaults.contextWindow,
-		supportsImages: modelSupportsVision(model.family, model.id),
+		supportsImages: getReportedVisionSupport(model) ?? modelSupportsVision(model.family, model.id),
 		supportsPromptCache: true,
 		inputPrice: rates?.inputPrice ?? 0,
 		outputPrice: rates?.outputPrice ?? 0,
@@ -133,6 +136,19 @@ export function buildVsCodeLmModelInfo(model: {
 	}
 
 	return { id: modelId, info }
+}
+
+/**
+ * Gives the image support that the provider reports for a model, or undefined
+ * if the provider reports nothing. The `LanguageModelChat` object of VS Code
+ * has `capabilities.supportsImageToText`, which Copilot sets from its own model
+ * data. It is not in the public typings that KitPilot builds against. The
+ * static name list in modelSupportsVision is the fallback for an older VS Code,
+ * and it goes out of date when a new model family arrives.
+ */
+export function getReportedVisionSupport(model: { capabilities?: unknown }): boolean | undefined {
+	const capabilities = model.capabilities as { supportsImageToText?: unknown } | undefined
+	return typeof capabilities?.supportsImageToText === "boolean" ? capabilities.supportsImageToText : undefined
 }
 
 /**

@@ -1,5 +1,12 @@
 # KitPilot Changelog
 
+## 0.2.12
+
+### Fixed
+
+- **KitPilot now recovers when Copilot rejects a request as too long.** Before, the task stopped with "prompt is too long". KitPilot did not recognize the error from Copilot, so it did not reduce the conversation. Now KitPilot reduces the conversation and sends the request again.
+- **Claude Opus 5 and other new models now accept images.** Before, KitPilot used a list of model names, and the list did not include Claude Opus 5, Claude Sonnet 5, Claude Fable 5, Gemini 3, and some other models. Now KitPilot uses the image support that Copilot reports for each model.
+
 ## 0.2.11
 
 ### Fixed

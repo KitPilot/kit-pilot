@@ -3799,10 +3799,15 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			// Generate environment details to include in the condensed summary
 			const environmentDetails = await getEnvironmentDetails(this, true)
 
-			// Force aggressive truncation by keeping only 75% of the conversation history
+			// Force aggressive truncation by keeping only 75% of the conversation history.
+			// The provider has just rejected the prompt as too long, so the context is
+			// at least full. The token count that KitPilot keeps can be lower than the
+			// count of the provider, and that difference is the reason that the prompt
+			// grew too long. Thus count the context as full, so that the reduction
+			// always runs and the retry does not send the same prompt again.
 			const truncateResult = await manageContext({
 				messages: this.apiConversationHistory,
-				totalTokens: contextTokens || 0,
+				totalTokens: Math.max(contextTokens || 0, contextWindow),
 				maxTokens,
 				contextWindow,
 				apiHandler: this.api,
