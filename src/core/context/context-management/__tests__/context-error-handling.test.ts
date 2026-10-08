@@ -3,6 +3,33 @@ import { APIError } from "openai"
 import { checkContextWindowExceededError } from "../context-error-handling"
 
 describe("checkContextWindowExceededError", () => {
+	describe("VS Code Language Model API errors", () => {
+		it("detects the Copilot error for a prompt that is too long", () => {
+			// The error text that a user received from copilot/claude-opus-5.
+			const error = new Error(
+				'Request Failed: 400 {"error":{"code":"model_max_prompt_tokens_exceeded","message":"prompt is too long: 1138989 tokens \u003e 1000000 maximum","type":"invalid_request_error"},"request_id":"req_011CfpU1dvxFeXD4zZAWsVKc","type":"error"}',
+			)
+
+			expect(checkContextWindowExceededError(error)).toBe(true)
+		})
+
+		it("detects a 400 with a context-length message and no error code", () => {
+			expect(checkContextWindowExceededError(new Error("Request Failed: 400 prompt is too long"))).toBe(true)
+			expect(
+				checkContextWindowExceededError(
+					new Error("Request Failed: 400 This model's maximum context length is 128000"),
+				),
+			).toBe(true)
+		})
+
+		it("does not detect other VS Code Language Model errors", () => {
+			expect(checkContextWindowExceededError(new Error("Request Failed: 429 rate limited"))).toBe(false)
+			expect(checkContextWindowExceededError(new Error("Request Failed: 400 invalid tool schema"))).toBe(false)
+			expect(checkContextWindowExceededError(new Error("prompt is too long"))).toBe(false)
+			expect(checkContextWindowExceededError(new Error("NoPermissions"))).toBe(false)
+		})
+	})
+
 	describe("OpenAI errors", () => {
 		it("should detect OpenAI context window error with APIError instance", () => {
 			const error = Object.create(APIError.prototype)

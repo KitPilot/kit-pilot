@@ -4,8 +4,44 @@ export function checkContextWindowExceededError(error: unknown): boolean {
 	return (
 		checkIsOpenAIContextWindowError(error) ||
 		checkIsOpenRouterContextWindowError(error) ||
-		checkIsAnthropicContextWindowError(error)
+		checkIsAnthropicContextWindowError(error) ||
+		checkIsVsCodeLmContextWindowError(error)
 	)
+}
+
+/**
+ * The VS Code Language Model API gives a plain Error. Copilot puts the status
+ * and the provider's JSON body in its message, for example:
+ *
+ *   Request Failed: 400 {"error":{"code":"model_max_prompt_tokens_exceeded",
+ *   "message":"prompt is too long: 1138989 tokens > 1000000 maximum", ...}}
+ *
+ * The error has no `status` and no structured body, so the other checks do
+ * not match it. Thus a request that was too long never got the automatic
+ * context reduction and retry.
+ */
+function checkIsVsCodeLmContextWindowError(error: unknown): boolean {
+	try {
+		if (!error || typeof error !== "object") {
+			return false
+		}
+		const message = String((error as { message?: unknown }).message ?? "")
+
+		// Provider error codes that always mean that the prompt is too long.
+		if (/\b(?:model_max_prompt_tokens_exceeded|context_length_exceeded)\b/.test(message)) {
+			return true
+		}
+
+		// Otherwise require a 400 status and a context-length phrase.
+		return (
+			/\b400\b/.test(message) &&
+			[/prompt is too long/i, /maximum context length/i, /\bcontext\s*(?:length|window)\s*exceeded\b/i].some(
+				(pattern) => pattern.test(message),
+			)
+		)
+	} catch {
+		return false
+	}
 }
 
 function checkIsOpenRouterContextWindowError(error: unknown): boolean {
