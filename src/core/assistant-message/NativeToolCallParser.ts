@@ -1024,6 +1024,28 @@ export class NativeToolCallParser {
 					}
 					break
 
+				case "remember_this":
+					if (
+						args.name !== undefined &&
+						args.type !== undefined &&
+						args.description !== undefined &&
+						args.content !== undefined
+					) {
+						nativeArgs = {
+							name: args.name,
+							type: args.type,
+							description: args.description,
+							content: args.content,
+						} as NativeArgsFor<TName>
+					}
+					break
+
+				case "forget_this":
+					if (args.name !== undefined) {
+						nativeArgs = { name: args.name } as NativeArgsFor<TName>
+					}
+					break
+
 				default:
 					if (customToolRegistry.has(resolvedName)) {
 						nativeArgs = args as NativeArgsFor<TName>

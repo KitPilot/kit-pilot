@@ -167,6 +167,15 @@ export function buildReplayParts(record: unknown, target: VsCodeLmReplayTarget |
 	return record.parts.map((part) => new target.ThinkingPart(part.value, part.id, part.metadata))
 }
 
+/**
+ * True if an error is about the replayed reasoning, for example an invalid
+ * thinking block or signature. Only such an error turns replay off.
+ */
+export function isReasoningRejection(error: unknown): boolean {
+	const message = error instanceof Error ? error.message : String(error ?? "")
+	return /\b(?:thinking|reasoning|signature|encrypted_content|redacted_thinking)\b/i.test(message)
+}
+
 /** Gives the text of a thinking part, for the estimate of input tokens. */
 export function getThinkingPartText(item: unknown): string | undefined {
 	if (!isThinkingPart(item)) return undefined

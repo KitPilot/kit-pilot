@@ -1151,6 +1151,20 @@ describe("VsCodeLmHandler reasoning replay", () => {
 		warn.mockRestore()
 	})
 
+	it("keeps replay on when a request with replayed reasoning fails for another reason", async () => {
+		// Seen live: "Model declined to respond" also occurs without replay.
+		model.sendRequest
+			.mockRejectedValueOnce(new Error("Model declined to respond."))
+			.mockResolvedValueOnce(respond(new vscode.LanguageModelTextPart("ok")))
+		vi.spyOn(console, "error").mockImplementation(() => {})
+
+		await expect(drain(handler.createMessage("rules", history))).rejects.toThrow("Model declined to respond.")
+		expect(model.sendRequest).toHaveBeenCalledTimes(1)
+
+		await drain(handler.createMessage("rules", history))
+		expect(hasThinking(sentMessages(1))).toBe(true)
+	})
+
 	it("does not retry when the stored reasoning is from a different model", async () => {
 		const otherModelHistory = history.map((m: any) =>
 			m.vscodeLmReplay ? { ...m, vscodeLmReplay: { ...replay, modelId: "gpt-5" } } : m,

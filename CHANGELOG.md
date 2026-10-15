@@ -1,5 +1,12 @@
 # KitPilot Changelog
 
+## 0.2.13
+
+### Fixed
+
+- **KitPilot can now save and delete memories.** Before, KitPilot dropped every `remember_this` and `forget_this` call, and the model was not told. Thus the model said "I will save the memory now" many times, and some responses looked empty. Now both tools work.
+- **Experimental reasoning replay now stays on after an unrelated error.** Before, an error such as "Model declined to respond" turned off `kit-pilot.experimentalPreserveReasoning` for the rest of the session. Now only an error about the reasoning turns it off.
+
 ## 0.2.12
 
 ### Fixed

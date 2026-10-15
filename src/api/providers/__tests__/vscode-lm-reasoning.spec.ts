@@ -6,6 +6,7 @@ import {
 	getThinkingPartText,
 	getReplayModelKey,
 	isAutoModel,
+	isReasoningRejection,
 	isThinkingPart,
 	type VsCodeLmReplayTarget,
 } from "../vscode-lm-reasoning"
@@ -151,5 +152,19 @@ describe("isAutoModel", () => {
 		expect(isAutoModel({ id: "auto", family: "claude-fable-5.1" })).toBe(false)
 		expect(getReplayModelKey({ id: "auto", family: "claude-fable-5.1" })).toBe("claude-fable-5.1")
 		expect(isAutoModel({ id: "auto" })).toBe(true)
+	})
+})
+
+describe("isReasoningRejection", () => {
+	it("matches an error about the replayed reasoning", () => {
+		expect(isReasoningRejection(new Error("invalid thinking block"))).toBe(true)
+		expect(isReasoningRejection(new Error("Invalid signature in thinking block"))).toBe(true)
+		expect(isReasoningRejection(new Error("encrypted_content could not be verified"))).toBe(true)
+	})
+
+	it("does not match other errors", () => {
+		expect(isReasoningRejection(new Error("Model declined to respond."))).toBe(false)
+		expect(isReasoningRejection(new Error("Request Failed: 429 rate limited"))).toBe(false)
+		expect(isReasoningRejection(undefined)).toBe(false)
 	})
 })

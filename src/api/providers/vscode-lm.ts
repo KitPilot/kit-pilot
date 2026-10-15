@@ -32,6 +32,7 @@ import {
 	getReplayModelKey,
 	getThinkingPartConstructor,
 	isAutoModel,
+	isReasoningRejection,
 	isThinkingPart,
 	describePartShape,
 	logReasoningDiagnostic,
@@ -869,7 +870,10 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 			// Copilot can reject replayed reasoning. If nothing has streamed yet,
 			// no text is shown and no tool has run, so one retry without the
 			// reasoning is safe. After any output, the error propagates as usual.
-			if (replayed && !yieldedOutput) {
+			// Only an error about the reasoning turns replay off. Other errors,
+			// for example "Model declined to respond", also occur without replay,
+			// so they must not turn it off.
+			if (replayed && !yieldedOutput && isReasoningRejection(error)) {
 				this.replayDisabled = true
 				console.warn(
 					"KitPilot <Language Model API>: a request with replayed reasoning failed before any output. KitPilot retries it once without the reasoning, and replay stays off for this task.",
