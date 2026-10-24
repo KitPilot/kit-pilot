@@ -376,7 +376,7 @@ describe("SYSTEM_PROMPT", () => {
 		)
 
 		// Role definition should be at the top
-		expect(prompt.indexOf("Custom role definition")).toBeLessThan(prompt.indexOf("TOOL USE"))
+		expect(prompt.indexOf("Custom role definition")).toBeLessThan(prompt.indexOf("HOW YOU WORK"))
 
 		// Custom instructions should be at the bottom
 		const customInstructionsIndex = prompt.indexOf("Custom mode instructions")
@@ -410,7 +410,7 @@ describe("SYSTEM_PROMPT", () => {
 		)
 
 		// Role definition from promptComponent should be at the top
-		expect(prompt.indexOf("Custom prompt role definition")).toBeLessThan(prompt.indexOf("TOOL USE"))
+		expect(prompt.indexOf("Custom prompt role definition")).toBeLessThan(prompt.indexOf("HOW YOU WORK"))
 		// Should not contain the default mode's role definition
 		expect(prompt).not.toContain(modes[0].roleDefinition)
 	})
@@ -439,7 +439,7 @@ describe("SYSTEM_PROMPT", () => {
 		)
 
 		// Should use the default mode's role definition
-		expect(prompt.indexOf(modes[0].roleDefinition)).toBeLessThan(prompt.indexOf("TOOL USE"))
+		expect(prompt.indexOf(modes[0].roleDefinition)).toBeLessThan(prompt.indexOf("HOW YOU WORK"))
 	})
 
 	it("should exclude update_todo_list tool when todoListEnabled is false", async () => {
@@ -549,17 +549,14 @@ describe("SYSTEM_PROMPT", () => {
 			settings, // settings
 		)
 
-		// Should contain TOOL USE section with native note
-		expect(prompt).toContain("TOOL USE")
-		expect(prompt).toContain("provider-native tool-calling mechanism")
-		expect(prompt).toContain("Do not include XML markup or examples")
+		// Should contain the core section with the native tool-calling note
+		expect(prompt).toContain("HOW YOU WORK")
+		expect(prompt).toContain("native tool-calling mechanism")
+		expect(prompt).toContain("Do not write a tool call as XML or as text.")
 
 		// Should NOT contain XML-style tags or examples
 		expect(prompt).not.toContain("<actual_tool_name>")
 		expect(prompt).not.toContain("</actual_tool_name>")
-
-		// Should contain Tool Use Guidelines section
-		expect(prompt).toContain("Tool Use Guidelines")
 
 		// Should NOT contain a tool catalog / XML examples
 		expect(prompt).not.toContain("# Tools")
@@ -572,10 +569,13 @@ describe("SYSTEM_PROMPT", () => {
 
 		// Should still contain role definition and other non-XML sections
 		expect(prompt).toContain(modes[0].roleDefinition)
-		expect(prompt).toContain("CAPABILITIES")
-		expect(prompt).toContain("RULES")
-		expect(prompt).toContain("SYSTEM INFORMATION")
-		expect(prompt).toContain("OBJECTIVE")
+		expect(prompt).toContain("FORMAT")
+		expect(prompt).toContain("ENVIRONMENT")
+		expect(prompt).toContain("MODES")
+		// The sections inherited from Roo Code are gone.
+		for (const heading of ["TOOL USE", "CAPABILITIES", "\nRULES", "SYSTEM INFORMATION", "OBJECTIVE"]) {
+			expect(prompt).not.toContain(heading)
+		}
 	})
 
 	afterAll(() => {

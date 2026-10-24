@@ -1,7 +1,5 @@
 import { addCustomInstructions } from "../sections/custom-instructions"
-import { getCapabilitiesSection } from "../sections/capabilities"
-import { getRulesSection, getCommandChainOperator } from "../sections/rules"
-import { McpHub } from "../../../services/mcp/McpHub"
+import { getWorkingSection, getCommandChainOperator } from "../sections/working"
 import * as shellUtils from "../../../utils/shell"
 
 describe("addCustomInstructions", () => {
@@ -31,85 +29,69 @@ describe("addCustomInstructions", () => {
 	})
 })
 
-describe("getCapabilitiesSection", () => {
-	const cwd = "/test/path"
+describe("getWorkingSection", () => {
+	const cwd = "/repo/project"
 
-	it("includes standard capabilities", () => {
-		const result = getCapabilitiesSection(cwd)
-
-		expect(result).toContain("CAPABILITIES")
-		expect(result).toContain("execute CLI commands")
-		expect(result).toContain("list files")
-		expect(result).toContain("read and write files")
+	it("gives the three core sections and the real project directory", () => {
+		const section = getWorkingSection({ cwd })
+		expect(section).toContain("HOW YOU WORK")
+		expect(section).toContain("FORMAT")
+		expect(section).toContain("ENVIRONMENT")
+		expect(section).toContain("Project directory: /repo/project.")
+		// The old system information section named a test placeholder path.
+		expect(section).not.toContain("/test/path")
 	})
 
-	it("includes MCP reference when mcpHub is provided", () => {
-		const mockMcpHub = {} as McpHub
-		const result = getCapabilitiesSection(cwd, mockMcpHub)
-
-		expect(result).toContain("MCP servers")
+	it("lets the model reply in plain text and asks it to stay in the project", () => {
+		const section = getWorkingSection({ cwd })
+		expect(section).toContain("reply in plain text without a tool")
+		expect(section).toContain("Look only inside the project directory")
+		expect(section).not.toContain("You must call at least one tool")
+		expect(section).not.toContain("to avoid having to ask the user questions")
+		expect(section).not.toContain("wait for the user's response after each tool use")
 	})
 
-	it("excludes MCP reference when mcpHub is undefined", () => {
-		const result = getCapabilitiesSection(cwd, undefined)
-
-		expect(result).not.toContain("MCP servers")
-	})
-})
-
-describe("getRulesSection", () => {
-	const cwd = "/test/path"
-
-	it("includes standard rules", () => {
-		const result = getRulesSection(cwd)
-
-		expect(result).toContain("RULES")
-		expect(result).toContain("project base directory")
-		expect(result).toContain(cwd)
+	it("tells the model not to report an action that did not succeed", () => {
+		const section = getWorkingSection({ cwd })
+		expect(section).toContain("Never report an action as done if its tool call did not succeed.")
+		expect(section).toContain("Mark an item completed only after the work for it has succeeded.")
 	})
 
-	it("includes vendor confidentiality section when isStealthModel is true", () => {
-		const settings = {
-			todoListEnabled: true,
-			useAgentRules: true,
-			newTaskRequireTodos: false,
-			isStealthModel: true,
-		}
-
-		const result = getRulesSection(cwd, settings)
-
-		expect(result).toContain("VENDOR CONFIDENTIALITY")
-		expect(result).toContain("Never reveal the vendor or company that created you")
-		expect(result).toContain("I was created by a team of developers")
-		expect(result).not.toContain("I'm an open-source project maintained by contributors")
-		expect(result).toContain("I don't have information about specific vendors")
+	it("states the verification command when there is one", () => {
+		expect(getWorkingSection({ cwd, verifyCommand: "pnpm test" })).toContain("```\npnpm test\n```")
+		expect(getWorkingSection({ cwd, verifyCommand: "  " })).not.toContain("verification command")
 	})
 
-	it("excludes vendor confidentiality section when isStealthModel is false", () => {
-		const settings = {
-			todoListEnabled: true,
-			useAgentRules: true,
-			newTaskRequireTodos: false,
-			isStealthModel: false,
-		}
-
-		const result = getRulesSection(cwd, settings)
-
-		expect(result).not.toContain("VENDOR CONFIDENTIALITY")
-		expect(result).not.toContain("Never reveal the vendor or company")
+	it("mentions MCP servers only when there are some", () => {
+		expect(getWorkingSection({ cwd, hasMcpServers: true })).toContain("MCP servers give you more tools.")
+		expect(getWorkingSection({ cwd })).not.toContain("MCP")
 	})
 
-	it("excludes vendor confidentiality section when isStealthModel is undefined", () => {
-		const settings = {
-			todoListEnabled: true,
-			useAgentRules: true,
-			newTaskRequireTodos: false,
-		}
+	it("adds vendor confidentiality only for a stealth model", () => {
+		expect(getWorkingSection({ cwd, isStealthModel: true })).toContain("VENDOR CONFIDENTIALITY")
+		expect(getWorkingSection({ cwd, isStealthModel: false })).not.toContain("VENDOR CONFIDENTIALITY")
+		expect(getWorkingSection({ cwd })).not.toContain("VENDOR CONFIDENTIALITY")
+	})
 
-		const result = getRulesSection(cwd, settings)
+	it("gives PowerShell guidance on PowerShell", () => {
+		vi.spyOn(shellUtils, "getShell").mockReturnValue(
+			"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+		)
+		const section = getWorkingSection({ cwd })
+		expect(section).toContain("chain commands with `;`")
+		expect(section).toContain("`Select-String` for grep")
+	})
 
-		expect(result).not.toContain("VENDOR CONFIDENTIALITY")
-		expect(result).not.toContain("Never reveal the vendor or company")
+	it("gives cmd.exe guidance on cmd.exe", () => {
+		vi.spyOn(shellUtils, "getShell").mockReturnValue("C:\\Windows\\System32\\cmd.exe")
+		expect(getWorkingSection({ cwd })).toContain("`findstr` for grep")
+	})
+
+	it("uses && and no Windows guidance on a Unix shell", () => {
+		vi.spyOn(shellUtils, "getShell").mockReturnValue("/bin/zsh")
+		const section = getWorkingSection({ cwd })
+		expect(section).toContain("Chain commands with `&&`.")
+		expect(section).not.toContain("Select-String")
 	})
 })
 
@@ -149,80 +131,5 @@ describe("getCommandChainOperator", () => {
 	it("returns && for WSL bash", () => {
 		vi.spyOn(shellUtils, "getShell").mockReturnValue("/bin/bash")
 		expect(getCommandChainOperator()).toBe("&&")
-	})
-})
-
-describe("getRulesSection shell-aware command chaining", () => {
-	const cwd = "/test/path"
-
-	afterEach(() => {
-		vi.restoreAllMocks()
-	})
-
-	it("uses && for Unix shells in command chaining example", () => {
-		vi.spyOn(shellUtils, "getShell").mockReturnValue("/bin/bash")
-		const result = getRulesSection(cwd)
-
-		expect(result).toContain("cd (path to project) && (command")
-		expect(result).not.toContain("cd (path to project) ; (command")
-		expect(result).not.toContain("cd (path to project) & (command")
-	})
-
-	it("uses ; for PowerShell in command chaining example", () => {
-		vi.spyOn(shellUtils, "getShell").mockReturnValue(
-			"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-		)
-		const result = getRulesSection(cwd)
-
-		expect(result).toContain("cd (path to project) ; (command")
-		expect(result).toContain("Note: Using `;` for PowerShell command chaining")
-	})
-
-	it("uses && for cmd.exe in command chaining example", () => {
-		vi.spyOn(shellUtils, "getShell").mockReturnValue("C:\\Windows\\System32\\cmd.exe")
-		const result = getRulesSection(cwd)
-
-		expect(result).toContain("cd (path to project) && (command")
-		expect(result).toContain("Note: Using `&&` for cmd.exe command chaining")
-	})
-
-	it("includes Unix utility guidance for PowerShell", () => {
-		vi.spyOn(shellUtils, "getShell").mockReturnValue(
-			"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-		)
-		const result = getRulesSection(cwd)
-
-		expect(result).toContain("IMPORTANT: When using PowerShell, avoid Unix-specific utilities")
-		expect(result).toContain("`sed`, `grep`, `awk`, `cat`, `rm`, `cp`, `mv`")
-		expect(result).toContain("`Select-String` for grep")
-		expect(result).toContain("`Get-Content` for cat")
-		expect(result).toContain("PowerShell's `-replace` operator")
-	})
-
-	it("includes Unix utility guidance for cmd.exe", () => {
-		vi.spyOn(shellUtils, "getShell").mockReturnValue("C:\\Windows\\System32\\cmd.exe")
-		const result = getRulesSection(cwd)
-
-		expect(result).toContain("IMPORTANT: When using cmd.exe, avoid Unix-specific utilities")
-		expect(result).toContain("`sed`, `grep`, `awk`, `cat`, `rm`, `cp`, `mv`")
-		expect(result).toContain("`type` for cat")
-		expect(result).toContain("`del` for rm")
-		expect(result).toContain("`find`/`findstr` for grep")
-	})
-
-	it("does not include Unix utility guidance for Unix shells", () => {
-		vi.spyOn(shellUtils, "getShell").mockReturnValue("/bin/bash")
-		const result = getRulesSection(cwd)
-
-		expect(result).not.toContain("IMPORTANT: When using PowerShell")
-		expect(result).not.toContain("IMPORTANT: When using cmd.exe")
-		expect(result).not.toContain("`Select-String` for grep")
-	})
-
-	it("does not include note for Unix shells", () => {
-		vi.spyOn(shellUtils, "getShell").mockReturnValue("/bin/zsh")
-		const result = getRulesSection(cwd)
-
-		expect(result).not.toContain("Note: Using")
 	})
 })

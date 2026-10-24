@@ -36,7 +36,6 @@ import {
 	isThinkingPart,
 	describePartShape,
 	logReasoningDiagnostic,
-	readPreserveReasoning,
 	type VsCodeLmReplayRecord,
 	type VsCodeLmReplayTarget,
 } from "./vscode-lm-reasoning"
@@ -603,13 +602,13 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 	}
 
 	private getReplayTarget(client: vscode.LanguageModelChat): VsCodeLmReplayTarget | undefined {
-		if (this.replayDisabled || !readPreserveReasoning() || isAutoModel(client)) return undefined
+		if (this.replayDisabled || isAutoModel(client)) return undefined
 		const ThinkingPart = getThinkingPartConstructor()
 		if (!ThinkingPart) {
 			if (!this.replayUnsupportedLogged) {
 				this.replayUnsupportedLogged = true
 				console.warn(
-					"KitPilot <Language Model API>: experimentalPreserveReasoning is on, but this VS Code has no LanguageModelThinkingPart. Reasoning is not kept.",
+					"KitPilot <Language Model API>: this VS Code has no LanguageModelThinkingPart, so the reasoning of the model is not kept between turns.",
 				)
 			}
 			return undefined
@@ -654,7 +653,6 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 		const vsCodeLmMessages = placeSystemPrompt(
 			systemPrompt,
 			convertToVsCodeLmMessages(cleanedMessages, replayTarget),
-			readSystemPromptAsUserMessage(),
 		)
 		// True only if thinking parts were actually sent. Stored reasoning from a
 		// different model is not sent, so it cannot cause the retry below.
@@ -787,7 +785,7 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 			if (recordReasoning && replayTarget && parts.length) {
 				this.pendingReplayRecord = { modelId: replayTarget.modelId, vendor: replayTarget.vendor, parts }
 			}
-			if (readPreserveReasoning()) {
+			{
 				logReasoningDiagnostic(
 					[
 						"outcome=ok",
@@ -839,7 +837,7 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 			// rejection of replayed reasoning is the case that matters most. The
 			// line has the error name and code only. The message can quote the
 			// rejected reasoning, so it is not logged.
-			if (readPreserveReasoning()) {
+			{
 				const failure = error as { name?: unknown; code?: unknown }
 				logReasoningDiagnostic(
 					[
@@ -1036,22 +1034,16 @@ function isUsableVsCodeLmModel(model: { vendor?: string; id: string }): boolean 
 
 /**
  * Puts the system prompt into the request. The VS Code LM API gives a
- * Marketplace extension no system role, so the default sends the prompt as an
- * Assistant message. When `asUser` is true, the prompt goes into the first User
- * message instead, inside `<system_instructions>` tags. This is an experiment
- * to compare how well the model follows the prompt in each position.
+ * Marketplace extension no system role. An Assistant message would present
+ * the instructions as text that the model wrote earlier, so the prompt goes
+ * into the first User message, inside `<system_instructions>` tags.
  *
  * @internal Exported for testing only.
  */
 export function placeSystemPrompt(
 	systemPrompt: string,
 	messages: vscode.LanguageModelChatMessage[],
-	asUser: boolean,
 ): vscode.LanguageModelChatMessage[] {
-	if (!asUser) {
-		return [vscode.LanguageModelChatMessage.Assistant(systemPrompt), ...messages]
-	}
-
 	const instructions = new vscode.LanguageModelTextPart(
 		`<system_instructions>\n${systemPrompt}\n</system_instructions>\n\n`,
 	)
@@ -1063,10 +1055,6 @@ export function placeSystemPrompt(
 		return messages
 	}
 	return [vscode.LanguageModelChatMessage.User([instructions]), ...messages]
-}
-
-function readSystemPromptAsUserMessage(): boolean {
-	return vscode.workspace.getConfiguration("kit-pilot").get<boolean>("experimentalSystemPromptAsUserMessage", false)
 }
 
 export async function getVsCodeLmModels() {

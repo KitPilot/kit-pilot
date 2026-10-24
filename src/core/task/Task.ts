@@ -115,7 +115,7 @@ import {
 	taskMetadata,
 } from "../task-persistence"
 import type { VsCodeLmReplayRecord } from "../../api/providers/vscode-lm-reasoning"
-import { isPlainReplyTurnEnd, readPlainReplyEndsTurn } from "./plainReplies"
+import { isPlainReplyTurnEnd } from "./plainReplies"
 import { getEnvironmentDetails } from "../environment/getEnvironmentDetails"
 import { checkContextWindowExceededError } from "../context/context-management/context-error-handling"
 import { getInitialWorkspaceContext } from "./workspaceContext"
@@ -179,25 +179,14 @@ export function extractUserPromptText(content: Anthropic.Messages.ContentBlockPa
 }
 
 /**
- * Builds the text of the first user message of a task. By default the
- * workspace overview comes before the user text. When `userMessageFirst` is
- * true, the user text comes first. This is an experiment to compare how well
- * the model understands the request in each order.
+ * Builds the text of the first user message of a task. The user text comes
+ * first, so that the model reads the request before the workspace overview.
  *
  * @internal Exported for testing only.
  */
-export function buildFirstUserMessageText(
-	task: string | undefined,
-	workspaceContext: string,
-	userMessageFirst: boolean,
-): string {
+export function buildFirstUserMessageText(task: string | undefined, workspaceContext: string): string {
 	const userMessage = `<user_message>\n${task}\n</user_message>`
-	if (!userMessageFirst) return `${workspaceContext}${userMessage}`
 	return workspaceContext ? `${userMessage}\n\n${workspaceContext.trimEnd()}` : userMessage
-}
-
-function readUserMessageFirst(): boolean {
-	return vscode.workspace.getConfiguration("kit-pilot").get<boolean>("experimentalUserMessageFirst", false)
 }
 
 export class Task extends EventEmitter<TaskEvents> implements TaskLike {
@@ -1868,7 +1857,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			await this.initiateTaskLoop([
 				{
 					type: "text",
-					text: buildFirstUserMessageText(task, workspaceContext, readUserMessageFirst()),
+					text: buildFirstUserMessageText(task, workspaceContext),
 				},
 				...imageBlocks,
 			]).catch((error) => {
@@ -3503,7 +3492,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						(block) => block.type === "tool_use" || block.type === "mcp_tool_use",
 					)
 
-					if (isPlainReplyTurnEnd(didToolUse, assistantMessage, readPlainReplyEndsTurn())) {
+					if (isPlainReplyTurnEnd(didToolUse, assistantMessage)) {
 						await this.waitForUserAfterPlainReply()
 					} else if (!didToolUse) {
 						// Increment consecutive no-tool-use counter

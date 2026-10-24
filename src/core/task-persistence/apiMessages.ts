@@ -25,7 +25,7 @@ export type ApiMessage = Anthropic.MessageParam & {
 	// See: https://api-docs.deepseek.com/guides/thinking_mode#tool-calls
 	reasoning_content?: string
 	// For the VS Code LM provider: the model's reasoning, replayed on later turns
-	// when the experimentalPreserveReasoning setting is on
+	// so that the model keeps its earlier reasoning
 	vscodeLmReplay?: VsCodeLmReplayRecord
 	// For non-destructive condense: unique identifier for summary messages
 	condenseId?: string

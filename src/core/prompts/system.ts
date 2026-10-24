@@ -13,19 +13,12 @@ import { SkillsManager } from "../../services/skills/SkillsManager"
 
 import type { SystemPromptSettings } from "./types"
 import {
-	getRulesSection,
-	getSystemInfoSection,
-	getObjectiveSection,
-	getSharedToolUseSection,
-	getToolUseGuidelinesSection,
-	getCapabilitiesSection,
+	getWorkingSection,
 	getModesSection,
 	addCustomInstructions,
-	markdownFormattingSection,
 	getSkillsSection,
 	getUserMemorySection,
 } from "./sections"
-import { readPlainReplyEndsTurn } from "../task/plainReplies"
 
 // Helper function to get prompt component, filtering out empty objects
 export function getPromptComponent(
@@ -82,27 +75,19 @@ async function generatePrompt(
 		getUserMemorySection(),
 	])
 
-	// Tools catalog is not included in the system prompt.
-	const toolsCatalog = ""
-	const plainReplies = readPlainReplyEndsTurn()
+	const workingSection = getWorkingSection({
+		cwd,
+		verifyCommand: vscode.workspace.getConfiguration("kit-pilot").get<string>("verifyCommand", ""),
+		hasMcpServers: !!shouldIncludeMcp,
+		isStealthModel: settings?.isStealthModel,
+	})
 
 	const basePrompt = `${roleDefinition}
 
-${markdownFormattingSection()}
-
-${getSharedToolUseSection(plainReplies)}${toolsCatalog}
-
-	${getToolUseGuidelinesSection()}
-
-${getCapabilitiesSection(cwd, shouldIncludeMcp ? mcpHub : undefined)}
+${workingSection}
 
 ${modesSection}
 ${skillsSection ? `\n${skillsSection}` : ""}
-${getRulesSection(cwd, settings, plainReplies)}
-
-${getSystemInfoSection(cwd)}
-
-${getObjectiveSection(vscode.workspace.getConfiguration("kit-pilot").get<string>("verifyCommand", ""), plainReplies)}
 ${userMemorySection ? `\n${userMemorySection}\n` : ""}
 ${await addCustomInstructions(baseInstructions, globalCustomInstructions || "", cwd, mode, {
 	language: language ?? formatLanguage(vscode.env.language),
