@@ -1,5 +1,14 @@
 # KitPilot Changelog
 
+## 0.2.14
+
+### Changed
+
+- **KitPilot now gives the model shorter and clearer instructions.** Before, KitPilot sent the long instructions that it inherited from Roo Code. They contradicted themselves in places, and they named a wrong project folder. The new instructions are 60% shorter. They tell the model to ask you when a request is not clear, and not to report an action that did not succeed.
+- **The model can now answer you and ask you questions in plain text.** Before, KitPilot told the model that a reply without a tool was an error, and sent more requests. Now such a reply ends the turn, and KitPilot waits for your answer.
+- **The model now keeps its reasoning between turns and reads your request first.** KitPilot sends the reasoning of the model back on later turns, as Claude Code does. Your message now comes before the workspace overview, and the instructions arrive as instructions, not as an earlier reply of the model.
+- **The four experimental settings are removed.** `kit-pilot.experimentalPlainReplyEndsTurn`, `kit-pilot.experimentalPreserveReasoning`, `kit-pilot.experimentalSystemPromptAsUserMessage` and `kit-pilot.experimentalUserMessageFirst` are now always on, so you do not need to set them.
+
 ## 0.2.13
 
 ### Fixed
