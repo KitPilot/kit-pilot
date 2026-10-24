@@ -1020,15 +1020,8 @@ describe("placeSystemPrompt", () => {
 	const user = (text: string) => vscode.LanguageModelChatMessage.User(text)
 	const assistant = (text: string) => vscode.LanguageModelChatMessage.Assistant(text)
 
-	it("sends the prompt as an Assistant message by default", () => {
-		const result = placeSystemPrompt("rules", [user("hello")], false)
-		expect(result).toHaveLength(2)
-		expect(result[0].role).toBe("assistant")
-		expect((result[0].content[0] as vscode.LanguageModelTextPart).value).toBe("rules")
-	})
-
-	it("puts the prompt at the start of the first User message when the experiment is on", () => {
-		const result = placeSystemPrompt("rules", [user("hello"), assistant("hi")], true)
+	it("puts the prompt at the start of the first User message", () => {
+		const result = placeSystemPrompt("rules", [user("hello"), assistant("hi")])
 		expect(result).toHaveLength(2)
 		expect(result[0].role).toBe("user")
 		expect(result[0].content.map((p) => (p as vscode.LanguageModelTextPart).value)).toEqual([
@@ -1038,7 +1031,7 @@ describe("placeSystemPrompt", () => {
 	})
 
 	it("adds a separate User message when the history does not start with one", () => {
-		const result = placeSystemPrompt("rules", [assistant("hi")], true)
+		const result = placeSystemPrompt("rules", [assistant("hi")])
 		expect(result).toHaveLength(2)
 		expect(result[0].role).toBe("user")
 		expect(result[1].role).toBe("assistant")
@@ -1087,7 +1080,7 @@ describe("VsCodeLmHandler reasoning replay", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks()
-		settings.values = { experimentalPreserveReasoning: true }
+		settings.values = {}
 		;(vscode.lm.selectChatModels as Mock).mockResolvedValue([model])
 		handler = new VsCodeLmHandler({ vsCodeLmModelSelector: { vendor: "copilot", family: "claude-sonnet" } })
 		handler["client"] = model as any
@@ -1242,32 +1235,6 @@ describe("VsCodeLmHandler reasoning replay", () => {
 		)
 
 		expect(handler.takeVsCodeLmReplayRecord()).toBeUndefined()
-	})
-
-	it("does nothing when the setting is off", async () => {
-		settings.values = {}
-		model.sendRequest.mockResolvedValueOnce(
-			respond(new ThinkingPart("x", "t1"), new vscode.LanguageModelTextPart("ok")),
-		)
-
-		await drain(handler.createMessage("rules", history))
-
-		expect(model.sendRequest.mock.calls[0][1]).not.toHaveProperty("includeEncryptedThinking")
-		expect(hasThinking(sentMessages(0))).toBe(false)
-		expect(handler.takeVsCodeLmReplayRecord()).toBeUndefined()
-	})
-
-	it("keeps reasoning when the id is auto but the family names the model", async () => {
-		// Seen on a free Copilot plan: every model has the id "auto".
-		handler["client"] = { ...model, id: "auto", family: "claude-fable-5.1" } as any
-		model.sendRequest.mockResolvedValueOnce(
-			respond(new ThinkingPart("why", "t1"), new vscode.LanguageModelTextPart("ok")),
-		)
-
-		await drain(handler.createMessage("rules", [{ role: "user", content: "hi" }]))
-
-		expect(model.sendRequest.mock.calls[0][1]).toMatchObject({ includeEncryptedThinking: true })
-		expect(handler.takeVsCodeLmReplayRecord()).toMatchObject({ modelId: "claude-fable-5.1" })
 	})
 
 	it("does nothing for the Auto model", async () => {

@@ -67,10 +67,6 @@ export function describePartShape(chunk: unknown): string {
 	}`
 }
 
-export function readPreserveReasoning(): boolean {
-	return vscode.workspace.getConfiguration("kit-pilot").get<boolean>("experimentalPreserveReasoning", false)
-}
-
 export function getThinkingPartConstructor(): ThinkingPartConstructor | undefined {
 	const ctor = (vscode as unknown as { LanguageModelThinkingPart?: unknown }).LanguageModelThinkingPart
 	return typeof ctor === "function" ? (ctor as ThinkingPartConstructor) : undefined

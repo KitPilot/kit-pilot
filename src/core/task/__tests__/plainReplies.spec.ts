@@ -8,19 +8,15 @@ vi.mock("../../../services/hooks", async (importOriginal) => ({
 
 import { Task } from "../Task"
 import { isPlainReplyTurnEnd } from "../plainReplies"
-import { getSharedToolUseSection } from "../../prompts/sections/tool-use"
-import { getRulesSection } from "../../prompts/sections/rules"
-import { getObjectiveSection } from "../../prompts/sections/objective"
 
 describe("isPlainReplyTurnEnd", () => {
-	it("ends the turn for a text reply without a tool when the setting is on", () => {
-		expect(isPlainReplyTurnEnd(false, "Which file do you mean?", true)).toBe(true)
+	it("ends the turn for a text reply without a tool", () => {
+		expect(isPlainReplyTurnEnd(false, "Which file do you mean?")).toBe(true)
 	})
 
-	it("does not end the turn when the setting is off, a tool was used, or there is no text", () => {
-		expect(isPlainReplyTurnEnd(false, "Which file do you mean?", false)).toBe(false)
-		expect(isPlainReplyTurnEnd(true, "Reading the file.", true)).toBe(false)
-		expect(isPlainReplyTurnEnd(false, "   \n", true)).toBe(false)
+	it("does not end the turn when a tool was used or there is no text", () => {
+		expect(isPlainReplyTurnEnd(true, "Reading the file.")).toBe(false)
+		expect(isPlainReplyTurnEnd(false, "   \n")).toBe(false)
 	})
 })
 
@@ -75,35 +71,5 @@ describe("Task.waitForUserAfterPlainReply", () => {
 		expect(task.userMessageContent).toEqual([
 			{ type: "text", text: "<user_message>\nthe config file\n</user_message>" },
 		])
-	})
-})
-
-describe("prompt text for plain replies", () => {
-	it("keeps the tool requirement when the setting is off", () => {
-		expect(getSharedToolUseSection()).toContain("You must call at least one tool per assistant response.")
-		expect(getRulesSection("/repo")).toContain("You are only allowed to ask the user questions")
-		expect(getRulesSection("/repo")).toContain("NOT engage in a back and forth conversation")
-		expect(getObjectiveSection("")).toContain("don't end your responses with questions")
-	})
-
-	it("allows plain replies when the setting is on", () => {
-		const toolUse = getSharedToolUseSection(true)
-		expect(toolUse).not.toContain("You must call at least one tool")
-		expect(toolUse).toContain("reply in plain text without a tool")
-
-		const rules = getRulesSection("/repo", undefined, true)
-		expect(rules).not.toContain("You are only allowed to ask the user questions")
-		expect(rules).toContain("ask in plain text")
-		expect(rules).toContain("ask the user a short question before you act")
-		// The model must not search outside the project to avoid a question.
-		expect(rules).not.toContain("to avoid having to ask the user questions")
-		expect(rules).toContain("Do not search outside '/repo' unless the user names a location there.")
-		// A finished task still ends with attempt_completion.
-		expect(rules).toContain("you must use the attempt_completion tool")
-
-		const objective = getObjectiveSection("", true)
-		expect(objective).not.toContain("don't end your responses with questions")
-		expect(objective).toContain("missing parameters in plain text or with the ask_followup_question tool")
-		expect(objective).toContain("you must use the attempt_completion tool")
 	})
 })

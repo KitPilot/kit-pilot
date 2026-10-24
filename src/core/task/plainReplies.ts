@@ -1,18 +1,8 @@
-import * as vscode from "vscode"
-
 /**
- * The experimentalPlainReplyEndsTurn setting. When it is on, a reply without a
- * tool ends the turn and KitPilot waits for the user, as Claude Code does. When
- * it is off, KitPilot tells the model that it must use a tool.
+ * True if a response ends the turn as a plain reply: it has text and no tool
+ * call. KitPilot then waits for the user, as Claude Code does. Before 0.2.14
+ * KitPilot told the model that a reply without a tool was an error.
  */
-/**
- * True if a response ends the turn as a plain reply: it has text, it has no
- * tool call, and the setting is on.
- */
-export function isPlainReplyTurnEnd(didToolUse: boolean, assistantText: string, enabled: boolean): boolean {
-	return enabled && !didToolUse && assistantText.trim().length > 0
-}
-
-export function readPlainReplyEndsTurn(): boolean {
-	return vscode.workspace.getConfiguration("kit-pilot").get<boolean>("experimentalPlainReplyEndsTurn", false)
+export function isPlainReplyTurnEnd(didToolUse: boolean, assistantText: string): boolean {
+	return !didToolUse && assistantText.trim().length > 0
 }
