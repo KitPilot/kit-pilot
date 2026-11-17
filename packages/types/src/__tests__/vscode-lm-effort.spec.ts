@@ -51,7 +51,8 @@ describe("VS Code model effort", () => {
 		"claude-sonnet-4",
 		"gemini-2.5-pro",
 		"gpt-5.5-pro",
-		"gpt-99",
+		// A future GPT or Claude generation gets the fallback levels. See the
+		// fallback test below.
 		"auto",
 		"constructor",
 		"__proto__",
@@ -68,6 +69,33 @@ describe("VS Code model effort", () => {
 			"max",
 		])
 	})
+
+	it.each(["claude-opus-5.5", "claude-sonnet-5.5", "claude-fable-5.2", "gpt-6-astra"])(
+		"gives %s the levels low to max",
+		(family) => {
+			expect(getVsCodeLmEffortLevels({ vendor: "copilot", family }, "1.136.1")).toEqual([
+				"low",
+				"medium",
+				"high",
+				"xhigh",
+				"max",
+			])
+		},
+	)
+
+	it.each(["claude-haiku-5.5", "claude-opus-6", "gpt-6-luna", "gpt-6-sol", "gpt-6.1-sol", "gpt-6.1-terra", "gpt-7"])(
+		"gives a new model, %s, the fallback levels",
+		(family) => {
+			expect(getVsCodeLmEffortLevels({ vendor: "copilot", family }, "1.136.1")).toEqual(["low", "medium", "high"])
+		},
+	)
+
+	it.each(["claude-haiku-4.5", "claude-sonnet-4", "gpt-4o", "gpt-4.1", "gemini-3.5-flash", "text-embedding-3-small"])(
+		"gives no fallback levels to an older or other family, %s",
+		(family) => {
+			expect(getVsCodeLmEffortLevels({ vendor: "copilot", family }, "1.136.1")).toEqual([])
+		},
+	)
 
 	it("does not apply Copilot capabilities to another vendor", () => {
 		expect(getVsCodeLmEffortLevels({ vendor: "custom", family: "claude-opus-5" }, "1.136.1")).toEqual([])
