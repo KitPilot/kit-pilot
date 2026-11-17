@@ -22,7 +22,10 @@ export function getVsCodeLmEffortKey(model?: VsCodeLmEffortModel): string | unde
 // https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/reasoning
 // https://developers.openai.com/api/docs/models (individual model pages)
 // claude-fable-5.1 and claude-opus-4.8-fast: the reasoning_effort list in the
-// Copilot model metadata (checked 2026-09-25).
+// Copilot model metadata (checked 2026-09-25). gpt-6-astra: the same source.
+// claude-opus-5.5, claude-sonnet-5.5 and claude-fable-5.2: GitHub lists them
+// with configurable reasoning levels (checked 2026-11-17), and every Claude 5
+// model in Copilot's model data has the levels low to max.
 const COMMON = ["low", "medium", "high"] as const
 const WITH_MAX = [...COMMON, "max"] as const
 const WITH_EXTRA_HIGH = [...COMMON, "xhigh"] as const
@@ -41,6 +44,9 @@ const COPILOT_EFFORT_MODELS: Readonly<Record<string, readonly VsCodeLmEffort[]>>
 	"claude-sonnet-5": WITH_BOTH,
 	"claude-fable-5": WITH_BOTH,
 	"claude-fable-5.1": WITH_BOTH,
+	"claude-fable-5.2": WITH_BOTH,
+	"claude-opus-5.5": WITH_BOTH,
+	"claude-sonnet-5.5": WITH_BOTH,
 	"claude-mythos-5": WITH_BOTH,
 	"gpt-5": ["minimal", ...COMMON],
 	"gpt-5-mini": ["minimal", ...COMMON],
@@ -59,6 +65,20 @@ const COPILOT_EFFORT_MODELS: Readonly<Record<string, readonly VsCodeLmEffort[]>>
 	"gpt-5.6-sol": ["none", ...WITH_BOTH],
 	"gpt-5.6-terra": ["none", ...WITH_BOTH],
 	"gpt-5.6-luna": ["none", ...WITH_BOTH],
+	"gpt-6-astra": WITH_BOTH,
+}
+
+// A new Claude 5 (or later) or GPT-6 (or later) model that is not in the list
+// above still gets these levels. Every reasoning model of these generations in
+// Copilot's model data supports them, and GitHub lists configurable reasoning
+// levels for them. Older families are not matched, because some of them have
+// no effort levels (for example claude-haiku-4.5). Without this fallback, a new
+// model had no effort selector until a KitPilot release added it.
+function isFallbackEffortFamily(family: string): boolean {
+	const claude = /^claude-[a-z]+-(\d+)/.exec(family)
+	if (claude) return Number(claude[1]) >= 5
+	const gpt = /^gpt-(\d+)/.exec(family)
+	return !!gpt && Number(gpt[1]) >= 6
 }
 
 /** The internal request fields were verified in VS Code 1.136. */
@@ -70,5 +90,6 @@ export function supportsVsCodeLmEffort(version: string): boolean {
 export function getVsCodeLmEffortLevels(model: VsCodeLmEffortModel, version: string): readonly VsCodeLmEffort[] {
 	if (!supportsVsCodeLmEffort(version) || model.vendor !== "copilot" || !model.family) return []
 	const family = model.family.toLowerCase()
-	return Object.hasOwn(COPILOT_EFFORT_MODELS, family) ? (COPILOT_EFFORT_MODELS[family] ?? []) : []
+	if (Object.hasOwn(COPILOT_EFFORT_MODELS, family)) return COPILOT_EFFORT_MODELS[family] ?? []
+	return isFallbackEffortFamily(family) ? COMMON : []
 }

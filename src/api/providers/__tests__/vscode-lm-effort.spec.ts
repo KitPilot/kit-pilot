@@ -51,6 +51,26 @@ describe("getVsCodeLmEffortOptions", () => {
 		).toEqual({ configuration: { reasoningEffort: "low" } })
 	})
 
+	it("turns on thinking for a Claude model that is not in the effort list", () => {
+		// Before, a new Claude model such as Opus 5.5 ran with thinking off.
+		for (const family of ["claude-opus-5.5", "claude-haiku-5.5", "claude-haiku-4.5", "claude-new-9"]) {
+			expect(getVsCodeLmEffortOptions({ vendor: "copilot", family }, {})).toEqual({
+				modelOptions: { _enableThinking: true },
+			})
+		}
+	})
+
+	it("does not send the Claude thinking flag to another vendor", () => {
+		expect(getVsCodeLmEffortOptions({ vendor: "anthropic", family: "claude-opus-5.5" }, {})).toEqual({})
+	})
+
+	it("sends a fallback effort for a new model that is not in the list", () => {
+		const model = { vendor: "copilot", family: "claude-haiku-5.5" }
+		expect(
+			getVsCodeLmEffortOptions(model, { vsCodeLmModelEfforts: { [getVsCodeLmEffortKey(model)!]: "low" } }),
+		).toEqual({ configuration: { reasoningEffort: "low" }, modelOptions: { _enableThinking: true } })
+	})
+
 	it("omits all internal fields on older VS Code versions", () => {
 		host.version = "1.135.0"
 		expect(getVsCodeLmEffortOptions(claude, settings)).toEqual({})
