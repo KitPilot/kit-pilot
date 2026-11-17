@@ -1,5 +1,11 @@
 # KitPilot Changelog
 
+## 0.2.15
+
+### Fixed
+
+- **New Claude models now think, and new models have an effort selector.** Before, KitPilot did not turn on thinking for Claude Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.2, and it showed no effort selector for them or for the GPT-6 models. Now thinking is on for every Claude model that supports it. Opus 5.5, Sonnet 5.5, Fable 5.2 and GPT-6 Astra offer Low to Max. Other new Claude and GPT models offer Low, Medium and High until KitPilot adds their full list.
+
 ## 0.2.14
 
 ### Changed
