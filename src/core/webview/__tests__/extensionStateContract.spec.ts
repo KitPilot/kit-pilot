@@ -293,6 +293,33 @@ describe("extension -> webview state contract", () => {
 		).toEqual(JSON.parse(committed))
 	})
 
+	it("gives the auto-approval check the command lists from settings.json", async () => {
+		// Before, only the settings page merged settings.json into these lists,
+		// so a list in settings.json showed there but was not enforced.
+		const lists: Record<string, string[]> = {
+			allowedCommands: ["*"],
+			deniedCommands: ["git push"],
+			askCommands: ["Remove-Item"],
+		}
+		const getConfiguration = vscode.workspace.getConfiguration as unknown as ReturnType<typeof vi.fn>
+		const original = getConfiguration.getMockImplementation()
+		getConfiguration.mockImplementation(() => ({
+			get: vi.fn((key: string) => lists[key] ?? []),
+			update: vi.fn(),
+		}))
+		try {
+			await provider.contextProxy.setValue("deniedCommands", ["del "])
+			const state = await provider.getState()
+			expect(state.allowedCommands).toEqual(expect.arrayContaining(["*"]))
+			expect(state.deniedCommands).toEqual(expect.arrayContaining(["del ", "git push"]))
+			expect(state.askCommands).toEqual(["Remove-Item"])
+		} finally {
+			getConfiguration.mockImplementation(
+				original ?? (() => ({ get: vi.fn().mockReturnValue([]), update: vi.fn() })),
+			)
+		}
+	})
+
 	it("serializes the invariants the webview depends on", async () => {
 		const state = await provider.getStateToPostToWebview()
 

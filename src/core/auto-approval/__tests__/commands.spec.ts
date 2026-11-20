@@ -1,4 +1,4 @@
-import { containsDangerousSubstitution, getCommandDecision } from "../commands"
+import { containsDangerousSubstitution, containsEmbeddedAskCommand, getCommandDecision } from "../commands"
 
 describe("containsDangerousSubstitution", () => {
 	describe("zsh array assignments (should NOT be flagged)", () => {
@@ -97,5 +97,80 @@ describe("getCommandDecision — integration with dangerous substitution checks"
 
 	it("should ask user for dangerous parameter expansion even when command is allowed", () => {
 		expect(getCommandDecision('echo "${var@P}"', allowedCommands)).toBe("ask_user")
+	})
+})
+
+describe("ask commands", () => {
+	const all = ["*"]
+	const denied = ["git push"]
+
+	it("asks for a command on the ask list even when * allows everything", () => {
+		expect(getCommandDecision("git reset --hard HEAD~1", all, [], ["git reset"])).toBe("ask_user")
+	})
+
+	it("runs commands that are not on the ask list", () => {
+		expect(getCommandDecision("dir /b", all, [], ["git reset"])).toBe("auto_approve")
+	})
+
+	it("asks for the whole chain when one part is on the ask list", () => {
+		expect(getCommandDecision("dir && copy /Y a b >nul && Remove-Item -Recurse x", all, [], ["Remove-Item"])).toBe(
+			"ask_user",
+		)
+	})
+
+	it("lets a longer allowed prefix win over a shorter ask entry", () => {
+		const allowed = ["*", "git status"]
+		expect(getCommandDecision("git status", allowed, [], ["git"])).toBe("auto_approve")
+		expect(getCommandDecision("git commit -m x", allowed, [], ["git"])).toBe("ask_user")
+	})
+
+	it("does not let * win over an ask entry", () => {
+		expect(getCommandDecision("del file.txt", all, [], ["del "])).toBe("ask_user")
+	})
+
+	it("still refuses a denied command", () => {
+		expect(getCommandDecision("git push origin main", all, denied, ["git"])).toBe("auto_deny")
+	})
+
+	it("asks for an ask entry inside a wrapper", () => {
+		expect(
+			getCommandDecision('powershell -NoProfile -Command "Remove-Item -Recurse build"', all, [], ["Remove-Item"]),
+		).toBe("ask_user")
+		expect(getCommandDecision("cmd /c del /q build", all, [], ["del "])).toBe("ask_user")
+	})
+
+	it("does not match an ask entry in the middle of a word", () => {
+		// "del " is inside "model ", which is not a command boundary.
+		expect(getCommandDecision("python run.py --model large", all, [], ["del "])).toBe("auto_approve")
+	})
+
+	it("matches without regard to case", () => {
+		expect(getCommandDecision("REMOVE-ITEM x", all, [], ["remove-item"])).toBe("ask_user")
+	})
+
+	it("behaves as before when there is no ask list", () => {
+		expect(getCommandDecision("git status", ["git"], ["rm"])).toBe("auto_approve")
+		expect(getCommandDecision("rm -rf x", ["git"], ["rm"])).toBe("auto_deny")
+		expect(getCommandDecision("ls", ["git"], ["rm"])).toBe("ask_user")
+	})
+})
+
+describe("containsEmbeddedAskCommand", () => {
+	it("ignores a match at the start, which the prefix rule handles", () => {
+		expect(containsEmbeddedAskCommand("git status", ["git"])).toBe(false)
+	})
+
+	it("finds a match after a quote or a space", () => {
+		expect(containsEmbeddedAskCommand('powershell -Command "Remove-Item x"', ["Remove-Item"])).toBe(true)
+	})
+
+	it("finds a match after a parenthesis or a brace", () => {
+		expect(containsEmbeddedAskCommand('powershell -Command "& {Remove-Item x}"', ["Remove-Item"])).toBe(true)
+		expect(containsEmbeddedAskCommand("echo (x)Remove-Item y", ["Remove-Item"])).toBe(true)
+		expect(containsEmbeddedAskCommand("cmd /c (del a)", ["del "])).toBe(true)
+	})
+
+	it("ignores * and empty entries", () => {
+		expect(containsEmbeddedAskCommand("anything at all", ["*", "  "])).toBe(false)
 	})
 })

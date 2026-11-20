@@ -706,6 +706,16 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 						await vscode.workspace
 							.getConfiguration(Package.name)
 							.update("deniedCommands", newValue, vscode.ConfigurationTarget.Global)
+					} else if (key === "askCommands") {
+						const commands = value ?? []
+
+						newValue = Array.isArray(commands)
+							? commands.filter((cmd) => typeof cmd === "string" && cmd.trim().length > 0)
+							: []
+
+						await vscode.workspace
+							.getConfiguration(Package.name)
+							.update("askCommands", newValue, vscode.ConfigurationTarget.Global)
 					} else if (key === "ttsEnabled") {
 						newValue = value ?? true
 						setTtsEnabled(newValue as boolean)
@@ -1136,6 +1146,22 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			await vscode.workspace
 				.getConfiguration(Package.name)
 				.update("deniedCommands", validCommands, vscode.ConfigurationTarget.Global)
+
+			break
+		}
+		case "askCommands": {
+			// Validate and sanitize the commands array
+			const commands = message.commands ?? []
+			const validCommands = Array.isArray(commands)
+				? commands.filter((cmd) => typeof cmd === "string" && cmd.trim().length > 0)
+				: []
+
+			await updateGlobalState("askCommands", validCommands)
+
+			// Also update workspace settings.
+			await vscode.workspace
+				.getConfiguration(Package.name)
+				.update("askCommands", validCommands, vscode.ConfigurationTarget.Global)
 
 			break
 		}

@@ -2189,6 +2189,14 @@ export class ClineProvider
 	}
 
 	/**
+	 * Merges the commands that always ask before they run, from global state
+	 * and workspace configuration.
+	 */
+	private mergeAskCommands(globalStateCommands?: string[]): string[] {
+		return this.mergeCommandLists("askCommands", "ask", globalStateCommands)
+	}
+
+	/**
 	 * Common utility for merging command lists from global state and workspace configuration.
 	 * Implements the Command Denylist feature's merging strategy with proper validation.
 	 *
@@ -2198,8 +2206,8 @@ export class ClineProvider
 	 * @returns Merged and deduplicated command list
 	 */
 	private mergeCommandLists(
-		configKey: "allowedCommands" | "deniedCommands",
-		commandType: "allowed" | "denied",
+		configKey: "allowedCommands" | "deniedCommands" | "askCommands",
+		commandType: "allowed" | "denied" | "ask",
 		globalStateCommands?: string[],
 	): string[] {
 		try {
@@ -2244,6 +2252,7 @@ export class ClineProvider
 			alwaysAllowExecute,
 			allowedCommands,
 			deniedCommands,
+			askCommands,
 			alwaysAllowMcp,
 			alwaysAllowModeSwitch,
 			alwaysAllowSubtasks,
@@ -2310,6 +2319,7 @@ export class ClineProvider
 
 		const mergedAllowedCommands = this.mergeAllowedCommands(allowedCommands)
 		const mergedDeniedCommands = this.mergeDeniedCommands(deniedCommands)
+		const mergedAskCommands = this.mergeAskCommands(askCommands)
 		const cwd = this.cwd
 		const currentTask = this.getCurrentTask()
 
@@ -2349,6 +2359,7 @@ export class ClineProvider
 			shouldShowAnnouncement: lastShownAnnouncementId !== this.latestAnnouncementId,
 			allowedCommands: mergedAllowedCommands,
 			deniedCommands: mergedDeniedCommands,
+			askCommands: mergedAskCommands,
 			soundVolume: soundVolume ?? 0.5,
 			writeDelayMs: writeDelayMs ?? DEFAULT_WRITE_DELAY_MS,
 			terminalShellIntegrationTimeout: terminalShellIntegrationTimeout ?? Terminal.defaultShellIntegrationTimeout,
@@ -2459,8 +2470,12 @@ export class ClineProvider
 			autoCondenseContext: stateValues.autoCondenseContext ?? true,
 			autoCondenseContextPercent: stateValues.autoCondenseContextPercent ?? 100,
 			taskHistory: this.taskHistoryStore.getAll(),
-			allowedCommands: stateValues.allowedCommands,
-			deniedCommands: stateValues.deniedCommands,
+			// The lists in settings.json count too. Before, only the settings
+			// page merged them, so a list in settings.json showed there but the
+			// auto-approval check did not use it.
+			allowedCommands: this.mergeAllowedCommands(stateValues.allowedCommands),
+			deniedCommands: this.mergeDeniedCommands(stateValues.deniedCommands),
+			askCommands: this.mergeAskCommands(stateValues.askCommands),
 			soundEnabled: stateValues.soundEnabled ?? false,
 			ttsEnabled: stateValues.ttsEnabled ?? false,
 			ttsSpeed: stateValues.ttsSpeed ?? 1.0,
@@ -2817,6 +2832,12 @@ export class ClineProvider
 				await vscode.workspace
 					.getConfiguration(Package.name)
 					.update("deniedCommands", configuration.deniedCommands, vscode.ConfigurationTarget.Global)
+			}
+
+			if (configuration.askCommands) {
+				await vscode.workspace
+					.getConfiguration(Package.name)
+					.update("askCommands", configuration.askCommands, vscode.ConfigurationTarget.Global)
 			}
 
 			if (configuration.commandExecutionTimeout !== undefined) {

@@ -3,7 +3,7 @@
 	"displayName": "%extension.displayName%",
 	"description": "%extension.description%",
 	"publisher": "KitPilot",
-	"version": "0.2.15",
+	"version": "0.2.16",
 	"icon": "assets/icons/icon.png",
 	"galleryBanner": {
 		"color": "#617A91",
@@ -329,6 +329,14 @@
 					},
 					"default": [],
 					"description": "%commands.deniedCommands.description%"
+				},
+				"kit-pilot.askCommands": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"description": "%commands.askCommands.description%"
 				},
 				"kit-pilot.commandExecutionTimeout": {
 					"type": "number",

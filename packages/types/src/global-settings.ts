@@ -105,6 +105,7 @@ export const globalSettingsSchema = z.object({
 	followupAutoApproveTimeoutMs: z.number().optional(),
 	allowedCommands: z.array(z.string()).optional(),
 	deniedCommands: z.array(z.string()).optional(),
+	askCommands: z.array(z.string()).optional(),
 	commandExecutionTimeout: z.number().optional(),
 	commandTimeoutAllowlist: z.array(z.string()).optional(),
 	// Wake an idle agent when a background task exits or matches notify_on

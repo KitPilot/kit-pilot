@@ -17,6 +17,7 @@
 			"vendor": "copilot"
 		}
 	},
+	"askCommands": [],
 	"autoApprovalEnabled": false,
 	"autoCondenseContext": true,
 	"autoCondenseContextPercent": 100,
