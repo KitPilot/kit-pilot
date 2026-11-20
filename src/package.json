@@ -330,6 +330,14 @@
 					"default": [],
 					"description": "%commands.deniedCommands.description%"
 				},
+				"kit-pilot.askCommands": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"description": "%commands.askCommands.description%"
+				},
 				"kit-pilot.commandExecutionTimeout": {
 					"type": "number",
 					"default": 0,

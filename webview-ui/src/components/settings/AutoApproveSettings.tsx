@@ -35,6 +35,7 @@ type AutoApproveSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	allowedMaxCost?: number | undefined
 	allowedMaxCostWarningPercent?: number | undefined
 	deniedCommands?: string[]
+	askCommands?: string[]
 	setCachedStateField: SetCachedStateField<
 		| "alwaysAllowReadOnly"
 		| "alwaysAllowReadOnlyOutsideWorkspace"
@@ -52,6 +53,7 @@ type AutoApproveSettingsProps = HTMLAttributes<HTMLDivElement> & {
 		| "allowedMaxCost"
 		| "allowedMaxCostWarningPercent"
 		| "deniedCommands"
+		| "askCommands"
 	>
 }
 
@@ -72,12 +74,14 @@ export const AutoApproveSettings = ({
 	allowedMaxCost,
 	allowedMaxCostWarningPercent,
 	deniedCommands,
+	askCommands,
 	setCachedStateField,
 	...props
 }: AutoApproveSettingsProps) => {
 	const { t } = useAppTranslation()
 	const [commandInput, setCommandInput] = useState("")
 	const [deniedCommandInput, setDeniedCommandInput] = useState("")
+	const [askCommandInput, setAskCommandInput] = useState("")
 	const { autoApprovalEnabled, setAutoApprovalEnabled } = useExtensionState()
 
 	const toggles = useAutoApprovalToggles()
@@ -103,6 +107,17 @@ export const AutoApproveSettings = ({
 			setCachedStateField("deniedCommands", newCommands)
 			setDeniedCommandInput("")
 			vscode.postMessage({ type: "updateSettings", updatedSettings: { deniedCommands: newCommands } })
+		}
+	}
+
+	const handleAddAskCommand = () => {
+		const currentCommands = askCommands ?? []
+
+		if (askCommandInput && !currentCommands.includes(askCommandInput)) {
+			const newCommands = [...currentCommands, askCommandInput]
+			setCachedStateField("askCommands", newCommands)
+			setAskCommandInput("")
+			vscode.postMessage({ type: "updateSettings", updatedSettings: { askCommands: newCommands } })
 		}
 	}
 
@@ -387,6 +402,62 @@ export const AutoApproveSettings = ({
 										vscode.postMessage({
 											type: "updateSettings",
 											updatedSettings: { deniedCommands: newCommands },
+										})
+									}}>
+									<div className="flex flex-row items-center gap-1">
+										<div>{cmd}</div>
+										<X className="text-foreground scale-75" />
+									</div>
+								</Button>
+							))}
+						</div>
+
+						{/* Ask Before Running Section */}
+						<SearchableSetting
+							settingId="auto-approve-ask-commands"
+							section="autoApprove"
+							label={t("settings:autoApprove.execute.askCommands")}
+							className="mt-6">
+							<label className="block font-medium mb-1" data-testid="ask-commands-heading">
+								{t("settings:autoApprove.execute.askCommands")}
+							</label>
+							<div className="text-vscode-descriptionForeground text-sm mt-1">
+								{t("settings:autoApprove.execute.askCommandsDescription")}
+							</div>
+						</SearchableSetting>
+
+						<div className="flex gap-2">
+							<Input
+								value={askCommandInput}
+								onChange={(e: any) => setAskCommandInput(e.target.value)}
+								onKeyDown={(e: any) => {
+									if (e.key === "Enter") {
+										e.preventDefault()
+										handleAddAskCommand()
+									}
+								}}
+								placeholder={t("settings:autoApprove.execute.askCommandPlaceholder")}
+								className="grow"
+								data-testid="ask-command-input"
+							/>
+							<Button className="h-8" onClick={handleAddAskCommand} data-testid="add-ask-command-button">
+								{t("settings:autoApprove.execute.addButton")}
+							</Button>
+						</div>
+
+						<div className="flex flex-wrap gap-2">
+							{(askCommands ?? []).map((cmd, index) => (
+								<Button
+									key={index}
+									variant="secondary"
+									data-testid={`remove-ask-command-${index}`}
+									onClick={() => {
+										const newCommands = (askCommands ?? []).filter((_, i) => i !== index)
+										setCachedStateField("askCommands", newCommands)
+
+										vscode.postMessage({
+											type: "updateSettings",
+											updatedSettings: { askCommands: newCommands },
 										})
 									}}>
 									<div className="flex flex-row items-center gap-1">

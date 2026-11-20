@@ -185,6 +185,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		shouldShowAnnouncement: false,
 		allowedCommands: [],
 		deniedCommands: [],
+		askCommands: [],
 		soundEnabled: false,
 		soundVolume: 0.5,
 		ttsEnabled: false,

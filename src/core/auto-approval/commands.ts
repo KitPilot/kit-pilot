@@ -257,6 +257,7 @@ export function getCommandDecision(
 	command: string,
 	allowedCommands: string[],
 	deniedCommands?: string[],
+	askCommands?: string[],
 ): CommandDecision {
 	if (!command?.trim()) {
 		return "auto_approve"
@@ -270,7 +271,7 @@ export function getCommandDecision(
 		// Remove simple PowerShell-like redirections (e.g. 2>&1) before checking
 		const cmdWithoutRedirection = cmd.replace(/\d*>&\d*/, "").trim()
 
-		return getSingleCommandDecision(cmdWithoutRedirection, allowedCommands, deniedCommands)
+		return getSingleCommandDecision(cmdWithoutRedirection, allowedCommands, deniedCommands, askCommands)
 	})
 
 	// If any sub-command is denied, deny the whole command
@@ -341,9 +342,60 @@ export function getSingleCommandDecision(
 	command: string,
 	allowedCommands: string[],
 	deniedCommands?: string[],
+	askCommands?: string[],
 ): CommandDecision {
 	if (!command) return "auto_approve"
 
+	const decision = getAllowDenyDecision(command, allowedCommands, deniedCommands)
+	if (decision === "auto_deny") return decision
+
+	// A command that matches the ask list waits for the user, even if the
+	// allow list has "*". Only a longer (more specific) allowed prefix wins:
+	// ask "git" and allow "git status" lets "git status" run.
+	const longestAskMatch = findLongestPrefixMatch(command, askCommands || [])
+	if (longestAskMatch) {
+		const longestAllowedMatch = findLongestPrefixMatch(command, allowedCommands || [])
+		if (longestAllowedMatch && longestAllowedMatch !== "*" && longestAllowedMatch.length > longestAskMatch.length) {
+			return "auto_approve"
+		}
+		return "ask_user"
+	}
+
+	// An ask entry inside a wrapper (powershell -Command "...", cmd /c ...)
+	// does not start the command, so it is also looked for later in the text.
+	if (decision === "auto_approve" && containsEmbeddedAskCommand(command, askCommands)) {
+		return "ask_user"
+	}
+
+	return decision
+}
+
+/**
+ * True if an ask entry occurs after the start of the command, at a token
+ * boundary: after whitespace, a quote, or one of ; & | ( . This finds an entry
+ * inside a wrapper such as `powershell -Command "Remove-Item x"`. A match at
+ * the start is the prefix rule in getSingleCommandDecision, which lets a more
+ * specific allowed prefix win. A false match only makes KitPilot ask, so the
+ * check prefers to ask.
+ *
+ * @internal Exported for testing.
+ */
+export function containsEmbeddedAskCommand(command: string, askCommands?: string[]): boolean {
+	if (!askCommands?.length) return false
+	const text = command.toLowerCase()
+	return askCommands.some((entry) => {
+		const needle = entry.toLowerCase()
+		if (!needle.trim() || needle === "*") return false
+		let index = text.indexOf(needle, 1)
+		while (index !== -1) {
+			if (/[\s"'`;&|(]/.test(text[index - 1])) return true
+			index = text.indexOf(needle, index + 1)
+		}
+		return false
+	})
+}
+
+function getAllowDenyDecision(command: string, allowedCommands: string[], deniedCommands?: string[]): CommandDecision {
 	// Find longest matching prefixes in both lists
 	const longestAllowedMatch = findLongestPrefixMatch(command, allowedCommands || [])
 	const longestDeniedMatch = findLongestPrefixMatch(command, deniedCommands || [])
