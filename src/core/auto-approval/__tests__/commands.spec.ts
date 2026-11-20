@@ -164,6 +164,12 @@ describe("containsEmbeddedAskCommand", () => {
 		expect(containsEmbeddedAskCommand('powershell -Command "Remove-Item x"', ["Remove-Item"])).toBe(true)
 	})
 
+	it("finds a match after a parenthesis or a brace", () => {
+		expect(containsEmbeddedAskCommand('powershell -Command "& {Remove-Item x}"', ["Remove-Item"])).toBe(true)
+		expect(containsEmbeddedAskCommand("echo (x)Remove-Item y", ["Remove-Item"])).toBe(true)
+		expect(containsEmbeddedAskCommand("cmd /c (del a)", ["del "])).toBe(true)
+	})
+
 	it("ignores * and empty entries", () => {
 		expect(containsEmbeddedAskCommand("anything at all", ["*", "  "])).toBe(false)
 	})

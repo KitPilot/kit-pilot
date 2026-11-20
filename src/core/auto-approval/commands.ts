@@ -372,8 +372,10 @@ export function getSingleCommandDecision(
 
 /**
  * True if an ask entry occurs after the start of the command, at a token
- * boundary: after whitespace, a quote, or one of ; & | ( . This finds an entry
- * inside a wrapper such as `powershell -Command "Remove-Item x"`. A match at
+ * boundary: after whitespace, a quote, a parenthesis, a brace, or one of
+ * ; & | . This finds an entry inside a wrapper such as
+ * `powershell -Command "Remove-Item x"` or a PowerShell script block such as
+ * `powershell -Command "& {Remove-Item x}"`. A match at
  * the start is the prefix rule in getSingleCommandDecision, which lets a more
  * specific allowed prefix win. A false match only makes KitPilot ask, so the
  * check prefers to ask.
@@ -388,7 +390,7 @@ export function containsEmbeddedAskCommand(command: string, askCommands?: string
 		if (!needle.trim() || needle === "*") return false
 		let index = text.indexOf(needle, 1)
 		while (index !== -1) {
-			if (/[\s"'`;&|(]/.test(text[index - 1])) return true
+			if (/[\s"'`;&|(){}]/.test(text[index - 1])) return true
 			index = text.indexOf(needle, index + 1)
 		}
 		return false
