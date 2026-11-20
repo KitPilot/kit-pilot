@@ -1,5 +1,15 @@
 # KitPilot Changelog
 
+## 0.2.16
+
+### Added
+
+- **You can now name commands that always wait for you.** Add command prefixes under **Settings → Auto-Approve → Ask Before Running**, or in `kit-pilot.askCommands`. KitPilot then shows the Run button for these commands, even when you allow all commands with `*`. Other commands still run without approval, and denied commands are still refused. An entry also matches a command inside a wrapper, for example `powershell -Command "Remove-Item x"`.
+
+### Fixed
+
+- **The command lists in your VS Code settings now apply.** Before, KitPilot showed `kit-pilot.allowedCommands` and `kit-pilot.deniedCommands` from your settings on the settings page, but it did not use them to approve or refuse a command. Now it uses them.
+
 ## 0.2.15
 
 ### Fixed
